@@ -1,19 +1,11 @@
 /* eslint-disable react/no-unused-prop-types */
 
 import {CloseIcon} from '@sanity/icons'
-import {
-  BoundaryElementProvider,
-  Box,
-  Button,
-  Flex,
-  PopoverProps,
-  Text,
-  useClickOutside,
-  useGlobalKeyDown,
-} from '@sanity/ui'
+import {Box, Button, Flex, PopoverProps, Text, useClickOutside, useGlobalKeyDown} from '@sanity/ui'
 import React, {useCallback, useEffect, useState} from 'react'
 import {PresenceOverlay} from '../../../../../presence'
 import {PortableTextEditorElement} from '../../Compositor'
+import {VirtualizerScrollInstanceProvider} from '../../../arrays/ArrayOfObjectsInput/List/VirtualizerScrollInstanceProvider'
 import {ModalWidth} from './types'
 import {
   ContentContainer,
@@ -24,6 +16,7 @@ import {
 } from './PopoverModal.styles'
 
 interface PopoverEditDialogProps {
+  autoFocus?: boolean
   boundaryElement?: PortableTextEditorElement
   children: React.ReactNode
   onClose: () => void
@@ -60,7 +53,7 @@ export function PopoverEditDialog(props: PopoverEditDialogProps) {
 }
 
 function Content(props: PopoverEditDialogProps) {
-  const {onClose, referenceElement, width = 0, title, boundaryElement} = props
+  const {onClose, referenceElement, width = 0, title, boundaryElement, autoFocus} = props
 
   useGlobalKeyDown(
     useCallback(
@@ -79,7 +72,7 @@ function Content(props: PopoverEditDialogProps) {
   const [contentElement, setContentElement] = useState<HTMLDivElement | null>(null)
 
   return (
-    <BoundaryElementProvider element={contentElement}>
+    <VirtualizerScrollInstanceProvider scrollElement={contentElement}>
       <ContentContainer width={width}>
         <ModalWrapper direction="column" flex={1}>
           <ContentHeaderBox padding={1}>
@@ -88,7 +81,13 @@ function Content(props: PopoverEditDialogProps) {
                 <Text weight="semibold">{title}</Text>
               </Box>
 
-              <Button icon={CloseIcon} mode="bleed" onClick={onClose} padding={2} />
+              <Button
+                autoFocus={Boolean(autoFocus)}
+                icon={CloseIcon}
+                mode="bleed"
+                onClick={onClose}
+                padding={2}
+              />
             </Flex>
           </ContentHeaderBox>
           <ContentScrollerBox flex={1}>
@@ -100,6 +99,6 @@ function Content(props: PopoverEditDialogProps) {
           </ContentScrollerBox>
         </ModalWrapper>
       </ContentContainer>
-    </BoundaryElementProvider>
+    </VirtualizerScrollInstanceProvider>
   )
 }

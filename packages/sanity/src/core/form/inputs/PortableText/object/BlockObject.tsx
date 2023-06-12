@@ -4,11 +4,20 @@ import {
   EditorSelection,
   usePortableTextEditor,
 } from '@sanity/portable-text-editor'
-import {ObjectSchemaType, Path, PortableTextBlock} from '@sanity/types'
+import {ObjectSchemaType, Path, PortableTextBlock, isImage} from '@sanity/types'
 import {Tooltip, Flex, ResponsivePaddingProps, Box} from '@sanity/ui'
-import React, {ComponentType, PropsWithChildren, useCallback, useMemo, useState} from 'react'
-import {PatchArg} from '../../../patch'
-import {BlockProps, RenderCustomMarkers, RenderPreviewCallback} from '../../../types'
+import React, {PropsWithChildren, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {isEqual} from '@sanity/util/paths'
+import {
+  BlockProps,
+  RenderAnnotationCallback,
+  RenderArrayOfObjectsItemCallback,
+  RenderBlockCallback,
+  RenderCustomMarkers,
+  RenderFieldCallback,
+  RenderInputCallback,
+  RenderPreviewCallback,
+} from '../../../types'
 import {RenderBlockActionsCallback} from '../types'
 import {BlockActions} from '../BlockActions'
 import {ReviewChangesHighlightBlock, StyledChangeIndicatorWithProvidedFullPath} from '../_common'
@@ -19,6 +28,8 @@ import {usePortableTextMemberItem} from '../hooks/usePortableTextMembers'
 import {pathToString} from '../../../../field'
 import {debugRender} from '../debugRender'
 import {EMPTY_ARRAY} from '../../../../util'
+import {useChildPresence} from '../../../studio/contexts/Presence'
+import {useFormCallbacks} from '../../../studio'
 import {
   Root,
   ChangeIndicatorWrapper,
@@ -36,7 +47,6 @@ interface BlockObjectProps extends PropsWithChildren {
   focused: boolean
   isActive?: boolean
   isFullscreen?: boolean
-  onChange: (...patches: PatchArg[]) => void
   onItemClose: () => void
   onItemOpen: (path: Path) => void
   onItemRemove: (itemKey: string) => void
@@ -44,8 +54,14 @@ interface BlockObjectProps extends PropsWithChildren {
   path: Path
   readOnly?: boolean
   relativePath: Path
+  renderAnnotation?: RenderAnnotationCallback
+  renderBlock?: RenderBlockCallback
   renderBlockActions?: RenderBlockActionsCallback
   renderCustomMarkers?: RenderCustomMarkers
+  renderField: RenderFieldCallback
+  renderInlineBlock?: RenderBlockCallback
+  renderInput: RenderInputCallback
+  renderItem: RenderArrayOfObjectsItemCallback
   renderPreview: RenderPreviewCallback
   schemaType: ObjectSchemaType
   selected: boolean
@@ -54,51 +70,86 @@ interface BlockObjectProps extends PropsWithChildren {
 
 export function BlockObject(props: BlockObjectProps) {
   const {
+    boundaryElement,
     focused,
     isFullscreen,
-    onChange,
-    onItemOpen,
     onItemClose,
+    onItemOpen,
     onPathFocus,
     path,
     readOnly,
     relativePath,
+    renderAnnotation,
+    renderBlock,
     renderBlockActions,
     renderCustomMarkers,
+    renderField,
+    renderInlineBlock,
+    renderInput,
+    renderItem,
     renderPreview,
-    boundaryElement,
-    selected,
     schemaType,
+    selected,
     value,
   } = props
+  const {onChange} = useFormCallbacks()
   const {Markers} = useFormBuilder().__internal.components
   const [reviewChangesHovered, setReviewChangesHovered] = useState<boolean>(false)
   const markers = usePortableTextMarkers(path)
   const editor = usePortableTextEditor()
   const memberItem = usePortableTextMemberItem(pathToString(path))
+  const isDeleting = useRef<boolean>(false)
+
+  const selfSelection = useMemo(
+    (): EditorSelection => ({
+      anchor: {path: relativePath, offset: 0},
+      focus: {path: relativePath, offset: 0},
+    }),
+    [relativePath]
+  )
 
   const handleMouseOver = useCallback(() => setReviewChangesHovered(true), [])
   const handleMouseOut = useCallback(() => setReviewChangesHovered(false), [])
 
   const onOpen = useCallback(() => {
-    PortableTextEditor.blur(editor)
-    onItemOpen(path)
-  }, [editor, onItemOpen, path])
+    if (memberItem) {
+      // Take focus away from the editor so that it doesn't propagate a new focusPath and interfere here.
+      PortableTextEditor.blur(editor)
+      onItemOpen(memberItem.node.path)
+    }
+  }, [editor, memberItem, onItemOpen])
 
   const onClose = useCallback(() => {
     onItemClose()
+    PortableTextEditor.select(editor, selfSelection)
     PortableTextEditor.focus(editor)
-  }, [editor, onItemClose])
+  }, [onItemClose, editor, selfSelection])
 
   const onRemove = useCallback(() => {
-    const sel: EditorSelection = {
-      focus: {path: relativePath, offset: 0},
-      anchor: {path: relativePath, offset: 0},
+    // Guard against clicking "Delete" multiple times.
+    if (isDeleting.current) {
+      return
     }
-    PortableTextEditor.delete(editor, sel, {mode: 'blocks'})
-    // Focus will not stick unless this is done through a timeout when deleted through clicking the menu button.
-    setTimeout(() => PortableTextEditor.focus(editor))
-  }, [editor, relativePath])
+    try {
+      PortableTextEditor.delete(editor, selfSelection, {mode: 'blocks'})
+    } catch (err) {
+      console.error(err)
+    } finally {
+      isDeleting.current = true
+    }
+  }, [editor, selfSelection])
+
+  // Focus the editor if this object is removed because it was deleted.
+  // This is some special code needed for how the Menu for the block object
+  // is taking focus while clicking "Delete" from the menu.
+  useEffect(
+    () => () => {
+      if (isDeleting.current) {
+        PortableTextEditor.focus(editor)
+      }
+    },
+    [editor]
+  )
 
   const innerPaddingProps: ResponsivePaddingProps = useMemo(() => {
     if (isFullscreen && !renderBlockActions) {
@@ -123,7 +174,11 @@ export function BlockObject(props: BlockObjectProps) {
   const parentSchemaType = editor.schemaTypes.portableText
   const hasMarkers = Boolean(markers.length > 0)
 
-  const presence = memberItem?.node.presence || EMPTY_ARRAY
+  const presence = useChildPresence(path, true)
+  const rootPresence = useMemo(
+    () => presence.filter((p) => isEqual(p.path, path)),
+    [path, presence]
+  )
 
   // Tooltip indicating validation errors, warnings, info and markers
   const tooltipEnabled = hasError || hasWarning || hasInfo || hasMarkers
@@ -144,12 +199,13 @@ export function BlockObject(props: BlockObjectProps) {
 
   const isOpen = Boolean(memberItem?.member.open)
   const input = memberItem?.input
+  const nodePath = memberItem?.node.path || EMPTY_ARRAY
+  const referenceElement = memberItem?.elementRef?.current
 
-  const CustomComponent = schemaType.components?.block as ComponentType<BlockProps> | undefined
   const componentProps: BlockProps = useMemo(
     () => ({
       __unstable_boundaryElement: boundaryElement || undefined,
-      __unstable_referenceElement: memberItem?.elementRef?.current || undefined,
+      __unstable_referenceElement: referenceElement || undefined,
       children: input,
       focused,
       markers,
@@ -159,10 +215,16 @@ export function BlockObject(props: BlockObjectProps) {
       onRemove,
       open: isOpen,
       parentSchemaType,
-      path: memberItem?.node.path || EMPTY_ARRAY,
-      presence,
+      path: nodePath,
+      presence: rootPresence,
       readOnly: Boolean(readOnly),
+      renderAnnotation,
+      renderBlock,
       renderDefault: DefaultBlockObjectComponent,
+      renderField,
+      renderInlineBlock,
+      renderInput,
+      renderItem,
       renderPreview,
       schemaType,
       selected,
@@ -171,19 +233,25 @@ export function BlockObject(props: BlockObjectProps) {
     }),
     [
       boundaryElement,
-      focused,
+      referenceElement,
       input,
-      isOpen,
+      focused,
       markers,
-      memberItem?.elementRef,
-      memberItem?.node.path,
       onClose,
       onOpen,
       onPathFocus,
       onRemove,
+      isOpen,
       parentSchemaType,
-      presence,
+      nodePath,
+      rootPresence,
       readOnly,
+      renderAnnotation,
+      renderBlock,
+      renderField,
+      renderInlineBlock,
+      renderInput,
+      renderItem,
       renderPreview,
       schemaType,
       selected,
@@ -207,11 +275,7 @@ export function BlockObject(props: BlockObjectProps) {
               content={toolTipContent}
             >
               <PreviewContainer {...innerPaddingProps}>
-                {CustomComponent ? (
-                  <CustomComponent {...componentProps} />
-                ) : (
-                  <DefaultBlockObjectComponent {...componentProps} />
-                )}
+                {renderBlock && renderBlock(componentProps)}
               </PreviewContainer>
             </Tooltip>
             <BlockActionsOuter marginRight={1}>
@@ -247,7 +311,6 @@ export function BlockObject(props: BlockObjectProps) {
       </Box>
     ),
     [
-      CustomComponent,
       componentProps,
       focused,
       handleMouseOut,
@@ -257,6 +320,7 @@ export function BlockObject(props: BlockObjectProps) {
       memberItem,
       onChange,
       readOnly,
+      renderBlock,
       renderBlockActions,
       reviewChangesHovered,
       toolTipContent,
@@ -277,15 +341,15 @@ export const DefaultBlockObjectComponent = (props: BlockProps) => {
     onOpen,
     onRemove,
     open,
-    path,
     readOnly,
     renderPreview,
-    selected,
     schemaType,
+    selected,
     value,
     validation,
   } = props
-  const isImagePreview = schemaType.name === 'image'
+
+  const isImagePreview = isImage(value)
   const hasError = validation.filter((v) => v.level === 'error').length > 0
   const hasWarning = validation.filter((v) => v.level === 'warning').length > 0
   const hasMarkers = Boolean(markers.length > 0)
@@ -319,8 +383,8 @@ export const DefaultBlockObjectComponent = (props: BlockProps) => {
         {renderPreview({
           actions: (
             <BlockObjectActionsMenu
-              focused={focused}
               isOpen={open}
+              focused={focused}
               onOpen={onOpen}
               onRemove={onRemove}
               readOnly={readOnly}
@@ -338,7 +402,7 @@ export const DefaultBlockObjectComponent = (props: BlockProps) => {
           boundaryElement={__unstable_boundaryElement}
           defaultType="dialog"
           onClose={onClose}
-          path={path}
+          autoFocus={focused}
           schemaType={schemaType}
           referenceElement={__unstable_referenceElement}
         >

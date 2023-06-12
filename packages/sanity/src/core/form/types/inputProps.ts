@@ -8,12 +8,14 @@ import {
   NumberSchemaType,
   ObjectSchemaType,
   Path,
+  PortableTextBlock,
   ReferenceValue,
   SchemaType,
   SlugValue,
   StringSchemaType,
 } from '@sanity/types'
 import React, {ComponentType, FocusEventHandler, FormEventHandler} from 'react'
+import {HotkeyOptions, OnCopyFn, OnPasteFn} from '@sanity/portable-text-editor'
 import {FormPatch, PatchEvent} from '../patch'
 import {
   ArrayOfObjectsFormNode,
@@ -26,15 +28,18 @@ import {
 
 import {UploaderResolver} from '../studio'
 import {FormFieldGroup} from '../store'
+import {RenderBlockActionsCallback} from '../inputs'
 import {
+  RenderAnnotationCallback,
   RenderArrayOfObjectsItemCallback,
   RenderArrayOfPrimitivesItemCallback,
+  RenderBlockCallback,
   RenderFieldCallback,
   RenderInputCallback,
   RenderPreviewCallback,
 } from './renderCallback'
 import {ArrayInputInsertEvent, ArrayInputMoveItemEvent, UploadEvent} from './event'
-import {ArrayInputFunctionsProps} from './_transitional'
+import {ArrayInputFunctionsProps, PortableTextMarker, RenderCustomMarkers} from './_transitional'
 
 /** @beta */
 export interface BaseInputProps {
@@ -78,10 +83,19 @@ export interface ObjectInputProps<
   onFieldClose: (fieldName: string) => void
 
   /** @beta */
+  renderAnnotation?: RenderAnnotationCallback
+
+  /** @beta */
+  renderBlock?: RenderBlockCallback
+
+  /** @beta */
   renderInput: RenderInputCallback
 
   /** @beta */
   renderField: RenderFieldCallback
+
+  /** @beta */
+  renderInlineBlock?: RenderBlockCallback
 
   /** @beta */
   renderItem: RenderArrayOfObjectsItemCallback
@@ -152,7 +166,16 @@ export interface ArrayOfObjectsInputProps<
   onItemClose: () => void
 
   /** @beta */
+  renderAnnotation?: RenderAnnotationCallback
+
+  /** @beta */
+  renderBlock?: RenderBlockCallback
+
+  /** @beta */
   renderField: RenderFieldCallback
+
+  /** @beta */
+  renderInlineBlock?: RenderBlockCallback
 
   /** @beta */
   renderInput: RenderInputCallback
@@ -208,6 +231,15 @@ export interface ArrayOfPrimitivesInputProps<
 
   /** @beta */
   onIndexFocus: (index: number) => void
+
+  /** @beta */
+  renderAnnotation?: RenderAnnotationCallback
+
+  /** @beta */
+  renderBlock?: RenderBlockCallback
+
+  /** @beta */
+  renderInlineBlock?: RenderBlockCallback
 
   /** @beta */
   renderInput: RenderInputCallback
@@ -286,7 +318,22 @@ export interface BooleanInputProps<S extends BooleanSchemaType = BooleanSchemaTy
 export type PrimitiveInputProps = StringInputProps | BooleanInputProps | NumberInputProps
 
 /** @beta */
+export interface PortableTextInputProps
+  extends ArrayOfObjectsInputProps<PortableTextBlock, ArraySchemaType<PortableTextBlock>> {
+  hotkeys?: HotkeyOptions
+  markers?: PortableTextMarker[]
+  onCopy?: OnCopyFn
+  onPaste?: OnPasteFn
+  renderBlockActions?: RenderBlockActionsCallback
+  renderCustomMarkers?: RenderCustomMarkers
+}
+
+/** @beta */
 export type InputProps =
+  | ArrayOfObjectsInputProps
+  | ArrayOfPrimitivesInputProps
+  | BooleanInputProps
+  | NumberInputProps
   | ObjectInputProps
   | ObjectInputProps<CrossDatasetReferenceValue>
   | ObjectInputProps<FileValue>
@@ -294,8 +341,5 @@ export type InputProps =
   | ObjectInputProps<ImageValue>
   | ObjectInputProps<ReferenceValue>
   | ObjectInputProps<SlugValue>
-  | ArrayOfObjectsInputProps
-  | ArrayOfPrimitivesInputProps
+  | PortableTextInputProps
   | StringInputProps
-  | BooleanInputProps
-  | NumberInputProps

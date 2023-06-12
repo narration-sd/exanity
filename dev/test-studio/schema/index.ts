@@ -35,6 +35,7 @@ import actions from './debug/actions'
 import button from './debug/button'
 import conditionalFields from './debug/conditionalFields'
 import customInputs from './debug/customInputs'
+import customInputsWithPatches from './debug/customInputsWithPatches'
 import customNumber from './debug/customNumber'
 import {collapsibleObjects} from './debug/collapsibleObjects'
 import documentActions from './debug/documentActions'
@@ -107,6 +108,7 @@ import crossDatasetReference, {crossDatasetSubtype} from './standard/crossDatase
 import {circularCrossDatasetReferenceTest} from './debug/circularCrossDatasetReference'
 import {allNativeInputComponents} from './debug/allNativeInputComponents'
 import fieldGroupsWithFieldsets from './debug/fieldGroupsWithFieldsets'
+import ptReference from './debug/ptReference'
 
 // @todo temporary, until code input is v3 compatible
 const codeInputType = {
@@ -157,6 +159,7 @@ export const schemaTypes = [
   conditionalFieldset,
   customBlock,
   customInputs,
+  customInputsWithPatches,
   customNumber,
   date,
   datetime,
@@ -203,6 +206,7 @@ export const schemaTypes = [
   previewSelectBugRepro,
   ptAllTheBellsAndWhistlesType,
   ptCustomMarkersTestType,
+  ptReference,
   radio,
   readOnly,
   recursive,

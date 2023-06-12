@@ -20,7 +20,7 @@ import {castArray, isEqual as _isEqual, pick} from 'lodash'
 import {isEqual, pathFor, startsWith, toString, trimChildPath} from '@sanity/util/paths'
 import {resolveTypeName} from '@sanity/util/content'
 
-import {isNonNullable, isRecord} from '../../util'
+import {EMPTY_ARRAY, isNonNullable, isRecord} from '../../util'
 import {getFieldLevel} from '../studio/inputResolver/helpers'
 import {FIXME} from '../../FIXME'
 import {FormNodePresence} from '../../presence'
@@ -535,6 +535,11 @@ function prepareObjectInputState<T>(
     currentUser: props.currentUser,
   }
 
+  // readonly is inherited
+  const readOnly =
+    props.readOnly ||
+    resolveConditionalProperty(props.schemaType.readOnly, conditionalPropertyContext)
+
   const schemaTypeGroupConfig = props.schemaType.groups || []
   const defaultGroupName = (schemaTypeGroupConfig.find((g) => g.default) || ALL_FIELDS_GROUP)?.name
 
@@ -578,7 +583,7 @@ function prepareObjectInputState<T>(
 
         const fieldMember = prepareFieldMember({
           field: field,
-          parent: {...props, groups, selectedGroup},
+          parent: {...props, readOnly, groups, selectedGroup},
           index,
         })
 
@@ -603,9 +608,7 @@ function prepareObjectInputState<T>(
 
       const fieldsetMembers = fieldSet.fields.flatMap(
         (field): (FieldMember | FieldError | HiddenField)[] => {
-          const hidden = resolveConditionalProperty(field.type.hidden, conditionalPropertyContext)
-
-          if (fieldsetHidden || hidden) {
+          if (fieldsetHidden) {
             return [
               {
                 kind: 'hidden',
@@ -615,14 +618,11 @@ function prepareObjectInputState<T>(
               },
             ]
           }
-
-          // readonly is inherited
-          const readOnly = props.readOnly || fieldsetReadOnly
           const fieldMember = prepareFieldMember({
             field: field,
-            parent: {...props, readOnly, hidden, groups, selectedGroup},
+            parent: {...props, readOnly: readOnly || fieldsetReadOnly, groups, selectedGroup},
             index,
-          }) as FieldMember | FieldError
+          }) as FieldMember | FieldError | HiddenField
 
           return fieldMember ? [fieldMember] : []
         }
@@ -661,7 +661,8 @@ function prepareObjectInputState<T>(
 
   const hasFieldGroups = schemaTypeGroupConfig.length > 0
 
-  const presence = props.presence.filter((item) => isEqual(item.path, props.path))
+  const filteredPresence = props.presence.filter((item) => isEqual(item.path, props.path))
+  const presence = filteredPresence.length ? filteredPresence : EMPTY_ARRAY
 
   const validation = props.validation
     .filter((item) => isEqual(item.path, props.path))
@@ -731,7 +732,7 @@ function prepareObjectInputState<T>(
     value: props.value as Record<string, unknown> | undefined,
     changed: isChangedValue(props.value, props.comparisonValue),
     schemaType: props.schemaType,
-    readOnly: props.readOnly,
+    readOnly,
     path: props.path,
     id: toString(props.path),
     level: props.level,
@@ -775,7 +776,8 @@ function prepareArrayOfPrimitivesInputState<T extends (boolean | string | number
   // Todo: improve error handling at the parent level so that the value here is either undefined or an array
   const items = Array.isArray(props.value) ? props.value : []
 
-  const presence = props.presence.filter((item) => isEqual(item.path, props.path))
+  const filteredPresence = props.presence.filter((item) => isEqual(item.path, props.path))
+  const presence = filteredPresence.length ? filteredPresence : EMPTY_ARRAY
   const validation = props.validation
     .filter((item) => isEqual(item.path, props.path))
     .map((v) => ({level: v.level, message: v.item.message, path: v.path}))
@@ -824,7 +826,8 @@ function prepareArrayOfObjectsInputState<T extends {_key: string}[]>(
   // Todo: improve error handling at the parent level so that the value here is either undefined or an array
   const items = Array.isArray(props.value) ? props.value : []
 
-  const presence = props.presence.filter((item) => isEqual(item.path, props.path))
+  const filteredPresence = props.presence.filter((item) => isEqual(item.path, props.path))
+  const presence = filteredPresence.length ? filteredPresence : EMPTY_ARRAY
   const validation = props.validation
     .filter((item) => isEqual(item.path, props.path))
     .map((v) => ({level: v.level, message: v.item.message, path: v.path}))
@@ -1010,7 +1013,8 @@ function prepareArrayOfPrimitivesMember(props: {
 function preparePrimitiveInputState<SchemaType extends PrimitiveSchemaType>(
   props: RawState<SchemaType, unknown>
 ): PrimitiveFormNode {
-  const presence = props.presence.filter((item) => isEqual(item.path, props.path))
+  const filteredPresence = props.presence.filter((item) => isEqual(item.path, props.path))
+  const presence = filteredPresence.length ? filteredPresence : EMPTY_ARRAY
 
   const validation = props.validation
     .filter((item) => isEqual(item.path, props.path))

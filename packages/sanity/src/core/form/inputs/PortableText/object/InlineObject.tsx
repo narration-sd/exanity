@@ -6,13 +6,24 @@ import {
 import {ObjectSchemaType, Path, PortableTextBlock, PortableTextChild} from '@sanity/types'
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {Tooltip} from '@sanity/ui'
-import {BlockProps, RenderCustomMarkers, RenderPreviewCallback} from '../../../types'
+import {isEqual} from '@sanity/util/paths'
+import {
+  BlockProps,
+  RenderAnnotationCallback,
+  RenderArrayOfObjectsItemCallback,
+  RenderBlockCallback,
+  RenderCustomMarkers,
+  RenderFieldCallback,
+  RenderInputCallback,
+  RenderPreviewCallback,
+} from '../../../types'
 import {useFormBuilder} from '../../../useFormBuilder'
 import {usePortableTextMarkers} from '../hooks/usePortableTextMarkers'
 import {useMemberValidation} from '../hooks/useMemberValidation'
 import {usePortableTextMemberItem} from '../hooks/usePortableTextMembers'
 import {pathToString} from '../../../../field/paths'
 import {EMPTY_ARRAY} from '../../../../util'
+import {useChildPresence} from '../../../studio/contexts/Presence'
 import {InlineObjectToolbarPopover} from './InlineObjectToolbarPopover'
 import {ObjectEditModal} from './modals/ObjectEditModal'
 import {PreviewSpan, Root, TooltipBox} from './InlineObject.styles'
@@ -26,7 +37,13 @@ interface InlineObjectProps {
   path: Path
   readOnly?: boolean
   relativePath: Path
+  renderAnnotation?: RenderAnnotationCallback
+  renderBlock?: RenderBlockCallback
   renderCustomMarkers?: RenderCustomMarkers
+  renderField: RenderFieldCallback
+  renderInlineBlock?: RenderBlockCallback
+  renderInput: RenderInputCallback
+  renderItem: RenderArrayOfObjectsItemCallback
   renderPreview: RenderPreviewCallback
   schemaType: ObjectSchemaType
   selected: boolean
@@ -43,7 +60,13 @@ export const InlineObject = (props: InlineObjectProps) => {
     path,
     readOnly,
     relativePath,
+    renderAnnotation,
+    renderBlock,
     renderCustomMarkers,
+    renderField,
+    renderItem,
+    renderInlineBlock,
+    renderInput,
     renderPreview,
     schemaType,
     selected,
@@ -55,36 +78,52 @@ export const InlineObject = (props: InlineObjectProps) => {
   const memberItem = usePortableTextMemberItem(pathToString(path))
   const {validation, hasError, hasInfo, hasWarning} = useMemberValidation(memberItem?.node)
   const parentSchemaType = editor.schemaTypes.block
-  const CustomComponent = schemaType.components?.inlineBlock
   const hasMarkers = markers.length > 0
+  const selfSelection = useMemo(
+    (): EditorSelection => ({
+      anchor: {path: relativePath, offset: 0},
+      focus: {path: relativePath, offset: 0},
+    }),
+    [relativePath]
+  )
 
   const onRemove = useCallback(() => {
-    const sel: EditorSelection = {
-      focus: {path: relativePath, offset: 0},
-      anchor: {path: relativePath, offset: 0},
-    }
-    PortableTextEditor.delete(editor, sel, {mode: 'children'})
-    // Focus will not stick unless this is done through a timeout when deleted through clicking the menu button.
-    setTimeout(() => PortableTextEditor.focus(editor))
-  }, [editor, relativePath])
+    PortableTextEditor.delete(editor, selfSelection, {mode: 'children'})
+    PortableTextEditor.focus(editor)
+  }, [selfSelection, editor])
 
   const onOpen = useCallback(() => {
     if (memberItem) {
-      onItemOpen(memberItem?.node.path)
+      // Take focus away from the editor so that it doesn't propagate a new focusPath and interfere here.
+      PortableTextEditor.blur(editor)
+      onItemOpen(memberItem.node.path)
     }
-  }, [memberItem, onItemOpen])
+  }, [editor, onItemOpen, memberItem])
+
+  const onClose = useCallback(() => {
+    onItemClose()
+    PortableTextEditor.select(editor, selfSelection)
+    PortableTextEditor.focus(editor)
+  }, [onItemClose, editor, selfSelection])
 
   const isOpen = Boolean(memberItem?.member.open)
   const input = memberItem?.input
-  const presence = memberItem?.node.presence || EMPTY_ARRAY
+  const nodePath = memberItem?.node.path || EMPTY_ARRAY
+  const referenceElement = memberItem?.elementRef?.current
 
-  const componentProps: BlockProps | undefined = useMemo(
+  const presence = useChildPresence(path, true)
+  const rootPresence = useMemo(
+    () => presence.filter((p) => isEqual(p.path, path)),
+    [path, presence]
+  )
+
+  const componentProps: BlockProps = useMemo(
     () => ({
       __unstable_boundaryElement: boundaryElement || undefined,
-      __unstable_referenceElement: memberItem?.elementRef?.current || undefined,
+      __unstable_referenceElement: referenceElement || undefined,
       children: input,
       focused,
-      onClose: onItemClose,
+      onClose,
       onOpen,
       onPathFocus,
       onRemove,
@@ -92,10 +131,16 @@ export const InlineObject = (props: InlineObjectProps) => {
       markers,
       member: memberItem?.member,
       parentSchemaType,
-      path: memberItem?.member.item.path || EMPTY_ARRAY,
-      presence,
+      path: nodePath,
+      presence: rootPresence,
       readOnly: Boolean(readOnly),
+      renderAnnotation,
+      renderBlock,
       renderDefault: DefaultInlineObjectComponent,
+      renderField,
+      renderInlineBlock,
+      renderInput,
+      renderItem,
       renderPreview,
       schemaType,
       selected,
@@ -108,15 +153,23 @@ export const InlineObject = (props: InlineObjectProps) => {
       input,
       isOpen,
       markers,
-      memberItem,
-      onItemClose,
+      memberItem?.member,
+      nodePath,
+      onClose,
       onOpen,
       onPathFocus,
       onRemove,
       parentSchemaType,
-      presence,
       readOnly,
+      referenceElement,
+      renderAnnotation,
+      renderBlock,
+      renderField,
+      renderInlineBlock,
+      renderInput,
+      renderItem,
       renderPreview,
+      rootPresence,
       schemaType,
       selected,
       validation,
@@ -151,19 +204,13 @@ export const InlineObject = (props: InlineObjectProps) => {
           content={toolTipContent}
         >
           {/* This relative span must be here for the ToolTip to properly show */}
-          <span style={{position: 'relative'}}>
-            {(componentProps &&
-              (CustomComponent ? (
-                <CustomComponent {...componentProps} />
-              ) : (
-                <DefaultInlineObjectComponent {...componentProps} />
-              ))) ||
-              null}
-          </span>
+          {renderInlineBlock && (
+            <span style={{position: 'relative'}}>{renderInlineBlock(componentProps)}</span>
+          )}
         </Tooltip>
       </span>
     ),
-    [CustomComponent, componentProps, memberItem?.elementRef, toolTipContent, tooltipEnabled]
+    [componentProps, memberItem?.elementRef, renderInlineBlock, toolTipContent, tooltipEnabled]
   )
 }
 
@@ -178,7 +225,6 @@ export const DefaultInlineObjectComponent = (props: BlockProps) => {
     onOpen,
     onRemove,
     open,
-    path,
     readOnly,
     renderPreview,
     schemaType,
@@ -186,7 +232,6 @@ export const DefaultInlineObjectComponent = (props: BlockProps) => {
     validation,
     value,
   } = props
-  const editor = usePortableTextEditor()
   const hasMarkers = markers.length > 0
   const [popoverOpen, setPopoverOpen] = useState<boolean>(false)
   const popoverTitle = schemaType?.title || schemaType.name
@@ -225,8 +270,7 @@ export const DefaultInlineObjectComponent = (props: BlockProps) => {
 
   const onClosePopover = useCallback(() => {
     setPopoverOpen(false)
-    PortableTextEditor.focus(editor)
-  }, [editor])
+  }, [])
 
   return (
     <>
@@ -268,7 +312,7 @@ export const DefaultInlineObjectComponent = (props: BlockProps) => {
           boundaryElement={__unstable_boundaryElement}
           defaultType="popover"
           onClose={onClose}
-          path={path}
+          autoFocus={focused}
           referenceElement={__unstable_referenceElement}
           schemaType={schemaType}
         >

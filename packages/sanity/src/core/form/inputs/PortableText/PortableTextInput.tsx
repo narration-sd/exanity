@@ -1,13 +1,9 @@
-import {ArraySchemaType, PortableTextBlock} from '@sanity/types'
+import {Path, PortableTextBlock} from '@sanity/types'
 import {
   EditorChange,
-  OnCopyFn,
-  OnPasteFn,
   Patch as EditorPatch,
   PortableTextEditor,
-  HotkeyOptions,
   InvalidValue,
-  EditorSelection,
   Patch,
 } from '@sanity/portable-text-editor'
 import React, {
@@ -19,13 +15,13 @@ import React, {
   useImperativeHandle,
   createRef,
   ReactNode,
+  startTransition,
 } from 'react'
 import {Subject} from 'rxjs'
 import {Box, useToast} from '@sanity/ui'
-import {debounce} from 'lodash'
-import {FormPatch, SANITY_PATCH_TYPE} from '../../patch'
+import {SANITY_PATCH_TYPE} from '../../patch'
 import {ArrayOfObjectsItemMember, ObjectFormNode} from '../../store'
-import type {ArrayOfObjectsInputProps, PortableTextMarker, RenderCustomMarkers} from '../../types'
+import type {PortableTextInputProps} from '../../types'
 import {EMPTY_ARRAY} from '../../../util'
 import {pathToString} from '../../../field'
 import {isMemberArrayOfObjects} from '../../members/object/fields/asserters'
@@ -34,10 +30,9 @@ import {FIXME} from '../../../FIXME'
 import {Compositor, PortableTextEditorElement} from './Compositor'
 import {InvalidValue as RespondToInvalidContent} from './InvalidValue'
 import {usePatches} from './usePatches'
-import {RenderBlockActionsCallback} from './types'
 import {PortableTextMarkersProvider} from './contexts/PortableTextMarkers'
 import {PortableTextMemberItemsProvider} from './contexts/PortableTextMembers'
-import {_isArrayOfObjectsFieldMember, _isBlockType} from './_helpers'
+import {isArrayOfObjectsFieldMember, isBlockType} from './_helpers'
 
 /** @internal */
 export interface PortableTextMemberItem {
@@ -50,25 +45,13 @@ export interface PortableTextMemberItem {
 }
 
 /**
- * @beta
- */
-export interface PortableTextInputProps
-  extends ArrayOfObjectsInputProps<PortableTextBlock, ArraySchemaType<PortableTextBlock>> {
-  hotkeys?: HotkeyOptions
-  markers?: PortableTextMarker[]
-  onCopy?: OnCopyFn
-  onPaste?: OnPasteFn
-  renderBlockActions?: RenderBlockActionsCallback
-  renderCustomMarkers?: RenderCustomMarkers
-}
-
-/**
  * The root Portable Text Input component
  *
  * @beta
  */
 export function PortableTextInput(props: PortableTextInputProps) {
   const {
+    elementProps,
     focused,
     focusPath,
     hotkeys,
@@ -76,17 +59,19 @@ export function PortableTextInput(props: PortableTextInputProps) {
     members,
     onChange,
     onCopy,
-    onPathFocus,
+    onItemRemove,
     onInsert,
     onPaste,
+    onPathFocus,
     path,
     readOnly,
     renderBlockActions,
     renderCustomMarkers,
     schemaType,
     value,
-    elementProps,
   } = props
+
+  const {onBlur} = elementProps
 
   // Make the PTE focusable from the outside
   useImperativeHandle(elementProps.ref, () => ({
@@ -103,16 +88,6 @@ export function PortableTextInput(props: PortableTextInputProps) {
   const [invalidValue, setInvalidValue] = useState<InvalidValue | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isActive, setIsActive] = useState(false)
-
-  // Let formState decide if we are focused or not.
-  const hasFocus = Boolean(focused) || focusPath.length > 0
-
-  // Set active if focused
-  useEffect(() => {
-    if (hasFocus) {
-      setIsActive(true)
-    }
-  }, [hasFocus])
 
   const toast = useToast()
   const portableTextMemberItemsRef: React.MutableRefObject<PortableTextMemberItem[]> = useRef([])
@@ -156,7 +131,7 @@ export function PortableTextInput(props: PortableTextInputProps) {
 
     for (const member of members) {
       if (member.kind === 'item') {
-        const isObjectBlock = !_isBlockType(member.item.schemaType)
+        const isObjectBlock = !isBlockType(member.item.schemaType)
         if (isObjectBlock) {
           result.push({kind: 'objectBlock', member, node: member.item})
         } else {
@@ -187,7 +162,7 @@ export function PortableTextInput(props: PortableTextInputProps) {
           }
           // Markdefs
           const markDefArrayMember = member.item.members
-            .filter(_isArrayOfObjectsFieldMember)
+            .filter(isArrayOfObjectsFieldMember)
             .find((f) => f.name === 'markDefs')
           if (markDefArrayMember) {
             // eslint-disable-next-line max-depth
@@ -216,9 +191,13 @@ export function PortableTextInput(props: PortableTextInputProps) {
       }
 
       if (existingItem) {
+        // Only update the input if the node is open or the value has changed
+        // This is a performance optimization.
+        if (item.member.open || existingItem.node.value !== item.node.value) {
+          existingItem.input = input
+        }
         existingItem.member = item.member
         existingItem.node = item.node
-        existingItem.input = input
         return existingItem
       }
 
@@ -237,21 +216,14 @@ export function PortableTextInput(props: PortableTextInputProps) {
     return items
   }, [members, props])
 
-  // Sets the focusPath from editor selection (when typing, moving the cursor, clicking around)
-  // This doesn't need to be immediate, so debounce it as it impacts performance.
-  const setFocusPathDebounced = useMemo(
-    () =>
-      debounce(
-        (sel: EditorSelection) => {
-          if (sel) {
-            onPathFocus(sel.focus.path)
-          }
-        },
-        500,
-        {trailing: true, leading: true}
-      ),
-    [onPathFocus]
-  )
+  const hasFocus = focused || isEditorFocusablePath(focusPath)
+
+  // Set active if focused
+  useEffect(() => {
+    if (hasFocus) {
+      setIsActive(true)
+    }
+  }, [hasFocus])
 
   // Handle editor changes
   const handleEditorChange = useCallback(
@@ -261,10 +233,19 @@ export function PortableTextInput(props: PortableTextInputProps) {
           onChange(toFormPatches(change.patches))
           break
         case 'selection':
-          setFocusPathDebounced(change.selection)
+          // This doesn't need to be immediate,
+          // call through startTransition
+          startTransition(() => {
+            if (change.selection) {
+              onPathFocus(change.selection.focus.path)
+            }
+          })
           break
         case 'focus':
           setIsActive(true)
+          break
+        case 'blur':
+          onBlur(change.event)
           break
         case 'undo':
         case 'redo':
@@ -282,7 +263,7 @@ export function PortableTextInput(props: PortableTextInputProps) {
         default:
       }
     },
-    [onChange, toast, setFocusPathDebounced]
+    [onBlur, onChange, onPathFocus, toast]
   )
 
   useEffect(() => {
@@ -340,7 +321,7 @@ export function PortableTextInput(props: PortableTextInputProps) {
                 isActive={isActive}
                 isFullscreen={isFullscreen}
                 onActivate={handleActivate}
-                onChange={onChange}
+                onItemRemove={onItemRemove}
                 onCopy={onCopy}
                 onInsert={onInsert}
                 onPaste={onPaste}
@@ -357,5 +338,10 @@ export function PortableTextInput(props: PortableTextInputProps) {
 }
 
 function toFormPatches(patches: any) {
-  return patches.map((p: Patch) => ({...p, patchType: SANITY_PATCH_TYPE})) as FormPatch[]
+  return patches.map((p: Patch) => ({...p, patchType: SANITY_PATCH_TYPE}))
+}
+
+// Return true if the path directly points to something focusable in the editor
+function isEditorFocusablePath(path: Path) {
+  return path.length === 1 || (path.length === 3 && path[1] === 'children')
 }

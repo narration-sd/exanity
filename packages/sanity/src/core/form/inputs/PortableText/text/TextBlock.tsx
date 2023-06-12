@@ -1,13 +1,22 @@
 import {Box, Flex, ResponsivePaddingProps, Tooltip, Text} from '@sanity/ui'
-import React, {ComponentType, RefObject, useCallback, useMemo, useState} from 'react'
+import React, {RefObject, useCallback, useMemo, useState} from 'react'
 import {ObjectSchemaType, Path, PortableTextTextBlock} from '@sanity/types'
 import {
   EditorSelection,
   PortableTextEditor,
   usePortableTextEditor,
 } from '@sanity/portable-text-editor'
-import {BlockProps, RenderCustomMarkers, RenderPreviewCallback} from '../../../types'
-import {PatchArg} from '../../../patch'
+import {isEqual} from '@sanity/util/paths'
+import {
+  BlockProps,
+  RenderAnnotationCallback,
+  RenderArrayOfObjectsItemCallback,
+  RenderBlockCallback,
+  RenderCustomMarkers,
+  RenderFieldCallback,
+  RenderInputCallback,
+  RenderPreviewCallback,
+} from '../../../types'
 import {useFormBuilder} from '../../../useFormBuilder'
 import {BlockActions} from '../BlockActions'
 import {ReviewChangesHighlightBlock, StyledChangeIndicatorWithProvidedFullPath} from '../_common'
@@ -18,6 +27,8 @@ import {usePortableTextMemberItem} from '../hooks/usePortableTextMembers'
 import {pathToString} from '../../../../field'
 import {debugRender} from '../debugRender'
 import {EMPTY_ARRAY} from '../../../../util'
+import {useChildPresence} from '../../../studio/contexts/Presence'
+import {useFormCallbacks} from '../../../studio'
 import {TEXT_STYLE_PADDING} from './constants'
 import {
   BlockActionsInner,
@@ -37,15 +48,20 @@ export interface TextBlockProps {
   children: React.ReactNode
   focused: boolean
   isFullscreen?: boolean
-  onChange: (...patches: PatchArg[]) => void
   onItemClose: () => void
   onItemOpen: (path: Path) => void
   onItemRemove: (itemKey: string) => void
   onPathFocus: (path: Path) => void
   path: Path
   readOnly?: boolean
+  renderAnnotation?: RenderAnnotationCallback
+  renderBlock?: RenderBlockCallback
   renderBlockActions?: RenderBlockActionsCallback
   renderCustomMarkers?: RenderCustomMarkers
+  renderField: RenderFieldCallback
+  renderInlineBlock?: RenderBlockCallback
+  renderInput: RenderInputCallback
+  renderItem: RenderArrayOfObjectsItemCallback
   renderPreview: RenderPreviewCallback
   schemaType: ObjectSchemaType
   selected: boolean
@@ -59,14 +75,19 @@ export function TextBlock(props: TextBlockProps) {
     children,
     focused,
     isFullscreen,
-    onChange,
     onItemClose,
     onItemOpen,
     onPathFocus,
     path,
     readOnly,
+    renderBlock,
+    renderAnnotation,
     renderBlockActions,
     renderCustomMarkers,
+    renderField,
+    renderInlineBlock,
+    renderInput,
+    renderItem,
     renderPreview,
     schemaType,
     selected,
@@ -78,6 +99,18 @@ export function TextBlock(props: TextBlockProps) {
   const markers = usePortableTextMarkers(path)
   const memberItem = usePortableTextMemberItem(pathToString(path))
   const editor = usePortableTextEditor()
+  const {onChange} = useFormCallbacks()
+
+  const presence = useChildPresence(path, true)
+  // Include all presence paths pointing either directly to a block, or directly to a block child
+  // (which is where the user most of the time would have the presence in a text block)
+  const textPresence = useMemo(() => {
+    return presence.filter(
+      (p) =>
+        isEqual(p.path, path) ||
+        (p.path.slice(-3)[1] === 'children' && p.path.length - path.length === 2)
+    )
+  }, [path, presence])
 
   const handleChangeIndicatorMouseEnter = useCallback(() => setReviewChangesHovered(true), [])
   const handleChangeIndicatorMouseLeave = useCallback(() => setReviewChangesHovered(false), [])
@@ -147,9 +180,7 @@ export function TextBlock(props: TextBlockProps) {
 
   const isOpen = Boolean(memberItem?.member.open)
   const parentSchemaType = editor.schemaTypes.portableText
-  const presence = memberItem?.node.presence || EMPTY_ARRAY
 
-  const CustomComponent = schemaType.components?.block as ComponentType<BlockProps> | undefined
   const componentProps: BlockProps = useMemo(
     () => ({
       __unstable_boundaryElement: boundaryElement || undefined,
@@ -164,9 +195,15 @@ export function TextBlock(props: TextBlockProps) {
       open: isOpen,
       parentSchemaType,
       path: memberItem?.node.path || EMPTY_ARRAY,
-      presence,
+      presence: textPresence,
       readOnly: Boolean(readOnly),
+      renderAnnotation,
+      renderBlock,
       renderDefault: DefaultComponent,
+      renderField,
+      renderInput,
+      renderInlineBlock,
+      renderItem,
       renderPreview,
       schemaType,
       selected,
@@ -178,18 +215,25 @@ export function TextBlock(props: TextBlockProps) {
       focused,
       isOpen,
       markers,
-      memberItem,
+      memberItem?.elementRef,
+      memberItem?.node.path,
       onItemClose,
       onOpen,
       onPathFocus,
       onRemove,
       parentSchemaType,
-      presence,
       readOnly,
+      renderAnnotation,
+      renderBlock,
+      renderField,
+      renderInlineBlock,
+      renderInput,
+      renderItem,
       renderPreview,
       schemaType,
       selected,
       text,
+      textPresence,
       validation,
       value,
     ]
@@ -237,11 +281,7 @@ export function TextBlock(props: TextBlockProps) {
                   data-warning={hasWarning ? '' : undefined}
                   spellCheck={spellCheck}
                 >
-                  {CustomComponent ? (
-                    <CustomComponent {...componentProps} />
-                  ) : (
-                    <DefaultComponent {...componentProps} />
-                  )}
+                  {renderBlock && renderBlock(componentProps)}
                 </TextRoot>
               </Tooltip>
             </Box>
@@ -281,7 +321,6 @@ export function TextBlock(props: TextBlockProps) {
     ),
     [
       componentProps,
-      CustomComponent,
       focused,
       handleChangeIndicatorMouseEnter,
       handleChangeIndicatorMouseLeave,
@@ -294,6 +333,7 @@ export function TextBlock(props: TextBlockProps) {
       onChange,
       outerPaddingProps,
       readOnly,
+      renderBlock,
       renderBlockActions,
       reviewChangesHovered,
       spellCheck,

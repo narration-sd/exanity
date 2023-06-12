@@ -41,6 +41,7 @@ export const DEBUG_INPUT_TYPES = [
   'formInputDebug',
   'conditionalFieldsTest',
   'customInputsTest',
+  'customInputsWithPatches',
   'documentActionsTest',
   'collapsibleObjects',
   'empty',
@@ -72,6 +73,7 @@ export const DEBUG_INPUT_TYPES = [
   'validationTest',
   'allNativeInputComponents',
   'scrollBug',
+  'ptReference',
 ]
 
 export const CI_INPUT_TYPES = ['conditionalFieldset', 'validationCI']
