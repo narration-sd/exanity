@@ -40,13 +40,14 @@ export interface PortableTextMemberItem {
   key: string
   member: ArrayOfObjectsItemMember
   node: ObjectFormNode
-  elementRef?: React.MutableRefObject<PortableTextEditorElement> | undefined
+  elementRef?: React.MutableRefObject<PortableTextEditorElement | null>
   input?: ReactNode
 }
 
 /**
  * The root Portable Text Input component
  *
+ * @hidden
  * @beta
  */
 export function PortableTextInput(props: PortableTextInputProps) {
@@ -206,7 +207,7 @@ export function PortableTextInput(props: PortableTextInputProps) {
         key,
         member: item.member,
         node: item.node,
-        elementRef: createRef<PortableTextEditorElement>(),
+        elementRef: createRef<PortableTextEditorElement | null>(),
         input,
       }
     })
