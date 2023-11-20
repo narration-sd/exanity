@@ -28,7 +28,7 @@ export function ValidationInspector(props: DocumentInspectorProps) {
       onPathOpen(path)
       onFocus(path)
     },
-    [onFocus, onPathOpen]
+    [onFocus, onPathOpen],
   )
 
   return (
@@ -52,9 +52,9 @@ export function ValidationInspector(props: DocumentInspectorProps) {
 
         {validation.length > 0 && (
           <Stack space={2}>
-            {validation.map((marker) => (
+            {validation.map((marker, i) => (
               <ValidationCard
-                key={pathToString(marker.path)}
+                key={i}
                 marker={marker}
                 onOpen={handleOpen}
                 schemaType={schemaType}
@@ -127,7 +127,7 @@ function DocumentNodePathBreadcrumbs(props: {
 
   const pathTypes = useMemo(
     () => getPathTypes({path, schemaType, value}),
-    [path, schemaType, value]
+    [path, schemaType, value],
   )
 
   return (

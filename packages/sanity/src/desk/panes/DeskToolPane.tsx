@@ -23,8 +23,8 @@ interface DeskToolPaneProps {
 // TODO: audit this creates separate chunks
 const paneMap = {
   component: lazy(() => import('./userComponent')),
-  document: lazy(() => import('./document')),
-  documentList: lazy(() => import('./documentList')),
+  document: lazy(() => import('./document/pane')),
+  documentList: lazy(() => import('./documentList/pane')),
   list: lazy(() => import('./list')),
 }
 
@@ -77,7 +77,7 @@ export const DeskToolPane = memo(
   },
   (
     {params: prevParams = {}, payload: prevPayload = null, ...prev},
-    {params: nextParams = {}, payload: nextPayload = null, ...next}
+    {params: nextParams = {}, payload: nextPayload = null, ...next},
   ) => {
     // deeply compare these objects (it's okay, they're small)
     if (!isEqual(prevParams, nextParams)) return false
@@ -93,5 +93,5 @@ export const DeskToolPane = memo(
     }
 
     return true
-  }
+  },
 )

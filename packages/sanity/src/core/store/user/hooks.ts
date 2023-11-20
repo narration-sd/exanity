@@ -11,9 +11,9 @@ const useUserViaUserStore = createHookFromObservableFactory(
       userStore.getUser(userId).catch((err) => {
         console.error(err)
         return null
-      })
+      }),
     )
-  }
+  },
 )
 
 /** @internal */
@@ -22,7 +22,22 @@ export function useUser(userId: string): LoadingTuple<User | null | undefined> {
   return useUserViaUserStore(useMemo(() => [userStore, userId], [userId, userStore]))
 }
 
-/** @internal */
+/**
+ * Retrieves information about the currently authenticated user.
+ *
+ * @returns The current user or null if not available.
+ *
+ * @public
+ *
+ * @example
+ * ```ts
+ * const currentUser = useCurrentUser()
+ *
+ * if (currentUser) {
+ *  console.log('Logged in as', currentUser.name)
+ * }
+ * ```
+ */
 export function useCurrentUser(): CurrentUser | null {
   const {currentUser} = useSource()
   return currentUser

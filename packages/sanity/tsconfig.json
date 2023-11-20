@@ -1,6 +1,14 @@
 {
   "extends": "../../tsconfig.settings",
-  "include": ["./exports", "./package.json", "./scripts", "./src", "./test", "./typings"],
+  "include": [
+    "./exports",
+    "./package.json",
+    "./playwright-ct",
+    "./scripts",
+    "./src",
+    "./test",
+    "./typings"
+  ],
   "compilerOptions": {
     "composite": true,
     "rootDir": ".",
@@ -15,7 +23,7 @@
     },
 
     "emitDeclarationOnly": true,
-    "jsx": "react",
+    "jsx": "react-jsx",
 
     // For package.json import and scripts
     "resolveJsonModule": true,
@@ -31,7 +39,6 @@
     {"path": "../@sanity/schema/tsconfig.lib.json"},
     {"path": "../@sanity/types/tsconfig.lib.json"},
     {"path": "../@sanity/cli/tsconfig.lib.json"},
-    {"path": "../@sanity/util/tsconfig.lib.json"},
-    {"path": "../@sanity/validation/tsconfig.lib.json"}
+    {"path": "../@sanity/util/tsconfig.lib.json"}
   ]
 }

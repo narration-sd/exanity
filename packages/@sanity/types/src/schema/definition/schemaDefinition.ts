@@ -1,7 +1,7 @@
-import {ComponentType, ReactNode} from 'react'
-import {PreviewConfig} from '../preview'
-import {InitialValueProperty, SchemaValidationValue} from '../types'
-import {
+import type {ComponentType, ReactNode} from 'react'
+import type {PreviewConfig} from '../preview'
+import type {InitialValueProperty, SchemaValidationValue} from '../types'
+import type {
   ArrayDefinition,
   BlockDefinition,
   BooleanDefinition,
@@ -21,7 +21,7 @@ import {
   UrlDefinition,
   EmailDefinition,
 } from './type'
-import {BaseSchemaDefinition} from './type/common'
+import type {BaseSchemaDefinition} from './type/common'
 
 /**
  * `IntrinsicDefinitions` is a lookup map for "predefined" schema definitions.
@@ -104,7 +104,7 @@ export interface TypeReference {
  */
 export interface TypeAliasDefinition<
   TType extends string,
-  TAlias extends IntrinsicTypeName | undefined
+  TAlias extends IntrinsicTypeName | undefined,
 > extends BaseSchemaDefinition {
   type: TType
   options?: TAlias extends IntrinsicTypeName ? IntrinsicDefinitions[TAlias]['options'] : unknown
@@ -157,5 +157,5 @@ export type InlineFieldDefinition = {
  */
 export type FieldDefinition<
   TType extends IntrinsicTypeName = IntrinsicTypeName,
-  TAlias extends IntrinsicTypeName | undefined = undefined
+  TAlias extends IntrinsicTypeName | undefined = undefined,
 > = (InlineFieldDefinition[TType] | TypeAliasDefinition<string, TAlias>) & FieldDefinitionBase

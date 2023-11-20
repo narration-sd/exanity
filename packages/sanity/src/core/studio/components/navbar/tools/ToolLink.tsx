@@ -14,11 +14,18 @@ export interface ToolLinkProps {
  * @beta */
 export const ToolLink = forwardRef(function ToolLink(
   props: ToolLinkProps & Omit<React.HTMLProps<HTMLAnchorElement>, 'href' | 'name'>,
-  ref: React.ForwardedRef<HTMLAnchorElement>
+  ref: React.ForwardedRef<HTMLAnchorElement>,
 ) {
   const {name, ...rest} = props
   const state = useRouterState(
-    useCallback((routerState) => ({...routerState, tool: name, [name]: undefined}), [name])
+    useCallback(
+      () => ({
+        tool: name,
+        // make sure to clear tool state when navigating to another tool
+        [name]: undefined,
+      }),
+      [name],
+    ),
   )
 
   return <StateLink state={state} {...rest} ref={ref} />

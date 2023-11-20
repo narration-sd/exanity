@@ -1,9 +1,3 @@
-/**
- * \@jest-environment ./test/setup/jsdom.jest.env.ts
- */
-/* eslint-disable no-irregular-whitespace */
-// eslint-disable-next-line import/no-unassigned-import
-import '@testing-library/jest-dom/extend-expect'
 import {render, waitFor} from '@testing-library/react'
 
 import React from 'react'
@@ -53,7 +47,7 @@ describe('useSyncValue', () => {
         ref={editorRef}
         schemaType={schemaType}
         value={initialValue}
-      />
+      />,
     )
     rerender(
       <PortableTextEditorTester
@@ -61,7 +55,7 @@ describe('useSyncValue', () => {
         ref={editorRef}
         schemaType={schemaType}
         value={syncedValue}
-      />
+      />,
     )
     await waitFor(() => {
       if (editorRef.current) {
@@ -94,7 +88,7 @@ describe('useSyncValue', () => {
         ref={editorRef}
         schemaType={schemaType}
         value={initialValue}
-      />
+      />,
     )
     rerender(
       <PortableTextEditorTester
@@ -102,7 +96,7 @@ describe('useSyncValue', () => {
         ref={editorRef}
         schemaType={schemaType}
         value={syncedValue}
-      />
+      />,
     )
     await waitFor(() => {
       if (editorRef.current) {

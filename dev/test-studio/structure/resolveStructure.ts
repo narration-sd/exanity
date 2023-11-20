@@ -7,6 +7,7 @@ import {
   TerminalIcon,
   UsersIcon,
   JoystickIcon,
+  CodeIcon,
 } from '@sanity/icons'
 import {uuid} from '@sanity/uuid'
 import {DocumentStore, SanityDocument, Schema} from 'sanity'
@@ -24,6 +25,7 @@ import {
   PLUGIN_INPUT_TYPES,
   STANDARD_INPUT_TYPES,
   STANDARD_PORTABLE_TEXT_INPUT_TYPES,
+  TS_DOC_TYPES,
 } from './constants'
 import {delayValue} from './_helpers'
 import {typesInOptionGroup} from './groupByOption'
@@ -47,7 +49,7 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                 .id('randomObservable')
                 .title('Random observable')
                 .child(itemTitleChangesEverySecond(S)),
-            ])
+            ]),
         ),
 
       _buildTypeGroup(S, schema, {
@@ -152,8 +154,8 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                           S.menuItem().title('Test 1').action('test-1').showAsAction(true),
                           S.menuItem().title('Test 2').action('test-2'), //.showAsAction(true),
                         ])
-                        .child(S.document().documentId('component1-1-child').schemaType('author'))
-                    )
+                        .child(S.document().documentId('component1-1-child').schemaType('author')),
+                    ),
                 ),
 
               S.listItem()
@@ -165,7 +167,7 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                     .title('Component pane #2')
                     .options({no: 2})
                     .menuItems([S.menuItem().title('Test 1').action('test-1').showAsAction(true)])
-                    .child(S.document().documentId('component2-child').schemaType('author'))
+                    .child(S.document().documentId('component2-child').schemaType('author')),
                 ),
 
               S.divider(),
@@ -181,8 +183,8 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                       options: {
                         filter: 'defined(title)',
                       },
-                    })
-                  )
+                    }),
+                  ),
                 ),
 
               S.listItem()
@@ -194,7 +196,7 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                     options: {
                       filter: '_id in path("drafts.**")',
                     },
-                  })
+                  }).apiVersion('2023-07-28'),
                 ),
 
               S.listItem()
@@ -206,7 +208,7 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                     options: {
                       filter: '_type == "author" || _type == "book"',
                     },
-                  })
+                  }),
                 ),
 
               // A singleton not using `documentListItem`, eg no built-in preview
@@ -217,8 +219,8 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                     S.editor({
                       id: 'editor',
                       options: {id: 'circular', type: 'referenceTest'},
-                    }).title('Specific title!')
-                  ) as any
+                    }).title('Specific title!'),
+                  ) as any,
                 )
                 .showIcon(false),
 
@@ -238,7 +240,7 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                         .action('reload')
                         .icon(SyncIcon)
                         .showAsAction(true),
-                    ])
+                    ]),
                 ),
 
               // A "singleton" which should use a default preview
@@ -251,7 +253,7 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                 .id('field-groups-test-2')
                 .title('Field groups test 2')
                 .child(
-                  S.document().documentId('field-groups-test-2').schemaType('fieldGroupsMany')
+                  S.document().documentId('field-groups-test-2').schemaType('fieldGroupsMany'),
                 ),
               S.listItem()
                 .title('Deep')
@@ -261,7 +263,7 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                     .items([
                       S.documentTypeListItem('book').title('Books'),
                       S.documentTypeListItem('author').title('Authors'),
-                    ])
+                    ]),
                 ),
               S.listItem()
                 .title('Deep panes')
@@ -296,15 +298,15 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                                                       S.documentListItem()
                                                         .id('grrm')
                                                         .schemaType('author'),
-                                                    ])
+                                                    ]),
                                                 ),
-                                            ])
+                                            ]),
                                         ),
-                                    ])
+                                    ]),
                                 ),
-                            ])
+                            ]),
                         ),
-                    ])
+                    ]),
                 ),
 
               S.listItem({
@@ -315,6 +317,7 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                 child: () =>
                   S.documentTypeList('author')
                     .title('Developers')
+                    .apiVersion('2023-07-27')
                     .filter('_type == $type && role == $role')
                     .params({type: 'author', role: 'developer'})
                     .initialValueTemplates(S.initialValueTemplateItem('author-developer')),
@@ -332,7 +335,7 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                       .params({type: 'book', authorId})
                       .initialValueTemplates([
                         S.initialValueTemplateItem('book-by-author', {authorId}),
-                      ])
+                      ]),
                   ),
               }),
 
@@ -345,13 +348,13 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
                     .title('Unspecified books list')
                     .menuItems(S.documentTypeList('book').getMenuItems())
                     .filter('_type == $type')
-                    .params({type: 'book'})
+                    .params({type: 'book'}),
                 ),
 
               S.divider(),
 
               S.documentTypeListItem('sanity.imageAsset').title('Images').icon(ImagesIcon),
-            ])
+            ]),
         ),
 
       S.listItem().icon(PlugIcon).id('plugin').title('Plugin panes').child(
@@ -366,7 +369,7 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
           //   icon: TagIcon,
           //   title: 'Tag (orderable)',
           // }),
-        ])
+        ]),
       ),
 
       S.divider(),
@@ -396,6 +399,15 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
 
       S.divider(),
 
+      _buildTypeGroup(S, schema, {
+        icon: CodeIcon,
+        id: 'tsdoc',
+        title: 'TS doc',
+        types: TS_DOC_TYPES,
+      }),
+
+      S.divider(),
+
       ...S.documentTypeListItems().filter((listItem) => {
         const id = listItem.getId()
 
@@ -409,7 +421,8 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
           !EXTERNAL_PLUGIN_INPUT_TYPES.includes(id) &&
           !DEBUG_FIELD_GROUP_TYPES.includes(id) &&
           !typesInOptionGroup(S, schema, 'v3').includes(id) &&
-          !typesInOptionGroup(S, schema, '3d').includes(id)
+          !typesInOptionGroup(S, schema, '3d').includes(id) &&
+          !TS_DOC_TYPES.includes(id)
         )
       }),
     ])
@@ -418,13 +431,13 @@ export const structure: StructureResolver = (S, {schema, documentStore}) => {
 function documentStoreDrivenChild(
   S: StructureBuilder,
   schema: Schema,
-  documentStore: DocumentStore
+  documentStore: DocumentStore,
 ): Observable<ItemChild> {
   return documentStore
     .listenQuery(
       '*[!(_type match "**.**")] | order(_updatedAt desc)[0...10]',
       {},
-      {throttleTime: 1000}
+      {throttleTime: 1000},
     )
     .pipe(
       map((docs: SanityDocument[]) => {
@@ -433,7 +446,7 @@ function documentStoreDrivenChild(
         return S.list()
           .title('Some recently edited documents')
           .items(filteredDocs.map((doc) => S.documentListItem().schemaType(doc._type).id(doc._id)))
-      })
+      }),
     )
 }
 

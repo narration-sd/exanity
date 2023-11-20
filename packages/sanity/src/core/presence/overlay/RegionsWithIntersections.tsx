@@ -21,7 +21,7 @@ interface RegionsWithIntersectionsProps {
   regions: ReportedRegionWithRect<FieldPresenceData>[]
   render: (
     regionsWithIntersectionDetails: RegionWithIntersectionDetails[],
-    containerWidth: number
+    containerWidth: number,
   ) => React.ReactNode | null
   children: React.ReactNode
   margins: [number, number, number, number]
@@ -32,7 +32,7 @@ const negate = (num: number) => 0 - num
 
 export const RegionsWithIntersections = forwardRef(function RegionsWithIntersections(
   props: RegionsWithIntersectionsProps,
-  ref: React.ForwardedRef<HTMLDivElement>
+  ref: React.ForwardedRef<HTMLDivElement>,
 ) {
   const {regions, render, children, margins: marginsProp} = props
 
@@ -48,7 +48,7 @@ export const RegionsWithIntersections = forwardRef(function RegionsWithIntersect
         rootMargin: margins.map(negate).map(toPx).join(' '),
         threshold: INTERSECTION_THRESHOLDS,
       }),
-    [margins]
+    [margins],
   )
 
   const [intersections, setIntersections] = useState<
@@ -91,8 +91,8 @@ export const RegionsWithIntersections = forwardRef(function RegionsWithIntersect
               const distanceTop = intersection.isIntersecting
                 ? boundsTop - (intersection.intersectionRect.top - INTERSECTION_ELEMENT_PADDING)
                 : aboveTop
-                ? -top.boundingClientRect.bottom
-                : bottom.boundingClientRect.top
+                  ? -top.boundingClientRect.bottom
+                  : bottom.boundingClientRect.top
 
               // eslint-disable-next-line no-nested-ternary
               const distanceBottom = intersection.isIntersecting
@@ -101,16 +101,16 @@ export const RegionsWithIntersections = forwardRef(function RegionsWithIntersect
                     (intersection.intersectionRect.bottom + INTERSECTION_ELEMENT_PADDING)
                   )
                 : belowBottom
-                ? bottom.boundingClientRect.top
-                : -top.boundingClientRect.bottom
+                  ? bottom.boundingClientRect.top
+                  : -top.boundingClientRect.bottom
 
               const position =
                 // eslint-disable-next-line no-nested-ternary
                 distanceTop <= SNAP_TO_DOCK_DISTANCE_TOP
                   ? 'top'
                   : distanceBottom <= SNAP_TO_DOCK_DISTANCE_BOTTOM
-                  ? 'bottom'
-                  : 'inside'
+                    ? 'bottom'
+                    : 'inside'
 
               return {
                 distanceTop,
@@ -121,7 +121,7 @@ export const RegionsWithIntersections = forwardRef(function RegionsWithIntersect
             })
             .filter(Boolean)
         : []) as RegionWithIntersectionDetails[],
-    [bottom, intersections, regions, top]
+    [bottom, intersections, regions, top],
   )
 
   return (

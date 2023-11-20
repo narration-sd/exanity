@@ -1,20 +1,20 @@
-import {createClient, SanityClient} from '@sanity/client'
+import {createClient, type SanityClient} from '@sanity/client'
 import {map, shareReplay} from 'rxjs/operators'
-import {CurrentUser, Schema, SchemaValidationProblem} from '@sanity/types'
+import type {CurrentUser, Schema, SchemaValidationProblem} from '@sanity/types'
 import {studioTheme} from '@sanity/ui'
 import {startCase} from 'lodash'
 import {fromUrl} from '@sanity/bifur-client'
 import {createElement, isValidElement} from 'react'
 import {isValidElementType} from 'react-is'
 import {createSchema} from '../schema'
-import {AuthStore, createAuthStore} from '../store/_legacy'
+import {type AuthStore, createAuthStore, isAuthStore} from '../store/_legacy'
 import {FileSource, ImageSource} from '../form/studio/assetSource'
-import {InitialValueTemplateItem, Template, TemplateResponse} from '../templates'
+import type {InitialValueTemplateItem, Template, TemplateItem} from '../templates'
 import {EMPTY_ARRAY, isNonNullable} from '../util'
 import {validateWorkspaces} from '../studio'
 import {filterDefinitions} from '../studio/components/navbar/search/definitions/defaultFilters'
 import {operatorDefinitions} from '../studio/components/navbar/search/definitions/operators/defaultOperators'
-import {
+import type {
   Config,
   MissingConfigFile,
   PreparedConfig,
@@ -28,6 +28,7 @@ import {
 import {
   documentActionsReducer,
   documentBadgesReducer,
+  documentCommentsEnabledReducer,
   documentInspectorsReducer,
   documentLanguageFilterReducer,
   fileAssetSourceResolver,
@@ -54,12 +55,14 @@ const isError = (p: SchemaValidationProblem) => p.severity === 'error'
 function normalizeIcon(
   icon: React.ComponentType | React.ElementType | undefined,
   title: string,
-  subtitle = ''
+  subtitle = '',
 ): JSX.Element {
   if (isValidElementType(icon)) return createElement(icon)
   if (isValidElement(icon)) return icon
   return createDefaultIcon(title, subtitle)
 }
+
+const preparedWorkspaces = new WeakMap<SingleWorkspace | WorkspaceOptions, WorkspaceSummary>()
 
 /**
  * Takes in a config (created from the `defineConfig` function) and returns
@@ -73,7 +76,7 @@ function normalizeIcon(
  */
 export function prepareConfig(
   config: Config | MissingConfigFile,
-  options?: {basePath?: string}
+  options?: {basePath?: string},
 ): PreparedConfig {
   if (!Array.isArray(config) && 'missingConfigFile' in config) {
     throw new ConfigResolutionError({
@@ -98,102 +101,107 @@ export function prepareConfig(
     })
   }
 
-  const workspaces = workspaceOptions.map(
-    ({unstable_sources: nestedSources = [], ...rootSource}): WorkspaceSummary => {
-      const sources = [rootSource as SourceOptions, ...nestedSources]
+  const workspaces = workspaceOptions.map((rawWorkspace): WorkspaceSummary => {
+    if (preparedWorkspaces.has(rawWorkspace)) {
+      return preparedWorkspaces.get(rawWorkspace)!
+    }
+    const {unstable_sources: nestedSources = [], ...rootSource} = rawWorkspace
+    const sources = [rootSource as SourceOptions, ...nestedSources]
 
-      const resolvedSources = sources.map((source): InternalSource => {
-        const clientFactory = source.unstable_clientFactory || createClient
+    const resolvedSources = sources.map((source): InternalSource => {
+      const {projectId, dataset} = source
 
-        const {projectId, dataset, apiHost} = source
-
-        const auth = source.auth || createAuthStore({clientFactory, dataset, projectId, apiHost})
-
-        let schemaTypes
-        try {
-          schemaTypes = resolveConfigProperty({
-            propertyName: 'schema.types',
-            config: source,
-            context: {projectId, dataset},
-            initialValue: [],
-            reducer: schemaTypesReducer,
-          })
-        } catch (e) {
-          throw new ConfigResolutionError({
-            name: source.name,
-            type: 'source',
-            causes: [e],
-          })
-        }
-
-        const schema = createSchema({
-          name: source.name,
-          types: schemaTypes,
+      let schemaTypes
+      try {
+        schemaTypes = resolveConfigProperty({
+          propertyName: 'schema.types',
+          config: source,
+          context: {projectId, dataset},
+          initialValue: [],
+          reducer: schemaTypesReducer,
         })
-
-        const schemaValidationProblemGroups = schema._validation
-        const schemaErrors = schemaValidationProblemGroups?.filter((msg) =>
-          msg.problems.some(isError)
-        )
-
-        if (schemaValidationProblemGroups && schemaErrors?.length) {
-          // TODO: consider using the `ConfigResolutionError`
-          throw new SchemaError(schema)
-        }
-
-        const source$ = auth.state.pipe(
-          map(({client, authenticated, currentUser}) => {
-            return resolveSource({
-              config: source,
-              client,
-              currentUser,
-              schema,
-              authenticated,
-              auth,
-            })
-          }),
-          shareReplay(1)
-        )
-
-        return {
+      } catch (e) {
+        throw new ConfigResolutionError({
           name: source.name,
-          projectId: source.projectId,
-          dataset: source.dataset,
-          title: source.title || startCase(source.name),
-          auth,
-          schema,
-          source: source$,
-        }
-      })
-
-      const title = rootSource.title || startCase(rootSource.name)
-
-      const workspaceSummary: WorkspaceSummary = {
-        type: 'workspace-summary',
-        auth: resolvedSources[0].auth,
-        basePath: joinBasePath(rootPath, rootSource.basePath),
-        dataset: rootSource.dataset,
-        schema: resolvedSources[0].schema,
-        icon: normalizeIcon(
-          rootSource.icon,
-          title,
-          `${rootSource.projectId} ${rootSource.dataset}`
-        ),
-        name: rootSource.name || 'default',
-        projectId: rootSource.projectId,
-        theme: rootSource.theme || studioTheme,
-        title,
-        subtitle: rootSource.subtitle,
-        __internal: {
-          sources: resolvedSources,
-        },
+          type: 'source',
+          causes: [e],
+        })
       }
 
-      return workspaceSummary
+      const schema = createSchema({
+        name: source.name,
+        types: schemaTypes,
+      })
+
+      const schemaValidationProblemGroups = schema._validation
+      const schemaErrors = schemaValidationProblemGroups?.filter((msg) =>
+        msg.problems.some(isError),
+      )
+
+      if (schemaValidationProblemGroups && schemaErrors?.length) {
+        // TODO: consider using the `ConfigResolutionError`
+        throw new SchemaError(schema)
+      }
+
+      const auth = getAuthStore(source)
+      const source$ = auth.state.pipe(
+        map(({client, authenticated, currentUser}) => {
+          return resolveSource({
+            config: source,
+            client,
+            currentUser,
+            schema,
+            authenticated,
+            auth,
+          })
+        }),
+        shareReplay(1),
+      )
+
+      return {
+        name: source.name,
+        projectId: source.projectId,
+        dataset: source.dataset,
+        title: source.title || startCase(source.name),
+        auth,
+        schema,
+        source: source$,
+      }
+    })
+
+    const title = rootSource.title || startCase(rootSource.name)
+
+    const workspaceSummary: WorkspaceSummary = {
+      type: 'workspace-summary',
+      auth: resolvedSources[0].auth,
+      basePath: joinBasePath(rootPath, rootSource.basePath),
+      dataset: rootSource.dataset,
+      schema: resolvedSources[0].schema,
+      icon: normalizeIcon(rootSource.icon, title, `${rootSource.projectId} ${rootSource.dataset}`),
+      name: rootSource.name || 'default',
+      projectId: rootSource.projectId,
+      theme: rootSource.theme || studioTheme,
+      title,
+      subtitle: rootSource.subtitle,
+      __internal: {
+        sources: resolvedSources,
+      },
     }
-  )
+    preparedWorkspaces.set(rawWorkspace, workspaceSummary)
+    return workspaceSummary
+  })
 
   return {type: 'prepared-config', workspaces}
+}
+
+function getAuthStore(source: SourceOptions): AuthStore {
+  if (isAuthStore(source.auth)) {
+    return source.auth
+  }
+
+  const clientFactory = source.unstable_clientFactory || createClient
+  const {projectId, dataset, apiHost} = source
+  return createAuthStore({apiHost, ...source.auth, clientFactory, dataset, projectId})
 }
 
 interface ResolveSourceOptions {
@@ -260,13 +268,13 @@ function resolveSource({
       return Object.defineProperty(acc, key, {
         get() {
           console.warn(
-            '`configContext.client` is deprecated and will be removed in the next release! Use `context.getClient({apiVersion: "2021-06-07"})` instead'
+            '`configContext.client` is deprecated and will be removed in the next release! Use `context.getClient({apiVersion: "2021-06-07"})` instead',
           )
           return original
         },
       })
     },
-    {}
+    {},
   ) as any as SanityClient
   /* eslint-enable no-proto */
   // </TEMPORARY UGLY HACK TO PRINT DEPRECATION WARNINGS ON USE>
@@ -333,12 +341,12 @@ function resolveSource({
     // filter out the ones with parameters to fill
     .filter((template) => !template.parameters?.length)
     .map(
-      (template): TemplateResponse => ({
+      (template): TemplateItem => ({
         templateId: template.id,
         description: template.description,
         icon: template.icon,
         title: template.title,
-      })
+      }),
     )
 
   const templateMap = templates.reduce((acc, template) => {
@@ -348,7 +356,7 @@ function resolveSource({
 
   // TODO: extract this function
   const resolveNewDocumentOptions: Source['document']['resolveNewDocumentOptions'] = (
-    creationContext
+    creationContext,
   ) => {
     const {schemaType: schemaTypeName} = creationContext
 
@@ -386,7 +394,7 @@ function resolveSource({
 
           if (!schemaType) {
             throw new Error(
-              `Could not find matching schema type \`${template.schemaType}\` for template \`${template.id}\``
+              `Could not find matching schema type \`${template.schemaType}\` for template \`${template.id}\``,
             )
           }
 
@@ -411,6 +419,9 @@ function resolveSource({
           // if we are in a creationContext where there is no schema type,
           // then keep everything
           if (!schemaTypeName) return true
+
+          // If we are in a 'document' creationContext then keep everything
+          if (creationContext.type === 'document') return true
 
           // else only keep the `schemaType`s that match the creationContext
           return schemaTypeName === templateMap.get(item.templateId)?.schemaType
@@ -496,6 +507,16 @@ function resolveSource({
           propertyName: 'document.unstable_languageFilter',
           reducer: documentLanguageFilterReducer,
         }),
+
+      unstable_comments: {
+        enabled: (partialContext) => {
+          return documentCommentsEnabledReducer({
+            context: partialContext,
+            config,
+            initialValue: false,
+          })
+        },
+      },
     },
     form: {
       file: {

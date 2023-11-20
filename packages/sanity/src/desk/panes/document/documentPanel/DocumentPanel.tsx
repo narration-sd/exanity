@@ -13,11 +13,12 @@ import {useDocumentPane} from '../useDocumentPane'
 import {useDeskTool} from '../../../useDeskTool'
 import {DocumentInspectorPanel} from '../documentInspector'
 import {InspectDialog} from '../inspectDialog'
+import {DeletedDocumentBanner} from './DeletedDocumentBanner'
 import {ReferenceChangedBanner} from './ReferenceChangedBanner'
 import {PermissionCheckBanner} from './PermissionCheckBanner'
 import {FormView} from './documentViews'
 import {DocumentPanelHeader} from './header'
-import {ScrollContainer, VirtualizerScrollInstanceProvider} from 'sanity'
+import {ScrollContainer, useTimelineSelector, VirtualizerScrollInstanceProvider} from 'sanity'
 
 interface DocumentPanelProps {
   footerHeight: number | null
@@ -58,6 +59,10 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
     schemaType,
     permissions,
     isPermissionsLoading,
+    isDeleting,
+    isDeleted,
+    timelineStore,
+    formState,
   } = useDocumentPane()
   const {collapsed: layoutCollapsed} = usePaneLayout()
   const {collapsed} = usePane()
@@ -67,12 +72,19 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
   const headerRect = useElementRect(headerElement)
   const portalRef = useRef<HTMLDivElement | null>(null)
   const [documentScrollElement, setDocumentScrollElement] = useState<HTMLDivElement | null>(null)
+  const formContainerElement = useRef<HTMLDivElement | null>(null)
 
   const requiredPermission = value._createdAt ? 'update' : 'create'
 
+  const selectedGroup = useMemo(() => {
+    if (!formState) return undefined
+
+    return formState.groups.find((group) => group.selected)
+  }, [formState])
+
   const activeView = useMemo(
     () => views.find((view) => view.id === activeViewId) || views[0] || {type: 'form'},
-    [activeViewId, views]
+    [activeViewId, views],
   )
 
   // Use a local portal container when split panes is supported
@@ -106,7 +118,12 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
         options: activeView.options,
         schemaType,
       }),
-    [activeView, displayed, documentId, editState?.draft, editState?.published, schemaType, value]
+    [activeView, displayed, documentId, editState?.draft, editState?.published, schemaType, value],
+  )
+
+  const lastNonDeletedRevId = useTimelineSelector(
+    timelineStore,
+    (state) => state.lastNonDeletedRevId,
   )
 
   // Scroll to top as `documentId` changes
@@ -141,13 +158,19 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
                 __unstable_elements={{documentScrollElement: documentScrollElement}}
               >
                 <BoundaryElementProvider element={documentScrollElement}>
-                  <VirtualizerScrollInstanceProvider scrollElement={documentScrollElement}>
+                  <VirtualizerScrollInstanceProvider
+                    scrollElement={documentScrollElement}
+                    containerElement={formContainerElement}
+                  >
                     {activeView.type === 'form' && !isPermissionsLoading && ready && (
                       <>
                         <PermissionCheckBanner
                           granted={Boolean(permissions?.granted)}
                           requiredPermission={requiredPermission}
                         />
+                        {!isDeleting && isDeleted && (
+                          <DeletedDocumentBanner revisionId={lastNonDeletedRevId} />
+                        )}
                         <ReferenceChangedBanner />
                       </>
                     )}
@@ -156,11 +179,16 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
                       $disabled={layoutCollapsed || false}
                       data-testid="document-panel-scroller"
                       ref={setDocumentScrollElement}
+                      // Note: this is to make sure the scroll container is changed
+                      // when the selected group changes which causes virtualization
+                      // to re-render and re-measure the scroll container
+                      key={`${selectedGroup?.name}-${documentId}}`}
                     >
                       <FormView
                         hidden={formViewHidden}
                         key={documentId + (ready ? '_ready' : '_pending')}
                         margins={margins}
+                        ref={formContainerElement}
                       />
                       {activeViewNode}
                     </Scroller>

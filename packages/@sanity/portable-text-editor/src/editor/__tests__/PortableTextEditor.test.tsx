@@ -1,9 +1,5 @@
-/**
- * \@jest-environment ./test/setup/jsdom.jest.env.ts
- */
 /* eslint-disable no-irregular-whitespace */
-// eslint-disable-next-line import/no-unassigned-import
-import '@testing-library/jest-dom/extend-expect'
+
 import React from 'react'
 import {render, waitFor} from '@testing-library/react'
 import {PortableTextBlock} from '@sanity/types'
@@ -31,7 +27,7 @@ describe('initialization', () => {
         ref={editorRef}
         schemaType={schemaType}
         value={undefined}
-      />
+      />,
     )
 
     await waitFor(() => {
@@ -39,67 +35,77 @@ describe('initialization', () => {
       expect(onChange).toHaveBeenCalledWith({type: 'ready'})
       expect(onChange).toHaveBeenCalledWith({type: 'value', value: undefined})
       expect(container).toMatchInlineSnapshot(`
+<div>
+  <div
+    aria-describedby="desc_foo"
+    aria-multiline="true"
+    autocapitalize="false"
+    autocorrect="false"
+    class="pt-editable"
+    contenteditable="true"
+    data-slate-editor="true"
+    data-slate-node="value"
+    role="textbox"
+    spellcheck="false"
+    style="position: relative; white-space: pre-wrap; word-wrap: break-word;"
+    zindex="-1"
+  >
+    <div
+      class="pt-block pt-text-block pt-text-block-style-normal"
+      data-slate-node="element"
+    >
+      <div
+        draggable="false"
+      >
         <div>
-          <div>
-            <div
-              autocapitalize="false"
-              autocorrect="false"
-              class="pt-editable"
-              contenteditable="true"
-              data-slate-editor="true"
-              data-slate-node="value"
-              role="textbox"
-              spellcheck="false"
-              style="position: relative; outline: none; white-space: pre-wrap; word-wrap: break-word;"
-              zindex="-1"
+          <span
+            data-slate-node="text"
+          >
+            <span
+              contenteditable="false"
+              style="opacity: 0.5; position: absolute; user-select: none; pointer-events: none; left: 0px; right: 0px;"
             >
-              <div
-                class="pt-block pt-text-block pt-text-block-style-normal"
-                data-slate-node="element"
+              Jot something down here
+            </span>
+            <span
+              data-slate-leaf="true"
+            >
+              <span
+                data-slate-length="0"
+                data-slate-zero-width="n"
               >
-                <div
-                  draggable="false"
-                >
-                  <div>
-                    <span
-                      data-slate-node="text"
-                    >
-                      <div
-                        contenteditable="false"
-                        style="opacity: 0.5; position: absolute; user-select: none; pointer-events: none;"
-                      >
-                        Jot something down here
-                      </div>
-                      <span
-                        data-slate-leaf="true"
-                      >
-                        <span
-                          data-slate-length="0"
-                          data-slate-zero-width="n"
-                        >
-                          ﻿
-                          <br />
-                        </span>
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                ﻿
+                <br />
+              </span>
+            </span>
+          </span>
         </div>
-      `)
+      </div>
+    </div>
+  </div>
+</div>
+`)
     })
   })
-  it('takes value from props', async () => {
+  it('takes value from props and confirms it by emitting value change event', async () => {
     const initialValue = [helloBlock]
     const onChange = jest.fn()
+    const editorRef = React.createRef<PortableTextEditor>()
     render(
-      <PortableTextEditorTester onChange={onChange} schemaType={schemaType} value={initialValue} />
+      <PortableTextEditorTester
+        ref={editorRef}
+        onChange={onChange}
+        schemaType={schemaType}
+        value={initialValue}
+      />,
     )
+    const normalizedEditorValue = [{...initialValue[0], style: 'normal'}]
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith({type: 'value', value: initialValue})
     })
+    if (editorRef.current) {
+      expect(PortableTextEditor.getValue(editorRef.current)).toStrictEqual(normalizedEditorValue)
+    }
   })
 
   it('takes initial selection from props', async () => {
@@ -117,12 +123,12 @@ describe('initialization', () => {
         selection={initialSelection}
         schemaType={schemaType}
         value={initialValue}
-      />
+      />,
     )
     await waitFor(() => {
       if (editorRef.current) {
         PortableTextEditor.focus(editorRef.current)
-        expect(PortableTextEditor.getSelection(editorRef.current)).toEqual(initialSelection)
+        expect(PortableTextEditor.getSelection(editorRef.current)).toStrictEqual(initialSelection)
       }
     })
   })
@@ -146,7 +152,7 @@ describe('initialization', () => {
         selection={initialSelection}
         schemaType={schemaType}
         value={initialValue}
-      />
+      />,
     )
     await waitFor(() => {
       if (editorRef.current) {
@@ -168,7 +174,7 @@ describe('initialization', () => {
         selection={newSelection}
         schemaType={schemaType}
         value={initialValue}
-      />
+      />,
     )
     waitFor(() => {
       if (editorRef.current) {
@@ -177,7 +183,7 @@ describe('initialization', () => {
     })
   })
 
-  it('validates initial value', async () => {
+  it('handles empty array value', async () => {
     const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
     const initialValue: PortableTextBlock[] = []
     const initialSelection: EditorSelection = {
@@ -192,11 +198,11 @@ describe('initialization', () => {
         selection={initialSelection}
         schemaType={schemaType}
         value={initialValue}
-      />
+      />,
     )
     await waitFor(() => {
       if (editorRef.current) {
-        expect(onChange).toHaveBeenCalledWith({
+        expect(onChange).not.toHaveBeenCalledWith({
           type: 'invalidValue',
           value: initialValue,
           resolution: {
@@ -211,7 +217,7 @@ describe('initialization', () => {
             ],
           },
         })
-        expect(onChange).not.toHaveBeenCalledWith({type: 'value', value: initialValue})
+        expect(onChange).toHaveBeenCalledWith({type: 'value', value: initialValue})
         expect(onChange).toHaveBeenCalledWith({type: 'ready'})
       }
     })
@@ -224,15 +230,19 @@ describe('initialization', () => {
       focus: {path: [{_key: '123'}, 'children', {_key: '567'}], offset: 2},
     }
     const onChange = jest.fn()
-    const {rerender} = render(
-      <PortableTextEditorTester
-        onChange={onChange}
-        ref={editorRef}
-        selection={initialSelection}
-        schemaType={schemaType}
-        value={value}
-      />
-    )
+    let _rerender: any
+    await waitFor(() => {
+      render(
+        <PortableTextEditorTester
+          onChange={onChange}
+          ref={editorRef}
+          selection={initialSelection}
+          schemaType={schemaType}
+          value={value}
+        />,
+      )
+      _rerender = render
+    })
     await waitFor(() => {
       expect(onChange).not.toHaveBeenCalledWith({
         type: 'invalidValue',
@@ -251,29 +261,28 @@ describe('initialization', () => {
       })
       expect(onChange).toHaveBeenCalledWith({type: 'value', value})
     })
-    value = []
+    value = [{_type: 'banana', _key: '123'}]
     const newOnChange = jest.fn()
-    rerender(
+    _rerender(
       <PortableTextEditorTester
         onChange={newOnChange}
         ref={editorRef}
         selection={initialSelection}
         schemaType={schemaType}
         value={value}
-      />
+      />,
     )
     await waitFor(() => {
-      expect(newOnChange).not.toHaveBeenCalledWith({type: 'ready'})
       expect(newOnChange).toHaveBeenCalledWith({
         type: 'invalidValue',
         value,
         resolution: {
-          action: 'Unset the value',
-          description: 'Editor value must be an array of Portable Text blocks, or undefined.',
-          item: value,
+          action: 'Remove the block',
+          description: "Block with _key '123' has invalid _type 'banana'",
+          item: value[0],
           patches: [
             {
-              path: [],
+              path: [{_key: '123'}],
               type: 'unset',
             },
           ],
@@ -304,7 +313,7 @@ describe('initialization', () => {
         selection={initialSelection}
         schemaType={schemaType}
         value={initialValue}
-      />
+      />,
     )
     await waitFor(() => {
       if (editorRef.current) {

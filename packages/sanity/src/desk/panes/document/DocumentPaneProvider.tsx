@@ -1,6 +1,6 @@
 import React, {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {ObjectSchemaType, Path, SanityDocument, SanityDocumentLike} from '@sanity/types'
-import {omit, set} from 'lodash'
+import {omit} from 'lodash'
 import {useToast} from '@sanity/ui'
 import {fromString as pathFromString, resolveKeyedPath} from '@sanity/util/paths'
 import isHotkey from 'is-hotkey'
@@ -8,6 +8,7 @@ import {isActionEnabled} from '@sanity/schema/_internal'
 import {usePaneRouter} from '../../components'
 import {PaneMenuItem} from '../../types'
 import {useDeskTool} from '../../useDeskTool'
+import {CommentsProvider, CommentsSelectedPathProvider} from '../../comments'
 import {DocumentPaneContext, DocumentPaneContextValue} from './DocumentPaneContext'
 import {getMenuItems} from './menuItems'
 import {DocumentPaneProviderProps} from './types'
@@ -21,16 +22,24 @@ import {
 } from './constants'
 import {DocumentInspectorMenuItemsResolver} from './DocumentInspectorMenuItemsResolver'
 import {
+  DocumentFieldAction,
+  DocumentFieldActionNode,
   DocumentInspector,
+  DocumentInspectorMenuItem,
   DocumentPresence,
-  PatchEvent,
-  StateTree,
-  toMutationPatches,
+  EMPTY_ARRAY,
+  FieldActionsProvider,
+  FieldActionsResolver,
+  getDraftId,
   getExpandOperations,
   getPublishedId,
+  PatchEvent,
   setAtPath,
+  StateTree,
+  toMutationPatches,
   useConnectionState,
   useDocumentOperation,
+  useDocumentValuePermissions,
   useEditState,
   useFormState,
   useInitialValue,
@@ -38,18 +47,10 @@ import {
   useSchema,
   useSource,
   useTemplates,
+  useTimelineSelector,
+  useTimelineStore,
   useUnique,
   useValidationStatus,
-  getDraftId,
-  useDocumentValuePermissions,
-  useTimelineStore,
-  useTimelineSelector,
-  DocumentFieldAction,
-  DocumentInspectorMenuItem,
-  FieldActionsResolver,
-  EMPTY_ARRAY,
-  DocumentFieldActionNode,
-  FieldActionsProvider,
 } from 'sanity'
 
 /**
@@ -57,7 +58,7 @@ import {
  */
 // eslint-disable-next-line complexity, max-statements
 export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
-  const {children, index, pane, paneKey} = props
+  const {children, index, pane, paneKey, onFocusPath} = props
   const schema = useSchema()
   const templates = useTemplates()
   const {
@@ -93,7 +94,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
         panePayload,
         urlTemplate: params.template,
       }),
-    [documentType, paneOptions, params, panePayload, templates]
+    [documentType, paneOptions, params, panePayload, templates],
   )
   const initialValueRaw = useInitialValue({
     documentId,
@@ -108,33 +109,35 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
   const connectionState = useConnectionState(documentId, documentType)
   const schemaType = schema.get(documentType) as ObjectSchemaType | undefined
   const value: SanityDocumentLike = editState?.draft || editState?.published || initialValue.value
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const [inspectorMenuItems, setInspectorMenuItems] = useState<DocumentInspectorMenuItem[]>([])
 
   // Resolve document actions
   const actions = useMemo(
     () => documentActions({schemaType: documentType, documentId}),
-    [documentActions, documentId, documentType]
+    [documentActions, documentId, documentType],
   )
 
   // Resolve document badges
   const badges = useMemo(
     () => documentBadges({schemaType: documentType, documentId}),
-    [documentBadges, documentId, documentType]
+    [documentBadges, documentId, documentType],
   )
 
   // Resolve document language filter
   const languageFilter = useMemo(
     () => languageFilterResolver({schemaType: documentType, documentId}),
-    [documentId, documentType, languageFilterResolver]
+    [documentId, documentType, languageFilterResolver],
   )
 
   const validation = useUnique(validationRaw)
   const views = useUnique(viewsProp)
 
   const [focusPath, setFocusPath] = useState<Path>(() =>
-    params.path ? pathFromString(params.path) : []
+    params.path ? pathFromString(params.path) : EMPTY_ARRAY,
   )
+  const focusPathRef = useRef(focusPath)
   const activeViewId = params.view || (views[0] && views[0].id) || null
   const [timelineMode, setTimelineMode] = useState<'since' | 'rev' | 'closed'>('closed')
 
@@ -158,6 +161,26 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
   const sinceAttributes = useTimelineSelector(timelineStore, (state) => state.sinceAttributes)
   const timelineDisplayed = useTimelineSelector(timelineStore, (state) => state.timelineDisplayed)
   const timelineReady = useTimelineSelector(timelineStore, (state) => state.timelineReady)
+  const isPristine = useTimelineSelector(timelineStore, (state) => state.isPristine)
+
+  /**
+   * Determine if the current document is deleted.
+   *
+   * When the timeline is available – we check for the absence of an editable document pair
+   * (both draft + published versions) as well as a non 'pristine' timeline (i.e. a timeline that consists
+   * of at least one chunk).
+   *
+   * In the _very rare_ case where the timeline cannot be loaded – we skip this check and always assume
+   * the document is NOT deleted. Since we can't accurately determine document deleted status without history,
+   * skipping this check means that in these cases, users will at least be able to create new documents
+   * without them being incorrectly marked as deleted.
+   */
+  const isDeleted = useMemo(() => {
+    if (!timelineReady) {
+      return false
+    }
+    return Boolean(!editState?.draft && !editState?.published) && !isPristine
+  }, [editState?.draft, editState?.published, isPristine, timelineReady])
 
   // TODO: this may cause a lot of churn. May be a good idea to prevent these
   // requests unless the menu is open somehow
@@ -175,7 +198,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
 
   const inspectors: DocumentInspector[] = useMemo(
     () => inspectorsResolver({documentId, documentType}),
-    [documentId, documentType, inspectorsResolver]
+    [documentId, documentType, inspectorsResolver],
   )
 
   const [inspectorName, setInspectorName] = useState<string | null>(() => params.inspect || null)
@@ -205,7 +228,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
         inspectors,
         previewUrl,
       }),
-    [currentInspector, features, hasValue, inspectorMenuItems, inspectors, previewUrl]
+    [currentInspector, features, hasValue, inspectorMenuItems, inspectors, previewUrl],
   )
   const inspectOpen = params.inspect === 'on'
   const compareValue: Partial<SanityDocument> | null = changesOpen
@@ -214,7 +237,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
 
   const fieldActions: DocumentFieldAction[] = useMemo(
     () => (schemaType ? fieldActionsResolver({documentId, documentType, schemaType}) : []),
-    [documentId, documentType, fieldActionsResolver, schemaType]
+    [documentId, documentType, fieldActionsResolver, schemaType],
   )
 
   /**
@@ -234,7 +257,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
 
   const displayed: Partial<SanityDocument> | undefined = useMemo(
     () => (onOlderRevision ? timelineDisplayed || {_id: value._id, _type: value._type} : value),
-    [onOlderRevision, timelineDisplayed, value]
+    [onOlderRevision, timelineDisplayed, value],
   )
 
   const setTimelineRange = useCallback(
@@ -245,12 +268,18 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
         rev: newRev || undefined,
       })
     },
-    [params, setPaneParams]
+    [params, setPaneParams],
   )
 
   const handleFocus = useCallback(
     (nextFocusPath: Path) => {
       setFocusPath(nextFocusPath)
+
+      if (focusPathRef.current !== nextFocusPath) {
+        focusPathRef.current = nextFocusPath
+        onFocusPath?.(nextFocusPath)
+      }
+
       presenceStore.setLocation([
         {
           type: 'document',
@@ -260,16 +289,26 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
         },
       ])
     },
-    [documentId, presenceStore, setFocusPath]
+    [documentId, onFocusPath, presenceStore, setFocusPath],
   )
 
   const handleBlur = useCallback(
     (blurredPath: Path) => {
-      setFocusPath([])
+      if (disableBlurRef.current) {
+        return
+      }
+
+      setFocusPath(EMPTY_ARRAY)
+
+      if (focusPathRef.current !== EMPTY_ARRAY) {
+        focusPathRef.current = EMPTY_ARRAY
+        onFocusPath?.(EMPTY_ARRAY)
+      }
+
       // note: we're deliberately not syncing presence here since it would make the user avatar disappear when a
       // user clicks outside a field without focusing another one
     },
-    [setFocusPath]
+    [onFocusPath, setFocusPath],
   )
 
   const patchRef = useRef<(event: PatchEvent) => void>(() => {
@@ -316,7 +355,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
         setPaneParams({...result.params, inspect: undefined})
       }
     },
-    [currentInspector, inspectors, params, setPaneParams]
+    [currentInspector, inspectors, params, setPaneParams],
   )
 
   const openInspector = useCallback(
@@ -351,7 +390,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
 
       setPaneParams({...result.params, ...paneParams, inspect: nextInspector.name})
     },
-    [currentInspector, inspectors, params, setPaneParams]
+    [currentInspector, inspectors, params, setPaneParams],
   )
 
   const handleHistoryClose = useCallback(() => {
@@ -382,7 +421,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
         setPaneParams(omit(params, 'inspect'))
       }
     },
-    [inspectOpen, params, setPaneParams]
+    [inspectOpen, params, setPaneParams],
   )
 
   const handleMenuAction = useCallback(
@@ -426,7 +465,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       openInspector,
       previewUrl,
       toggleLegacyInspect,
-    ]
+    ],
   )
 
   const handleKeyUp = useCallback(
@@ -442,12 +481,12 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
         }
       }
     },
-    [handleMenuAction, menuItems]
+    [handleMenuAction, menuItems],
   )
 
   const handleLegacyInspectClose = useCallback(
     () => toggleLegacyInspect(false),
-    [toggleLegacyInspect]
+    [toggleLegacyInspect],
   )
 
   const [openPath, onSetOpenPath] = useState<Path>([])
@@ -466,7 +505,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
   const handleSetActiveFieldGroup = useCallback(
     (path: Path, groupName: string) =>
       onSetFieldGroupState((prevState) => setAtPath(prevState, path, groupName)),
-    []
+    [],
   )
 
   const requiredPermission = value._createdAt ? 'update' : 'create'
@@ -500,17 +539,21 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       updateActionDisabled ||
       createActionDisabled ||
       reconnecting ||
-      isLocked
+      isLocked ||
+      isDeleting ||
+      isDeleted
     )
   }, [
     connectionState,
+    editState.transactionSyncLock,
     isNonExistent,
+    isDeleted,
+    isDeleting,
     isPermissionsLoading,
     permissions?.granted,
     ready,
     revTime,
     schemaType,
-    editState.transactionSyncLock,
   ])
 
   const formState = useFormState(schemaType!, {
@@ -546,7 +589,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       })
       onSetOpenPath(path)
     },
-    [formStateRef]
+    [formStateRef],
   )
 
   const documentPane: DocumentPaneContextValue = {
@@ -596,6 +639,9 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
     permissions,
     setTimelineMode,
     setTimelineRange,
+    setIsDeleting,
+    isDeleting,
+    isDeleted,
     timelineError,
     timelineMode,
     timelineStore,
@@ -616,18 +662,37 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
     }
   }, [connectionState, pushToast])
 
+  const disableBlurRef = useRef(false)
+
   // Reset `focusPath` when `documentId` or `params.path` changes
   useEffect(() => {
     if (ready && params.path) {
       const {path, ...restParams} = params
       const pathFromUrl = resolveKeyedPath(formStateRef.current?.value, pathFromString(path))
+
+      disableBlurRef.current = true
+
       // Reset focus path when url params path changes
       setFocusPath(pathFromUrl)
       setOpenPath(pathFromUrl)
+
+      if (focusPathRef.current !== pathFromUrl) {
+        focusPathRef.current = pathFromUrl
+        onFocusPath?.(pathFromUrl)
+      }
+
+      const timeout = setTimeout(() => {
+        disableBlurRef.current = false
+      }, 0)
+
       // remove the `path`-param from url after we have consumed it as the initial focus path
       paneRouter.setParams(restParams)
+
+      return () => clearTimeout(timeout)
     }
-  }, [params, documentId, setOpenPath, ready, paneRouter])
+
+    return undefined
+  }, [params, documentId, onFocusPath, setOpenPath, ready, paneRouter])
 
   const [rootFieldActionNodes, setRootFieldActionNodes] = useState<DocumentFieldActionNode[]>([])
 
@@ -655,7 +720,9 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       )}
 
       <FieldActionsProvider actions={rootFieldActionNodes} path={EMPTY_ARRAY}>
-        {children}
+        <CommentsProvider documentId={documentId} documentType={documentType}>
+          <CommentsSelectedPathProvider>{children}</CommentsSelectedPathProvider>
+        </CommentsProvider>
       </FieldActionsProvider>
     </DocumentPaneContext.Provider>
   )

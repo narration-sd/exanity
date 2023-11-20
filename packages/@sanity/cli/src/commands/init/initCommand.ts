@@ -1,8 +1,8 @@
+import {type Framework, frameworks} from '@vercel/frameworks'
+import {LocalFileSystemDetector, detectFrameworkRecord} from '@vercel/fs-detectors'
 import initProject from '../../actions/init-project/initProject'
 import initPlugin from '../../actions/init-plugin/initPlugin'
 import {CliCommandDefinition} from '../../types'
-import {Framework, frameworks} from '@vercel/frameworks'
-import {LocalFileSystemDetector, detectFrameworkRecord} from '@vercel/fs-detectors'
 
 const helpText = `
 Options
@@ -20,7 +20,6 @@ Options
   --create-project <name> Create a new project with the given name
   --project-plan <name> Optionally select a plan for a new project
   --coupon <name> Optionally select a coupon for a new project (cannot be used with --project-plan)
-  --reconfigure Reconfigure Sanity studio in current folder with new project/dataset
   --no-typescript Do not use TypeScript for template files
 
 Examples
@@ -64,6 +63,9 @@ export interface InitFlags {
   'dataset-default'?: boolean
 
   coupon?: string
+  /**
+   * @deprecated `--reconfigure` is deprecated - manual configuration is now required
+   */
   reconfigure?: boolean
 
   organization?: string

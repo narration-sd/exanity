@@ -23,7 +23,10 @@ import {LoadingVariant, SortOrder} from './types'
 import {useDocumentList} from './useDocumentList'
 import {GeneralPreviewLayoutKey, SourceProvider, useSchema, useSource, useUnique} from 'sanity'
 
-type DocumentListPaneProps = BaseDeskToolPaneProps<'documentList'>
+/**
+ * @internal
+ */
+export type DocumentListPaneProps = BaseDeskToolPaneProps<'documentList'>
 
 const EMPTY_ARRAY: never[] = []
 
@@ -104,7 +107,7 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
   const [layout, setLayout] = useDeskToolSetting<GeneralPreviewLayoutKey>(
     typeName,
     'layout',
-    defaultLayout
+    defaultLayout,
   )
 
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -124,7 +127,7 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
   const [sortOrderRaw, setSortOrder] = useDeskToolSetting<SortOrder>(
     typeName,
     'sortOrder',
-    defaultSortOrder
+    defaultSortOrder,
   )
 
   const sortWithOrderingFn =
@@ -159,7 +162,7 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
         sortOrderRaw,
         layout,
       }),
-    [layout, menuItems, sortOrderRaw]
+    [layout, menuItems, sortOrderRaw],
   )
 
   const handleQueryChange = useObservableCallback(
@@ -168,10 +171,10 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
         map((event) => event.target.value),
         tap(setSearchInputValue),
         debounce((value) => (value === '' ? of('') : timer(300))),
-        tap(setSearchQuery)
+        tap(setSearchQuery),
       )
     },
-    []
+    [],
   )
 
   const handleClearSearch = useCallback(() => {
@@ -185,7 +188,7 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
         handleClearSearch()
       }
     },
-    [handleClearSearch]
+    [handleClearSearch],
   )
 
   useEffect(() => {

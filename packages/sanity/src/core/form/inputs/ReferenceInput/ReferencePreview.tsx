@@ -1,45 +1,19 @@
-import React, {ComponentType, ReactNode, useMemo} from 'react'
+import React, {useMemo} from 'react'
 import {ObjectSchemaType} from '@sanity/types'
 import {Box, Flex, Inline, Label, Text, Tooltip, useRootTheme} from '@sanity/ui'
-import {AccessDeniedIcon, EditIcon, HelpCircleIcon, PublishIcon} from '@sanity/icons'
+import {EditIcon, PublishIcon} from '@sanity/icons'
 import {RenderPreviewCallback} from '../../types'
-import {DocumentAvailability} from '../../../preview'
 import {PreviewLayoutKey, TextWithTone} from '../../../components'
+import {useTimeAgo} from '../../../hooks'
 import {useDocumentPresence} from '../../../store'
 import {DocumentPreviewPresence} from '../../../presence'
-import {TimeAgo} from './utils/TimeAgo'
 import {ReferenceInfo} from './types'
-
-function UnavailableMessage(props: {icon: ComponentType; children: ReactNode; title: ReactNode}) {
-  const Icon = props.icon
-  return (
-    <Flex padding={3}>
-      <Box>
-        <Text size={1}>
-          <Icon />
-        </Text>
-      </Box>
-      <Box flex={1} marginLeft={3}>
-        <Text size={1} weight="semibold">
-          {props.title}
-        </Text>
-
-        <Box marginTop={3}>
-          <Text as="p" muted size={1}>
-            {props.children}
-          </Text>
-        </Box>
-      </Box>
-    </Flex>
-  )
-}
 
 /**
  * Used to preview a referenced type
  * Takes the reference type as props
  */
 export function ReferencePreview(props: {
-  availability: DocumentAvailability
   id: string
   preview: ReferenceInfo['preview']
   refType: ObjectSchemaType
@@ -47,13 +21,10 @@ export function ReferencePreview(props: {
   renderPreview: RenderPreviewCallback
   showTypeLabel?: boolean
 }) {
-  const {availability, id, layout, preview, refType, renderPreview, showTypeLabel} = props
+  const {id, layout, preview, refType, renderPreview, showTypeLabel} = props
 
   const theme = useRootTheme()
   const documentPresence = useDocumentPresence(id)
-
-  const notFound = availability.reason === 'NOT_FOUND'
-  const insufficientPermissions = availability.reason === 'PERMISSION_DENIED'
 
   const previewId =
     preview.draft?._id ||
@@ -70,7 +41,7 @@ export function ReferencePreview(props: {
   // resolve the preview value it needs (this is cached in the runtime, so not likely to cause any fetch overhead)
   const previewStub = useMemo(
     () => ({_id: previewId, _type: refType.name}),
-    [previewId, refType.name]
+    [previewId, refType.name],
   )
 
   const previewProps = useMemo(
@@ -79,22 +50,22 @@ export function ReferencePreview(props: {
       schemaType: refType,
       value: previewStub,
     }),
-    [layout, previewStub, refType]
+    [layout, previewStub, refType],
   )
+
+  const timeSincePublished = useTimeAgo(preview.published?._updatedAt || '', {
+    minimal: true,
+    agoSuffix: true,
+  })
+
+  const timeSinceEdited = useTimeAgo(preview.draft?._updatedAt || '', {
+    minimal: true,
+    agoSuffix: true,
+  })
 
   return (
     <Flex align="center">
-      {availability.available ? (
-        <Box flex={1}>{renderPreview(previewProps)}</Box>
-      ) : (
-        <Box flex={1}>
-          <Flex align="center">
-            <Box flex={1} paddingY={2}>
-              <Text muted>Document unavailable</Text>
-            </Box>
-          </Flex>
-        </Box>
-      )}
+      <Box flex={1}>{renderPreview(previewProps)}</Box>
 
       <Box paddingLeft={3}>
         <Inline space={3}>
@@ -103,31 +74,6 @@ export function ReferencePreview(props: {
               {refType.title}
             </Label>
           )}
-
-          {insufficientPermissions || notFound ? (
-            <Box>
-              <Tooltip
-                portal
-                content={
-                  notFound ? (
-                    <UnavailableMessage title="Not found" icon={HelpCircleIcon}>
-                      The referenced document does not exist
-                      <br />
-                      (id: <code>{id}</code>)
-                    </UnavailableMessage>
-                  ) : (
-                    <UnavailableMessage title="Insufficcient permissions" icon={AccessDeniedIcon}>
-                      The referenced document could not be accessed due to insufficient permissions
-                    </UnavailableMessage>
-                  )
-                }
-              >
-                <TextWithTone tone="default">
-                  <HelpCircleIcon />
-                </TextWithTone>
-              </Tooltip>
-            </Box>
-          ) : null}
 
           {documentPresence && documentPresence.length > 0 && (
             <DocumentPreviewPresence presence={documentPresence} />
@@ -140,13 +86,9 @@ export function ReferencePreview(props: {
                 content={
                   <Box padding={2}>
                     <Text size={1}>
-                      {preview.published?._updatedAt ? (
-                        <>
-                          Published <TimeAgo time={preview.published._updatedAt} />
-                        </>
-                      ) : (
-                        <>Not published</>
-                      )}
+                      {preview.published?._updatedAt
+                        ? `Published ${timeSincePublished}`
+                        : 'Not published'}
                     </Text>
                   </Box>
                 }
@@ -157,7 +99,7 @@ export function ReferencePreview(props: {
                   dimmed={!preview.published}
                   muted={!preview.published}
                 >
-                  <PublishIcon />
+                  <PublishIcon aria-label={preview.published ? 'Published' : 'Not published'} />
                 </TextWithTone>
               </Tooltip>
             </Box>
@@ -168,13 +110,9 @@ export function ReferencePreview(props: {
                 content={
                   <Box padding={2}>
                     <Text size={1}>
-                      {preview.draft?._updatedAt ? (
-                        <>
-                          Edited <TimeAgo time={preview.draft._updatedAt} />
-                        </>
-                      ) : (
-                        <>No unpublished edits</>
-                      )}
+                      {preview.draft?._updatedAt
+                        ? `Edited ${timeSinceEdited}`
+                        : 'No unpublished edits'}
                     </Text>
                   </Box>
                 }
@@ -185,7 +123,7 @@ export function ReferencePreview(props: {
                   dimmed={!preview.draft}
                   muted={!preview.draft}
                 >
-                  <EditIcon />
+                  <EditIcon aria-label={preview.draft ? 'Edited' : 'No unpublished edits'} />
                 </TextWithTone>
               </Tooltip>
             </Box>

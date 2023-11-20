@@ -26,10 +26,12 @@ export function createRuleOptions(blockContentType: ArraySchemaType): BlockEnabl
   const enabledBlockStyles = features.styles.map((item) => item.value || item.title)
   const enabledSpanDecorators = features.decorators.map((item) => item.value || item.title)
   const enabledBlockAnnotations = features.annotations.map((item) => item.value || item.title || '')
+  const enabledListTypes = features.lists.map((item) => item.value || item.title || '')
   return {
     enabledBlockStyles,
     enabledSpanDecorators,
     enabledBlockAnnotations,
+    enabledListTypes,
   }
 }
 
@@ -70,7 +72,7 @@ export function defaultParseHtml(): HtmlParser {
     throw new Error(
       'The native `DOMParser` global which the `Html` deserializer uses by ' +
         'default is not present in this environment. ' +
-        'You must supply the `options.parseHtml` function instead.'
+        'You must supply the `options.parseHtml` function instead.',
     )
   }
   return (html) => {

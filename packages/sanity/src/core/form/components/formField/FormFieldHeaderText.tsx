@@ -3,6 +3,7 @@
 import {FormNodeValidation} from '@sanity/types'
 import {Box, Flex, Stack, Text} from '@sanity/ui'
 import React, {memo} from 'react'
+import {createDescriptionId} from '../../members/common/createDescriptionId'
 import {FormFieldValidationStatus} from './FormFieldValidationStatus'
 
 /** @internal */
@@ -25,7 +26,7 @@ const EMPTY_ARRAY: never[] = []
 
 /** @internal */
 export const FormFieldHeaderText = memo(function FormFieldHeaderText(
-  props: FormFieldHeaderTextProps
+  props: FormFieldHeaderTextProps,
 ) {
   const {description, inputId, title, validation = EMPTY_ARRAY} = props
   const hasValidations = validation.length > 0
@@ -45,7 +46,7 @@ export const FormFieldHeaderText = memo(function FormFieldHeaderText(
       </Flex>
 
       {description && (
-        <Text muted size={1}>
+        <Text muted size={1} id={createDescriptionId(inputId, description)}>
           {description}
         </Text>
       )}

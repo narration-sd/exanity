@@ -1,6 +1,6 @@
 {
   "name": "@sanity/schema",
-  "version": "3.14.1",
+  "version": "3.20.0",
   "description": "",
   "keywords": [
     "sanity",
@@ -27,8 +27,7 @@
       "source": "./src/_exports/index.ts",
       "require": "./lib/_exports/index.js",
       "node": {
-        "import": "./lib/_exports/index.cjs.mjs",
-        "require": "./lib/_exports/index.js"
+        "import": "./lib/_exports/index.cjs.mjs"
       },
       "import": "./lib/_exports/index.esm.js",
       "default": "./lib/_exports/index.esm.js"
@@ -38,8 +37,7 @@
       "source": "./src/_exports/_internal.ts",
       "require": "./lib/_exports/_internal.js",
       "node": {
-        "import": "./lib/_exports/index.cjs.mjs",
-        "require": "./lib/_exports/index.js"
+        "import": "./lib/_exports/_internal.cjs.mjs"
       },
       "import": "./lib/_exports/_internal.esm.js",
       "default": "./lib/_exports/_internal.esm.js"
@@ -68,13 +66,14 @@
     "postbuild": "run-s check:package",
     "check:package": "pkg-utils --tsconfig tsconfig.lib.json",
     "clean": "rimraf _internal.js lib",
+    "lint": "eslint .",
     "test": "jest",
     "test:watch": "jest --watchAll",
     "watch": "pkg-utils watch --tsconfig tsconfig.lib.json"
   },
   "dependencies": {
     "@sanity/generate-help-url": "^3.0.0",
-    "@sanity/types": "3.14.1",
+    "@sanity/types": "3.20.0",
     "arrify": "^1.0.1",
     "humanize-list": "^1.0.1",
     "leven": "^3.1.0",
@@ -83,6 +82,5 @@
   },
   "devDependencies": {
     "rimraf": "^3.0.2"
-  },
-  "gitHead": "a7b7dad6bdfde05883a61f78e998b2571dfbe0e2"
+  }
 }

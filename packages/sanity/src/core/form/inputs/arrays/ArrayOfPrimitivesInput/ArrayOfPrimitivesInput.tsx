@@ -7,6 +7,8 @@ import {PrimitiveItemProps} from '../../../types/itemProps'
 import {ArrayOfPrimitivesItem} from '../../../members'
 import {ErrorItem} from '../ArrayOfObjectsInput/List/ErrorItem'
 import {UploadTargetCard} from '../common/UploadTargetCard'
+import {ChangeIndicator} from '../../../../changeIndicators'
+import {ArrayOfPrimitivesItemMember, ArrayOfPrimitivesMember} from '../../../store/types/members'
 import {getEmptyValue} from './getEmptyValue'
 
 import {PrimitiveValue} from './types'
@@ -105,7 +107,7 @@ export class ArrayOfPrimitivesInput extends React.PureComponent<
   componentDidUpdate(
     prevProps: ArrayOfPrimitivesInputProps,
     prevState: Record<string, unknown>,
-    snapshot?: {restoreSelection: {start: number; end: number}; prevFocusedIndex: number}
+    snapshot?: {restoreSelection: {start: number; end: number}; prevFocusedIndex: number},
   ) {
     const {onIndexFocus} = this.props
     if (snapshot?.restoreSelection && prevProps.value) {
@@ -114,14 +116,14 @@ export class ArrayOfPrimitivesInput extends React.PureComponent<
       const nearestIndex = nearestIndexOf(
         this.props.value || [],
         snapshot.prevFocusedIndex,
-        prevFocusedValue
+        prevFocusedValue,
       )
 
       if (nearestIndex === -1) {
         return
       }
       const newInput = this._element?.querySelector(
-        `[data-item-index='${nearestIndex}'] input,textarea`
+        `[data-item-index='${nearestIndex}'] input,textarea`,
       )
 
       if (newInput instanceof HTMLInputElement) {
@@ -153,6 +155,8 @@ export class ArrayOfPrimitivesInput extends React.PureComponent<
       resolveUploader,
       elementProps,
       arrayFunctions: ArrayFunctions = ArrayOfPrimitivesFunctions,
+      path,
+      changed,
     } = this.props
 
     const isSortable = !readOnly && get(schemaType, 'options.sortable') !== false
@@ -199,11 +203,17 @@ export class ArrayOfPrimitivesInput extends React.PureComponent<
                         disableTransition={this.state.disableTransition}
                       >
                         {member.kind === 'item' && (
-                          <ArrayOfPrimitivesItem
-                            member={member}
-                            renderItem={this.renderArrayItem}
-                            renderInput={renderInput}
-                          />
+                          <ChangeIndicator
+                            path={member.item.path}
+                            isChanged={changed}
+                            hasFocus={false}
+                          >
+                            <ArrayOfPrimitivesItem
+                              member={member}
+                              renderItem={this.renderArrayItem}
+                              renderInput={renderInput}
+                            />
+                          </ChangeIndicator>
                         )}
                         {member.kind === 'error' && (
                           <ErrorItem

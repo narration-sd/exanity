@@ -17,8 +17,7 @@ const REQUIRED_PROPERTIES = {
 }
 
 module.exports = async function validateAssetDocuments(docs, options) {
-  const config = options.client.config()
-  const {projectId: targetProjectId, dataset: targetDataset} = config
+  const {targetProjectId, targetDataset} = options
   const concurrency = options.assetVerificationConcurrency || DEFAULT_VERIFY_CONCURRENCY
 
   const assetDocs = docs.filter((doc) => /^sanity\.[a-zA-Z]+Asset$/.test(doc._type || ''))
@@ -39,13 +38,13 @@ module.exports = async function validateAssetDocuments(docs, options) {
 
       if (projectId !== targetProjectId) {
         throw new Error(
-          `Asset ${id} references a different project ID than the specified target (asset is in ${projectId}, importing to ${targetProjectId}). ${resolveText}`
+          `Asset ${id} references a different project ID than the specified target (asset is in ${projectId}, importing to ${targetProjectId}). ${resolveText}`,
         )
       }
 
       if (dataset !== targetDataset) {
         throw new Error(
-          `Asset ${id} references a different dataset than the specified target (asset is in ${dataset}, importing to ${targetDataset}). ${resolveText}`
+          `Asset ${id} references a different dataset than the specified target (asset is in ${dataset}, importing to ${targetDataset}). ${resolveText}`,
         )
       }
     })
@@ -72,7 +71,7 @@ async function ensureAssetUrlExists(assetDoc) {
   if (!exists) {
     const helpUrl = generateHelpUrl('import-asset-file-does-not-exist')
     throw new Error(
-      `Document ${assetDoc._id} points to a URL that does not exist (${url}). See ${helpUrl}.`
+      `Document ${assetDoc._id} points to a URL that does not exist (${url}). See ${helpUrl}.`,
     )
   }
 
@@ -102,7 +101,7 @@ function validateImageMetadata(assetDoc) {
 
   if (!assetDoc.metadata.dimensions) {
     throw new Error(
-      `Asset document ${assetDoc._id} is missing required property "metadata.dimensions"`
+      `Asset document ${assetDoc._id} is missing required property "metadata.dimensions"`,
     )
   }
 
@@ -110,7 +109,7 @@ function validateImageMetadata(assetDoc) {
   dimensionProps.forEach((prop) => {
     if (typeof assetDoc.metadata.dimensions[prop] !== 'number') {
       throw new Error(
-        `Asset document ${assetDoc._id} is missing required property "metadata.dimensions.${prop}"`
+        `Asset document ${assetDoc._id} is missing required property "metadata.dimensions.${prop}"`,
       )
     }
   })

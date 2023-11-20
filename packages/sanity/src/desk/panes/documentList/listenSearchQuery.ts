@@ -11,6 +11,7 @@ import {
   take,
   throttleTime,
   throwError,
+  timer,
 } from 'rxjs'
 import {exhaustMapWithTrailing} from 'rxjs-exhaustmap-with-trailing'
 import {SortOrder} from './types'
@@ -59,22 +60,22 @@ export function listenSearchQuery(options: ListenQueryOptions): Observable<Sanit
             new Error(
               ev.type === 'reconnect'
                 ? 'Could not establish EventSource connection'
-                : `Received unexpected type of first event "${ev.type}"`
-            )
+                : `Received unexpected type of first event "${ev.type}"`,
+            ),
         )
       }
       return of(ev)
     }),
-    share()
+    share(),
   )
 
   const [welcome$, mutationAndReconnect$] = partition(events$, (ev) => ev.type === 'welcome')
 
   return merge(
     welcome$.pipe(take(1)),
-    mutationAndReconnect$.pipe(throttleTime(1000, asyncScheduler, {leading: true, trailing: true}))
+    mutationAndReconnect$.pipe(throttleTime(1000, asyncScheduler, {leading: true, trailing: true})),
   ).pipe(
-    exhaustMapWithTrailing(() => {
+    exhaustMapWithTrailing((event) => {
       // Get the types names to use for searching.
       // If we have a static list of types, we can skip fetching the types and use the static list.
       const typeNames$ = staticTypeNames
@@ -102,12 +103,19 @@ export function listenSearchQuery(options: ListenQueryOptions): Observable<Sanit
 
           const {query: createdQuery, params: createdParams} = createSearchQuery(
             searchTerms,
-            searchOptions
+            searchOptions,
           )
+          const doFetch = () => client.observable.fetch(createdQuery, createdParams)
 
-          return client.observable.fetch(createdQuery, createdParams)
-        })
+          if (event.type === 'mutation' && event.visibility !== 'query') {
+            // Even though the listener request specifies visibility=query, the events are not guaranteed to be delivered with visibility=query
+            // If the event we are responding to arrives with visibility != query, we add a little delay to allow for the updated document to be available for queries
+            // See https://www.sanity.io/docs/listening#visibility-c4786e55c3ff
+            return timer(1200).pipe(mergeMap(doFetch))
+          }
+          return doFetch()
+        }),
       )
-    })
+    }),
   )
 }

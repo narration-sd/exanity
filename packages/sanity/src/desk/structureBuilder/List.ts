@@ -57,7 +57,7 @@ const resolveChildForItem: ChildResolver = (itemId: string, options: ChildResolv
 function maybeSerializeListItem(
   item: ListItem | ListItemBuilder | Divider,
   index: number,
-  path: SerializePath
+  path: SerializePath,
 ): ListItem | Divider {
   if (item instanceof ListItemBuilder) {
     return item.serialize({path, index})
@@ -74,7 +74,7 @@ function maybeSerializeListItem(
     throw new SerializeError(
       `List items must be of type "listItem", got "${gotWhat}"${helpText}`,
       path,
-      index
+      index,
     ).withHelpUrl(HELP_URL.INVALID_LIST_ITEM)
   }
 
@@ -86,54 +86,83 @@ function isPromise<T>(thing: unknown): thing is PromiseLike<T> {
 }
 
 /**
- * @hidden
- * @beta */
+ * Interface for List
+ *
+ * @public
+ */
 export interface List extends GenericList {
   type: 'list'
+  /** List items. See {@link ListItem} and {@link Divider} */
   items: (ListItem | Divider)[]
 }
 
 /**
- * @hidden
- * @beta */
+ * Interface for list input
+ *
+ * @public
+ */
 export interface ListInput extends GenericListInput {
+  /** List input items array. See {@link ListItem}, {@link ListItemBuilder} and {@link Divider} */
   items?: (ListItem | ListItemBuilder | Divider)[]
 }
 
 /**
- * @hidden
- * @beta */
+ * Interface for buildable list
+ *
+ * @public
+ */
 export interface BuildableList extends BuildableGenericList {
+  /** List items. See {@link ListItem}, {@link ListItemBuilder} and {@link Divider} */
   items?: (ListItem | ListItemBuilder | Divider)[]
 }
 
 /**
- * @hidden
- * @beta */
+ * A `ListBuilder` is used to build a list of items in the desk tool.
+ *
+ * @public */
 export class ListBuilder extends GenericListBuilder<BuildableList, ListBuilder> {
+  /** buildable list option object. See {@link BuildableList} */
   protected spec: BuildableList
 
-  constructor(protected _context: StructureContext, spec?: ListInput) {
+  constructor(
+    /**
+     * Desk structure context. See {@link StructureContext}
+     */
+    protected _context: StructureContext,
+    spec?: ListInput,
+  ) {
     super()
     this.spec = spec ? spec : {}
     this.initialValueTemplatesSpecified = Boolean(spec && spec.initialValueTemplates)
   }
 
+  /**
+   * Set list builder based on items provided
+   * @param items - list items. See {@link ListItemBuilder}, {@link ListItem} and {@link Divider}
+   * @returns list builder based on items provided. See {@link ListBuilder}
+   */
   items(items: (ListItemBuilder | ListItem | Divider)[]): ListBuilder {
     return this.clone({items})
   }
 
+  /** Get list builder items
+   * @returns list items. See {@link BuildableList}
+   */
   getItems(): BuildableList['items'] {
     return this.spec.items
   }
 
+  /** Serialize list builder
+   * @param options - serialization options. See {@link SerializeOptions}
+   * @returns list based on path in options. See {@link List}
+   */
   serialize(options: SerializeOptions = {path: []}): List {
     const id = this.spec.id
     if (typeof id !== 'string' || !id) {
       throw new SerializeError(
         '`id` is required for lists',
         options.path,
-        options.index
+        options.index,
       ).withHelpUrl(HELP_URL.ID_REQUIRED)
     }
 
@@ -142,7 +171,7 @@ export class ListBuilder extends GenericListBuilder<BuildableList, ListBuilder> 
       throw new SerializeError(
         '`items` must be an array of items',
         options.path,
-        options.index
+        options.index,
       ).withHelpUrl(HELP_URL.LIST_ITEMS_MUST_BE_ARRAY)
     }
 
@@ -156,7 +185,7 @@ export class ListBuilder extends GenericListBuilder<BuildableList, ListBuilder> 
       throw new SerializeError(
         `List items with same ID found (${dupeDesc})`,
         options.path,
-        options.index
+        options.index,
       ).withHelpUrl(HELP_URL.LIST_ITEM_IDS_MUST_BE_UNIQUE)
     }
 
@@ -169,6 +198,11 @@ export class ListBuilder extends GenericListBuilder<BuildableList, ListBuilder> 
     }
   }
 
+  /**
+   * Clone list builder and return new list builder based on context and spec provided
+   * @param withSpec - list options. See {@link BuildableList}
+   * @returns new list builder based on context and spec provided. See {@link ListBuilder}
+   */
   clone(withSpec?: BuildableList): ListBuilder {
     const builder = new ListBuilder(this._context)
     builder.spec = {...this.spec, ...(withSpec || {})}

@@ -1,4 +1,12 @@
-import {castArray, flatMap, keyBy, pick, startCase} from 'lodash'
+import {castArray, flatMap, pick, startCase} from 'lodash'
+import type {
+  FieldGroup,
+  FieldGroupDefinition,
+  Fieldset,
+  FieldsetDefinition,
+  ObjectDefinition,
+  ObjectField,
+} from '@sanity/types'
 import createPreviewGetter from '../preview/createPreviewGetter'
 import guessOrderingConfig from '../ordering/guessOrderingConfig'
 import {normalizeSearchConfigs} from '../searchConfig/normalize'
@@ -71,14 +79,14 @@ export const ObjectType = {
 
         if (userProvidedSearchConfig) {
           return userProvidedSearchConfig.map((entry) =>
-            entry === 'defaults' ? normalizeSearchConfigs(subTypeDef) : entry
+            entry === 'defaults' ? normalizeSearchConfigs(subTypeDef) : entry,
           )
         }
         return resolveSearchConfig(parsed)
       },
       {
         enumerable: false,
-      }
+      },
     )
 
     return subtype(parsed)
@@ -107,91 +115,89 @@ export const ObjectType = {
   },
 }
 
-export function createFieldsets(typeDef, fields) {
-  const fieldsetsDef = typeDef.fieldsets || []
-  const fieldsets = fieldsetsDef.map((fieldset) => {
-    const {name, title, description, options, group, hidden, readOnly} = fieldset
-    return {
-      name,
-      title,
-      description,
-      options,
-      group,
-      fields: [],
-      hidden,
-      readOnly,
+export function createFieldsets(typeDef: ObjectDefinition, fields: ObjectField[]): Fieldset[] {
+  const fieldsetsByName: Record<string, FieldsetDefinition & {fields: ObjectField[]}> = {}
+
+  for (const fieldset of typeDef.fieldsets || []) {
+    if (fieldsetsByName[fieldset.name]) {
+      throw new Error(
+        `Duplicate fieldset name "${fieldset.name}" found for type '${
+          typeDef.title ? typeDef.title : startCase(typeDef.name)
+        }'`,
+      )
     }
-  })
 
-  const fieldsetsByName = keyBy(fieldsets, 'name')
-
-  return fields
-    .map((field) => {
-      if (field.fieldset) {
-        const fieldset = fieldsetsByName[field.fieldset]
-        if (!fieldset) {
-          throw new Error(
-            `Fieldset '${field.fieldset}' is not defined in schema for type '${typeDef.name}'`
-          )
-        }
-        fieldset.fields.push(field)
-        // Return the fieldset if its the first time we encounter a field in this fieldset
-        return fieldset.fields.length === 1 ? fieldset : null
-      }
-      return {single: true, field}
-    })
-    .filter(Boolean)
-}
-
-function createFieldsGroups(typeDef, fields) {
-  const groupsDef = typeDef.groups || []
-  const groups = groupsDef.map((group) => {
-    const {name, title, description, icon, readOnly, hidden} = group
-    return {
-      name,
-      title,
-      description,
-      icon,
-      readOnly,
-      default: group.default,
-      hidden,
-      fields: [],
-    }
-  })
-
-  const defaultGroups = groups.filter((group) => group.default)
-
-  if (defaultGroups.length > 1) {
-    // Throw if you have multiple default field groups defined
-    throw new Error(
-      `You currently have ${defaultGroups.length} default field groups defined for type '${
-        typeDef.name ? startCase(typeDef.name) : typeDef.title ?? ``
-      }', but only 1 is supported`
-    )
+    fieldsetsByName[fieldset.name] = {title: startCase(fieldset.name), ...fieldset, fields: []}
   }
 
-  const groupsByName = keyBy(groups, 'name')
+  const fieldsets = new Set<Fieldset>()
+
+  for (const field of fields) {
+    if (!field.fieldset) {
+      fieldsets.add({single: true, field})
+      continue
+    }
+
+    const fieldset = fieldsetsByName[field.fieldset]
+    if (!fieldset) {
+      throw new Error(
+        `Fieldset '${field.fieldset}' is not defined in schema for type '${typeDef.name}'`,
+      )
+    }
+
+    fieldset.fields.push(field)
+
+    // The Set will prevent duplicates
+    fieldsets.add(fieldset)
+  }
+
+  return Array.from(fieldsets)
+}
+
+function createFieldsGroups(typeDef: ObjectDefinition, fields: ObjectField[]): FieldGroup[] {
+  const groupsByName: Record<string, FieldGroupDefinition & {fields: ObjectField[]}> = {}
+
+  let numDefaultGroups = 0
+  for (const group of typeDef.groups || []) {
+    if (groupsByName[group.name]) {
+      throw new Error(
+        `Duplicate group name "${group.name}" found for type '${
+          typeDef.title ? typeDef.title : startCase(typeDef.name)
+        }'`,
+      )
+    }
+
+    groupsByName[group.name] = {title: startCase(group.name), ...group, fields: []}
+
+    if (group.default && ++numDefaultGroups > 1) {
+      // Throw if you have multiple default field groups defined
+      throw new Error(
+        `More than one field group defined as default for type '${
+          typeDef.title ? typeDef.title : startCase(typeDef.name)
+        }' - only 1 is supported`,
+      )
+    }
+  }
 
   fields.forEach((field) => {
-    if (field.group) {
-      const fieldGroupNames = castArray(field.group)
-
-      if (fieldGroupNames.length > 0) {
-        fieldGroupNames.forEach((fieldGroupName) => {
-          const currentGroup = groupsByName[fieldGroupName]
-
-          if (!currentGroup) {
-            throw new Error(
-              `Field group '${fieldGroupName}' is not defined in schema for type '${
-                typeDef.name ?? typeDef.title ?? ``
-              }'`
-            )
-          }
-
-          currentGroup.fields.push(field)
-        })
-      }
+    const fieldGroupNames = castArray(field.group || [])
+    if (fieldGroupNames.length === 0) {
+      return
     }
+
+    fieldGroupNames.forEach((fieldGroupName) => {
+      const currentGroup = groupsByName[fieldGroupName]
+
+      if (!currentGroup) {
+        throw new Error(
+          `Field group '${fieldGroupName}' is not defined in schema for type '${
+            typeDef.title ? typeDef.name : startCase(typeDef.name)
+          }'`,
+        )
+      }
+
+      currentGroup.fields.push(field)
+    })
   })
 
   return flatMap(groupsByName).filter((group) => group.fields.length > 0)

@@ -25,7 +25,7 @@ export interface PaneHeaderProps {
  */
 export const PaneHeader = forwardRef(function PaneHeader(
   props: PaneHeaderProps,
-  ref: React.ForwardedRef<HTMLDivElement>
+  ref: React.ForwardedRef<HTMLDivElement>,
 ) {
   const {actions, backButton, contentAfter, loading, subActions, tabs, tabIndex, title} = props
   const {collapse, collapsed, expand, rootElement: paneElement} = usePane()
@@ -35,7 +35,7 @@ export const PaneHeader = forwardRef(function PaneHeader(
     () => ({
       width: collapsed ? paneRect?.height || window.innerHeight : undefined,
     }),
-    [collapsed, paneRect]
+    [collapsed, paneRect],
   )
 
   const handleTitleClick = useCallback(() => {
@@ -81,9 +81,9 @@ export const PaneHeader = forwardRef(function PaneHeader(
               </TitleCard>
 
               {actions && (
-                <Box flex="none" hidden={collapsed}>
+                <Flex align="center" hidden={collapsed}>
                   <LegacyLayerProvider zOffset="paneHeader">{actions}</LegacyLayerProvider>
-                </Box>
+                </Flex>
               )}
             </Layout>
 

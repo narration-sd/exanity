@@ -8,7 +8,7 @@ import {SanityClient} from '@sanity/client'
 import {renderCrossDatasetReferenceInput} from '../../../../../../test/form'
 import {CrossDatasetReferenceInput} from '../CrossDatasetReferenceInput'
 import {CrossDatasetSearchHit} from '../types'
-import {createConfig} from '../../../../config'
+import {defineConfig} from '../../../../config'
 import {createTestProvider} from '../../../../../../test/testUtils/TestProvider'
 import {createMockSanityClient} from '../../../../../../test/mocks/mockSanityClient'
 import {featureDisabledRequest, featureEnabledRequest} from './mocks'
@@ -19,8 +19,8 @@ const AVAILABLE = {
 } as const
 
 function createWrapperComponent(client: SanityClient) {
-  const config = createConfig({
-    projectId: 'abcxyz',
+  const config = defineConfig({
+    projectId: 'mock-project-id',
     dataset: 'test',
   })
 
@@ -51,7 +51,6 @@ describe('render states', () => {
         name: 'productReference',
         type: 'crossDatasetReference',
         dataset: 'products',
-        projectId: 'abcxyz',
         to: [
           {
             type: 'product',
@@ -88,7 +87,7 @@ describe('render states', () => {
         preview: {
           published: {title: `Foo`},
         },
-      })
+      }),
     )
 
     const value = {
@@ -103,7 +102,6 @@ describe('render states', () => {
         name: 'productReference',
         type: 'crossDatasetReference',
         dataset: 'products',
-        projectId: 'abcxyz',
         to: [
           {
             type: 'product',
@@ -140,14 +138,14 @@ describe('render states', () => {
         preview: {
           published: {title: `Foo`},
         },
-      })
+      }),
     )
 
     const value = {
       _type: 'reference',
       _ref: 'someActor',
       _dataset: 'otherDataset',
-      _projectId: 'otherProject',
+      _projectId: 'mock-project-id',
     }
 
     const {result} = await renderCrossDatasetReferenceInput({
@@ -155,7 +153,6 @@ describe('render states', () => {
         name: 'productReference',
         type: 'crossDatasetReference',
         dataset: 'products',
-        projectId: 'abcxyz',
         weak: true,
         to: [
           {
@@ -194,7 +191,7 @@ describe('render states', () => {
         preview: {
           published: {title: `Foo`},
         },
-      })
+      }),
     )
 
     const value = {
@@ -209,7 +206,6 @@ describe('render states', () => {
         name: 'productReference',
         type: 'crossDatasetReference',
         dataset: 'products',
-        projectId: 'abcxyz',
         weak: true,
         to: [
           {
@@ -245,7 +241,7 @@ describe('user interaction happy paths', () => {
       of([
         {id: 'one', type: 'product', published: {_id: 'one', _type: 'product'}},
         {id: 'two', type: 'product', published: {_id: 'two', _type: 'product'}},
-      ])
+      ]),
     )
 
     const getReferenceInfo = ({_id: id, _type: type}: {_id: string; _type?: string}) =>
@@ -265,7 +261,6 @@ describe('user interaction happy paths', () => {
         name: 'productReference',
         type: 'crossDatasetReference',
         dataset: 'products',
-        projectId: 'abcxyz',
         to: [
           {
             type: 'product',
@@ -334,7 +329,7 @@ describe('user interaction happy paths', () => {
       of([
         {id: 'one', type: 'product', published: {_id: 'one', _type: 'product'}},
         {id: 'two', type: 'product', published: {_id: 'two', _type: 'product'}},
-      ])
+      ]),
     )
 
     const getReferenceInfo = ({_id: id}: {_id: string}) =>
@@ -362,7 +357,6 @@ describe('user interaction happy paths', () => {
         name: 'productReference',
         type: 'crossDatasetReference',
         dataset: 'products',
-        projectId: 'abcxyz',
         to: [
           {
             type: 'product',
@@ -457,7 +451,7 @@ describe('user interaction happy paths', () => {
       _type: 'productReference',
       _ref: 'some-product',
       _dataset: 'products',
-      _projectId: 'abcxyz',
+      _projectId: 'mock-project-id',
     }
 
     const {onChange, result} = await renderCrossDatasetReferenceInput({
@@ -467,7 +461,6 @@ describe('user interaction happy paths', () => {
         name: 'productReference',
         type: 'crossDatasetReference',
         dataset: 'products',
-        projectId: 'abcxyz',
         to: [
           {
             type: 'product',

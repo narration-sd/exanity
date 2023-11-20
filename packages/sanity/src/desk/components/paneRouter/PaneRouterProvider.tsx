@@ -2,6 +2,7 @@ import {omit} from 'lodash'
 import React, {useCallback, useMemo} from 'react'
 import {toString as pathToString} from '@sanity/util/paths'
 import {RouterPaneGroup, RouterPanes, RouterPaneSibling} from '../../types'
+import {usePaneLayout} from '../pane/usePaneLayout'
 import {ChildLink} from './ChildLink'
 import {BackLink} from './BackLink'
 import {ReferenceChildLink} from './ReferenceChildLink'
@@ -24,16 +25,18 @@ export function PaneRouterProvider(props: {
   siblingIndex: number
 }) {
   const {children, flatIndex, index, params, payload, siblingIndex} = props
-  const {navigate, navigateIntent} = useRouter()
+  const {navigate, navigateIntent, resolvePathFromState} = useRouter()
   const routerState = useRouterState()
+  const {panes, expand} = usePaneLayout()
   const routerPaneGroups: RouterPaneGroup[] = useMemo(
     () => (routerState?.panes || emptyArray) as RouterPanes,
-    [routerState?.panes]
+    [routerState?.panes],
   )
+  const lastPane = useMemo(() => panes?.[panes.length - 2], [panes])
 
   const groupIndex = index - 1
 
-  const modifyCurrentGroup = useCallback(
+  const createNextRouterState = useCallback(
     (modifier: (siblings: RouterPaneGroup, item: RouterPaneSibling) => RouterPaneGroup) => {
       const currentGroup = routerPaneGroups[groupIndex] || []
       const currentItem = currentGroup[siblingIndex]
@@ -45,11 +48,31 @@ export function PaneRouterProvider(props: {
       ]
       const nextRouterState = {...(routerState || {}), panes: nextPanes}
 
-      setTimeout(() => navigate(nextRouterState), 0)
-
       return nextRouterState
     },
-    [groupIndex, navigate, routerPaneGroups, routerState, siblingIndex]
+    [groupIndex, routerPaneGroups, routerState, siblingIndex],
+  )
+
+  const modifyCurrentGroup = useCallback(
+    (modifier: (siblings: RouterPaneGroup, item: RouterPaneSibling) => RouterPaneGroup) => {
+      const nextRouterState = createNextRouterState(modifier)
+      setTimeout(() => navigate(nextRouterState), 0)
+      return nextRouterState
+    },
+    [createNextRouterState, navigate],
+  )
+
+  const createPathWithParams: PaneRouterContextValue['createPathWithParams'] = useCallback(
+    (nextParams) => {
+      const nextRouterState = createNextRouterState((siblings, item) => [
+        ...siblings.slice(0, siblingIndex),
+        {...item, params: nextParams},
+        ...siblings.slice(siblingIndex + 1),
+      ])
+
+      return resolvePathFromState(nextRouterState)
+    },
+    [createNextRouterState, resolvePathFromState, siblingIndex],
   )
 
   const setPayload: PaneRouterContextValue['setPayload'] = useCallback(
@@ -60,7 +83,7 @@ export function PaneRouterProvider(props: {
         ...siblings.slice(siblingIndex + 1),
       ])
     },
-    [modifyCurrentGroup, siblingIndex]
+    [modifyCurrentGroup, siblingIndex],
   )
 
   const setParams: PaneRouterContextValue['setParams'] = useCallback(
@@ -71,7 +94,7 @@ export function PaneRouterProvider(props: {
         ...siblings.slice(siblingIndex + 1),
       ])
     },
-    [modifyCurrentGroup, siblingIndex]
+    [modifyCurrentGroup, siblingIndex],
   )
 
   const handleEditReference: PaneRouterContextValue['handleEditReference'] = useCallback(
@@ -89,7 +112,7 @@ export function PaneRouterProvider(props: {
         ],
       })
     },
-    [groupIndex, navigate, routerPaneGroups]
+    [groupIndex, navigate, routerPaneGroups],
   )
 
   const ctx: PaneRouterContextValue = useMemo(
@@ -146,7 +169,20 @@ export function PaneRouterProvider(props: {
       // Removes the current pane from the group
       closeCurrent: (): void => {
         modifyCurrentGroup((siblings, item) =>
-          siblings.length > 1 ? siblings.filter((sibling) => sibling !== item) : siblings
+          siblings.length > 1 ? siblings.filter((sibling) => sibling !== item) : siblings,
+        )
+      },
+
+      // Removes all panes to the right including current
+      closeCurrentAndAfter: (expandLast = true): void => {
+        if (expandLast && lastPane) {
+          expand(lastPane.element)
+        }
+        navigate(
+          {
+            panes: [...routerPaneGroups.slice(0, groupIndex)],
+          },
+          {replace: true},
         )
       },
 
@@ -179,22 +215,29 @@ export function PaneRouterProvider(props: {
       // Set the payload for the current pane
       setPayload,
 
+      // A function that returns a path with the given parameters
+      createPathWithParams,
+
       // Proxied navigation to a given intent. Consider just exposing `router` instead?
       navigateIntent,
     }),
     [
       flatIndex,
       groupIndex,
-      handleEditReference,
-      modifyCurrentGroup,
-      navigateIntent,
-      params,
+      siblingIndex,
       payload,
+      params,
       routerPaneGroups,
+      handleEditReference,
       setParams,
       setPayload,
-      siblingIndex,
-    ]
+      createPathWithParams,
+      navigateIntent,
+      modifyCurrentGroup,
+      lastPane,
+      navigate,
+      expand,
+    ],
   )
 
   return <PaneRouterContext.Provider value={ctx}>{children}</PaneRouterContext.Provider>

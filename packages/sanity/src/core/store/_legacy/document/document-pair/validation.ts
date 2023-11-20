@@ -17,20 +17,17 @@ import {
   groupBy,
   map,
   mergeMap,
-  publishReplay,
-  refCount,
   scan,
-  share,
   shareReplay,
   skip,
   throttleTime,
 } from 'rxjs/operators'
-import {validateDocumentObservable} from '@sanity/validation'
 import {isReference, Schema, ValidationContext, ValidationMarker} from '@sanity/types'
 import {reduce as reduceJSON} from 'json-reduce'
 import shallowEquals from 'shallow-equals'
 import {omit} from 'lodash'
 import {exhaustMapWithTrailing} from 'rxjs-exhaustmap-with-trailing'
+import {validateDocumentObservable} from '../../../../validation'
 import {SourceClientOptions} from '../../../../config'
 import {memoize} from '../utils/createMemoizer'
 import {IdPair} from '../types'
@@ -60,7 +57,7 @@ function findReferenceIds(obj: any): Set<string> {
       }
       return acc
     },
-    new Set<string>()
+    new Set<string>(),
   )
 }
 
@@ -72,7 +69,7 @@ type ObserveDocumentPairAvailability = (id: string) => Observable<DraftsModelDoc
 
 const listenDocumentExists = (
   observeDocumentAvailability: ObserveDocumentPairAvailability,
-  id: string
+  id: string,
 ): Observable<boolean> =>
   observeDocumentAvailability(id).pipe(map(({published}) => published.available))
 
@@ -81,6 +78,10 @@ const DOC_UPDATE_DELAY = 200
 
 // throttle delay for referenced document updates (i.e. time between responding to changes in referenced documents)
 const REF_UPDATE_DELAY = 1000
+
+function shareLatestWithRefCount<T>() {
+  return shareReplay<T>({bufferSize: 1, refCount: true})
+}
 
 /** @internal */
 export const validation = memoize(
@@ -92,7 +93,7 @@ export const validation = memoize(
       schema: Schema
     },
     {draftId, publishedId}: IdPair,
-    typeName: string
+    typeName: string,
   ): Observable<ValidationStatus> => {
     const document$ = editState(ctx, {draftId, publishedId}, typeName).pipe(
       map(({draft, published}) => draft || published),
@@ -105,21 +106,17 @@ export const validation = memoize(
         // so only pass on documents if _other_ attributes changes
         return shallowEquals(omit(prev, '_rev', '_updatedAt'), omit(next, '_rev', '_updatedAt'))
       }),
-      share()
+      shareLatestWithRefCount(),
     )
 
     const referenceIds$ = document$.pipe(
       map((document) => findReferenceIds(document)),
-      mergeMap((ids) => from(ids))
+      mergeMap((ids) => from(ids)),
     )
 
     // Note: we only use this to trigger a re-run of validation when a referenced document is published/unpublished
     const referenceExistence$ = referenceIds$.pipe(
-      groupBy(
-        (id) => id,
-        undefined,
-        () => timer(1000 * 60 * 30)
-      ),
+      groupBy((id) => id, {duration: () => timer(1000 * 60 * 30)}),
       mergeMap((id$) =>
         id$.pipe(
           distinct(),
@@ -127,20 +124,20 @@ export const validation = memoize(
             listenDocumentExists(ctx.observeDocumentPairAvailability, id).pipe(
               map(
                 // eslint-disable-next-line max-nested-callbacks
-                (result) => [id, result] as const
-              )
-            )
-          )
-        )
+                (result) => [id, result] as const,
+              ),
+            ),
+          ),
+        ),
       ),
-      scan((acc: Record<string, boolean>, [id, result]) => {
-        if (Boolean(acc[id]) === result) {
+      scan((acc: Record<string, boolean>, [id, result]): Record<string, boolean> => {
+        if (acc[id] === result) {
           return acc
         }
-        return result ? {...acc, [id]: result} : omit(acc, id)
+        return {...acc, [id]: result}
       }, {}),
       distinctUntilChanged(shallowEquals),
-      shareReplay({refCount: true, bufferSize: 1})
+      shareLatestWithRefCount(),
     )
 
     // Provided to individual validation functions to support using existence of a weakly referenced document
@@ -148,16 +145,18 @@ export const validation = memoize(
     const getDocumentExists: GetDocumentExists = ({id}) =>
       lastValueFrom(
         referenceExistence$.pipe(
-          first(),
-          map((referenceExistence) => referenceExistence[id])
-        )
+          // If the id is not present as key in the `referenceExistence` map it means it's existence status
+          // isn't yet loaded, so we want to wait until it is
+          first((referenceExistence) => id in referenceExistence),
+          map((referenceExistence) => referenceExistence[id]),
+        ),
       )
 
     const referenceDocumentUpdates$ = referenceExistence$.pipe(
       // we'll skip the first emission since the document already gets an initial validation pass
       // we're only interested in updates in referenced documents after that
       skip(1),
-      throttleTime(REF_UPDATE_DELAY, asyncScheduler, {leading: true, trailing: true})
+      throttleTime(REF_UPDATE_DELAY, asyncScheduler, {leading: true, trailing: true}),
     )
 
     return combineLatest([document$, concat(of(null), referenceDocumentUpdates$)]).pipe(
@@ -172,19 +171,18 @@ export const validation = memoize(
             validateDocumentObservable(ctx.getClient, document, ctx.schema, {
               getDocumentExists,
             }).pipe(
-              map((validationMarkers) => ({validation: validationMarkers, isValidating: false}))
-            )
+              map((validationMarkers) => ({validation: validationMarkers, isValidating: false})),
+            ),
           )
         })
       }),
       scan((acc, next) => ({...acc, ...next}), INITIAL_VALIDATION_STATUS),
-      publishReplay(1),
-      refCount()
+      shareLatestWithRefCount(),
     )
   },
   (ctx, idPair, typeName) => {
     const config = ctx.client.config()
 
     return `${config.dataset ?? ''}-${config.projectId ?? ''}-${idPair.publishedId}-${typeName}`
-  }
+  },
 )

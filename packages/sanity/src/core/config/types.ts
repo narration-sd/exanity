@@ -9,7 +9,7 @@ import type {
   SchemaType,
   SchemaTypeDefinition,
 } from '@sanity/types'
-import React, {type ComponentType} from 'react'
+import type {ComponentType, ReactNode} from 'react'
 import type {Observable} from 'rxjs'
 import type {
   BlockAnnotationProps,
@@ -20,14 +20,15 @@ import type {
   InputProps,
   ItemProps,
 } from '../form'
-import type {InitialValueTemplateItem, Template, TemplateResponse} from '../templates'
-import {PreviewProps} from '../components/previews'
-import {AuthStore} from '../store'
-import {StudioTheme} from '../theme'
-import {SearchFilterDefinition} from '../studio/components/navbar/search/definitions/filters'
-import {SearchOperatorDefinition} from '../studio/components/navbar/search/definitions/operators'
-import {StudioComponents, StudioComponentsPluginOptions} from './studio'
-import {
+import type {InitialValueTemplateItem, Template, TemplateItem} from '../templates'
+import type {PreviewProps} from '../components/previews'
+import type {AuthStore} from '../store'
+import type {StudioTheme} from '../theme'
+import type {SearchFilterDefinition} from '../studio/components/navbar/search/definitions/filters'
+import type {SearchOperatorDefinition} from '../studio/components/navbar/search/definitions/operators'
+import type {StudioComponents, StudioComponentsPluginOptions} from './studio'
+import type {AuthConfig} from './auth/types'
+import type {
   DocumentActionComponent,
   DocumentBadgeComponent,
   DocumentFieldAction,
@@ -35,27 +36,12 @@ import {
   DocumentFieldActionsResolver,
   DocumentInspector,
 } from './document'
-import {Router, RouterState} from 'sanity/router'
+import type {Router, RouterState} from 'sanity/router'
 
 /**
- *
  * @hidden
  * @beta
  */
-export interface SanityAuthConfig {
-  mode?: 'append' | 'replace'
-  redirectOnSingle?: boolean
-  providers?: {
-    name: string
-    title: string
-    url: string
-    logo?: string
-  }[]
-}
-
-/**
- * @hidden
- * @beta */
 export type AssetSourceResolver = ComposableOption<AssetSource[], ConfigContext>
 
 /**
@@ -75,7 +61,8 @@ export interface SanityFormConfig {
   }
   /**
    * @hidden
-   * @beta */
+   * @beta
+   */
   components?: {
     input?: ComponentType<InputProps>
     field?: ComponentType<FieldProps>
@@ -88,14 +75,16 @@ export interface SanityFormConfig {
   file?: {
     /**
      * @hidden
-     * @beta */
+     * @beta
+     */
     assetSources?: AssetSource[] | AssetSourceResolver
     // TODO: this option needs more thought on composition and availability
     directUploads?: boolean
   }
   /**
    * @hidden
-   * @beta */
+   * @beta
+   */
   image?: {
     assetSources?: AssetSource[] | AssetSourceResolver
     // TODO: this option needs more thought on composition and availability
@@ -109,22 +98,89 @@ export interface FormBuilderComponentResolverContext extends ConfigContext {
 }
 
 /**
+ * A tool can be thought of as a top-level "view" or "app".
+ * They are available through the global menu bar, and has a URL route associated with them.
+ *
+ * In essence, a tool is a React component that is rendered when the tool is active,
+ * along with a title, name (URL segment) and icon.
+ *
+ * Tools can handle {@link desk.Intent | intents} such as "edit" or "create" by defining a
+ * function for the `canHandleIntent` property, as well as the `getIntentState` property,
+ * which defines what an intent will be mapped to in terms of the tool's URL state.
+ *
  * @public
  */
 export interface Tool<Options = any> {
+  /**
+   * The React component that renders the tool.
+   */
   component: ComponentType<{tool: Tool<Options>}>
+
+  /**
+   * React component for the icon representing the tool.
+   */
   icon?: ComponentType
+
+  /**
+   * The name of the tool, used as part of the URL.
+   */
   name: string
+
+  /**
+   * Options are passed through from the configuration to the component defined by the `component`
+   */
   options?: Options
+
+  /**
+   * The router for the tool. See {@link router.Router}
+   */
   router?: Router
+
+  /**
+   * Title of the tool - used for the navigation menu item, along with the icon.
+   */
   title: string
+
+  /**
+   * Determines whether the tool will control the `document.title`.
+   */
+  controlsDocumentTitle?: boolean
+
+  /**
+   * Gets the state for the given intent.
+   *
+   * @param intent - The intent to get the state for.
+   * @param params - The parameters for the intent.
+   * @param routerState - The current router state. See {@link router.RouterState}
+   * @param payload - The payload for the intent.
+   * @returns The state for the intent.
+   */
   getIntentState?: (
     intent: string,
     params: Record<string, string>,
     routerState: RouterState | undefined,
-    payload: unknown
+    payload: unknown,
   ) => unknown
-  canHandleIntent?: (intent: string, params: Record<string, unknown>, payload: unknown) => boolean
+
+  /**
+   * Determines whether the tool can handle the given intent.
+   *
+   * Can either return a boolean, or an object where the keys represent the parameters that
+   * can/can not be handled. This will be used to determine whether or not a tool is the best
+   * suited to handle an intent. Note that an object of only `false` values (or an empty object)
+   * is treated as `true`, so you want to explicitly return `false` if you know the intent cannot
+   * fulfill the intent request.
+   *
+   * @param intent - The intent to check.
+   * @param params - The parameters for the intent.
+   * @param payload - The payload for the intent.
+   * @returns Boolean: whether it can handle the intent. Object: Values representing what specific parameters can be handled.
+   */
+  canHandleIntent?: (
+    intent: string,
+    params: Record<string, unknown>,
+    payload: unknown,
+  ) => boolean | {[key: string]: boolean}
 }
 
 /** @public */
@@ -132,18 +188,34 @@ export type ComposableOption<TValue, TContext> = (prev: TValue, context: TContex
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export type AsyncComposableOption<TValue, TContext> = (
   prev: TValue,
-  context: TContext
+  context: TContext,
 ) => Promise<TValue>
 
 /** @public */
 export interface ConfigContext {
+  /**
+   * The ID of the project.
+   */
   projectId: string
+  /**
+   * The name of the dataset.
+   */
   dataset: string
+  /**
+   * The schema for this source.
+   */
   schema: Schema
+  /**
+   * The current user or `null` if not authenticated.
+   */
   currentUser: CurrentUser | null
+  /**
+   * A function that returns a Sanity client with the {@link SourceClientOptions | specified options}.
+   */
   getClient: (options: SourceClientOptions) => SanityClient
 }
 
@@ -152,7 +224,8 @@ export type TemplateResolver = ComposableOption<Template[], ConfigContext>
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export interface SchemaPluginOptions {
   name?: string
   types?:
@@ -166,22 +239,22 @@ export interface SchemaPluginOptions {
 
 /**
  * @hidden
- * @beta */
-export type NewDocumentOptionsResolver = ComposableOption<
-  TemplateResponse[],
-  NewDocumentOptionsContext
->
+ * @beta
+ */
+export type NewDocumentOptionsResolver = ComposableOption<TemplateItem[], NewDocumentOptionsContext>
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export interface NewDocumentOptionsContext extends ConfigContext {
   creationContext: NewDocumentCreationContext
 }
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export type NewDocumentCreationContext =
   | {type: 'global'; documentId?: undefined; schemaType?: undefined}
   | {type: 'document'; documentId: string; schemaType: string}
@@ -189,7 +262,8 @@ export type NewDocumentCreationContext =
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export interface DocumentPluginOptions {
   badges?: DocumentBadgeComponent[] | DocumentBadgesResolver
   actions?: DocumentActionComponent[] | DocumentActionsResolver
@@ -199,16 +273,24 @@ export interface DocumentPluginOptions {
   inspectors?: DocumentInspector[] | DocumentInspectorsResolver
   /**
    * @hidden
-   * @beta */
+   * @beta
+   */
   productionUrl?: AsyncComposableOption<string | undefined, ResolveProductionUrlContext>
   /**
    * @hidden
-   * @beta */
+   * @beta
+   */
   unstable_languageFilter?: DocumentLanguageFilterResolver
   /**
    * @hidden
-   * @beta */
+   * @beta
+   */
   newDocumentOptions?: NewDocumentOptionsResolver
+
+  /** @internal */
+  unstable_comments?: {
+    enabled: boolean | ((context: DocumentCommentsEnabledContext) => boolean)
+  }
 }
 
 /**
@@ -240,7 +322,8 @@ export type DocumentLanguageFilterResolver = ComposableOption<
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export type DocumentActionsResolver = ComposableOption<
   DocumentActionComponent[],
   DocumentActionsContext
@@ -248,7 +331,8 @@ export type DocumentActionsResolver = ComposableOption<
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export type DocumentBadgesResolver = ComposableOption<
   DocumentBadgeComponent[],
   DocumentBadgesContext
@@ -262,7 +346,8 @@ export type DocumentInspectorsResolver = ComposableOption<
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export interface PluginOptions {
   name: string
   plugins?: PluginOptions[]
@@ -281,24 +366,26 @@ export interface PluginOptions {
 export type ConfigPropertyReducer<TValue, TContext> = (
   prev: TValue,
   config: PluginOptions,
-  context: TContext
+  context: TContext,
 ) => TValue
 
 /** @internal */
 export type AsyncConfigPropertyReducer<TValue, TContext> = (
   prev: TValue,
   config: PluginOptions,
-  context: TContext
+  context: TContext,
 ) => TValue | Promise<TValue>
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export type Plugin<TOptions = void> = (options: TOptions) => PluginOptions
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export interface WorkspaceOptions extends SourceOptions {
   basePath: string
   subtitle?: string
@@ -307,18 +394,21 @@ export interface WorkspaceOptions extends SourceOptions {
 
   /**
    * @hidden
-   * @beta */
+   * @beta
+   */
   theme?: StudioTheme
 
   /**
    * @hidden
-   * @beta */
+   * @beta
+   */
   unstable_sources?: SourceOptions[]
 }
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export interface SourceOptions extends PluginOptions {
   title?: string
 
@@ -342,25 +432,30 @@ export interface SourceOptions extends PluginOptions {
    */
   apiHost?: string
 
-  /** @internal */
-  auth?: AuthStore
+  /**
+   * Authentication options for this source.
+   */
+  auth?: AuthConfig | AuthStore
 
   /**
    * @hidden
-   * @beta */
+   * @beta
+   */
   unstable_clientFactory?: (options: SanityClientConfig) => SanityClient
 }
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export interface ResolveProductionUrlContext extends ConfigContext {
   document: SanityDocumentLike
 }
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export interface DocumentActionsContext extends ConfigContext {
   documentId?: string
   schemaType: string
@@ -368,7 +463,8 @@ export interface DocumentActionsContext extends ConfigContext {
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export interface DocumentBadgesContext extends ConfigContext {
   documentId?: string
   schemaType: string
@@ -380,9 +476,16 @@ export interface DocumentInspectorContext extends ConfigContext {
   documentType: string
 }
 
+/** @hidden @beta */
+export interface DocumentCommentsEnabledContext {
+  documentId?: string
+  documentType: string
+}
+
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export type PartialContext<TContext extends ConfigContext> = Pick<
   TContext,
   Exclude<keyof TContext, keyof ConfigContext>
@@ -390,83 +493,142 @@ export type PartialContext<TContext extends ConfigContext> = Pick<
 
 /** @public */
 export interface SourceClientOptions {
+  /**
+   * API version to use. See {@link https://www.sanity.io/docs/api-versioning | api-versioning}
+   */
   apiVersion: string
 }
 
-/** @public */
+/**
+ * Represents a source.
+ * @public
+ */
 export interface Source {
+  /** The type of the source. */
   type: 'source'
+  /** The name of the source. */
   name: string
+  /** The title of the source. */
   title: string
+  /** The ID of the project. */
   projectId: string
+  /** The name of the dataset. */
   dataset: string
+  /** The schema of the source. */
   schema: Schema
+  /** The templates of the source. */
   templates: Template[]
+  /** The tools of the source. */
   tools: Tool[]
+  /** The current user of the source. */
   currentUser: CurrentUser | null
+  /** Whether the user is authenticated. */
   authenticated: boolean
 
   /** @internal */
   auth: AuthStore
 
+  /**
+   * Returns a client instance.
+   * @param clientOptions - Options to pass to the client. See {@link SourceClientOptions}
+   */
   getClient: (clientOptions: SourceClientOptions) => SanityClient
 
+  /**
+   * Document-related functionality.
+   * @hidden
+   * @beta
+   */
   document: {
     /**
+     * Returns an array of actions for the document.
      * @hidden
-     * @beta */
+     * @beta
+     */
     actions: (props: PartialContext<DocumentActionsContext>) => DocumentActionComponent[]
 
     /**
+     * Returns an array of badges for the document.
      * @hidden
-     * @beta */
+     * @beta
+     */
     badges: (props: PartialContext<DocumentActionsContext>) => DocumentBadgeComponent[]
 
     /** @internal */
     unstable_fieldActions: (
-      props: PartialContext<DocumentFieldActionsResolverContext>
+      props: PartialContext<DocumentFieldActionsResolverContext>,
     ) => DocumentFieldAction[]
 
     /**
+     * Resolves the production URL for the document.
      * @hidden
-     * @beta */
+     * @beta
+     */
     resolveProductionUrl: (
-      context: PartialContext<ResolveProductionUrlContext>
+      context: PartialContext<ResolveProductionUrlContext>,
     ) => Promise<string | undefined>
 
     /**
+     * Resolves the new document options.
      * @hidden
-     * @beta */
+     * @beta
+     */
     resolveNewDocumentOptions: (context: NewDocumentCreationContext) => InitialValueTemplateItem[]
 
     /** @alpha */
     unstable_languageFilter: (
-      props: PartialContext<DocumentLanguageFilterContext>
+      props: PartialContext<DocumentLanguageFilterContext>,
     ) => DocumentLanguageFilterComponent[]
 
-    /** @hidden @beta */
+    /**
+     * @hidden
+     * @beta
+     */
     inspectors: (props: PartialContext<DocumentInspectorContext>) => DocumentInspector[]
+
+    /** @internal */
+    unstable_comments: {
+      enabled: (props: DocumentCommentsEnabledContext) => boolean
+    }
   }
+
+  /**
+   * Form-related functionality.
+   * @hidden
+   * @beta
+   */
   form: {
     /**
+     * File-related functionality.
      * @hidden
-     * @beta */
+     * @beta
+     */
     file: {
+      /** The asset sources. */
       assetSources: AssetSource[]
+
+      /** Whether direct uploads are enabled. */
       directUploads: boolean
     }
 
     /**
+     * Image-related functionality.
      * @hidden
-     * @beta */
+     * @beta
+     */
     image: {
+      /** The asset sources. */
       assetSources: AssetSource[]
+
+      /** Whether direct uploads are enabled. */
       directUploads: boolean
     }
 
     /**
+     * Components for the form.
      * @hidden
-     * @beta */
+     * @beta
+     */
     components?: {
       input?: ComponentType<Omit<InputProps, 'renderDefault'>>
       field?: ComponentType<Omit<FieldProps, 'renderDefault'>>
@@ -477,7 +639,6 @@ export interface Source {
     /**
      * these have not been migrated over and are not merged by the form builder
      *
-     *
      * @hidden
      * @beta
      */
@@ -487,10 +648,15 @@ export interface Source {
     }
   }
 
+  /**
+   * @hidden
+   * @beta
+   */
   studio?: {
     /**
      * @hidden
-     * @beta */
+     * @beta
+     */
     components?: StudioComponents
   }
 
@@ -507,13 +673,12 @@ export interface Source {
     options: SourceOptions
   }
 }
-
 /** @internal */
 export interface WorkspaceSummary {
   type: 'workspace-summary'
   name: string
   title: string
-  icon: React.ReactNode
+  icon: ReactNode
   subtitle?: string
   basePath: string
   auth: AuthStore
@@ -538,12 +703,24 @@ export interface WorkspaceSummary {
   }
 }
 
-/** @public */
+/**
+ * Definition for Workspace
+ *
+ * @public
+ */
 export interface Workspace extends Omit<Source, 'type'> {
   type: 'workspace'
+  /**
+   * URL base path to use, for instance `/myWorkspace`
+   * Note that this will be prepended with any _studio_ base path, eg `/studio/myWorkspace`,
+   * and is a client-side routing feature. If you're looking to serve your studio from a subpath,
+   * you're probably looking for the `basePath` property in `sanity.cli.ts`/`sanity.cli.js`.
+   */
   basePath: string
+  /** Subtitle to show under the name of the workspace */
   subtitle?: string
-  icon: React.ReactNode
+  /** React component to use as icon for this workspace */
+  icon: ReactNode
   /**
    *
    * @hidden
@@ -566,12 +743,14 @@ export type SingleWorkspace = Omit<WorkspaceOptions, 'name' | 'basePath'> & {
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export type Config = SingleWorkspace | WorkspaceOptions[]
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export interface MissingConfigFile {
   missingConfigFile: true
 }
@@ -581,3 +760,5 @@ export interface PreparedConfig {
   type: 'prepared-config'
   workspaces: WorkspaceSummary[]
 }
+
+export type {AuthConfig, AuthProvider} from './auth/types'

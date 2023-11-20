@@ -53,7 +53,7 @@ export const PortableTextEditorTester = forwardRef(function PortableTextEditorTe
     selection?: PortableTextEditableProps['selection']
     renderPlaceholder?: PortableTextEditableProps['renderPlaceholder']
   },
-  ref: ForwardedRef<PortableTextEditor>
+  ref: ForwardedRef<PortableTextEditor>,
 ) {
   useEffect(() => {
     key = 0
@@ -73,6 +73,7 @@ export const PortableTextEditorTester = forwardRef(function PortableTextEditorTe
       <PortableTextEditable
         selection={props.selection || undefined}
         renderPlaceholder={props.renderPlaceholder}
+        aria-describedby="desc_foo"
       />
     </PortableTextEditor>
   )

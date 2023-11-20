@@ -65,7 +65,7 @@ const emptyStyle: BlockStyleItem = {
 }
 
 export const BlockStyleSelect = memo(function BlockStyleSelect(
-  props: BlockStyleSelectProps
+  props: BlockStyleSelectProps,
 ): JSX.Element {
   const {disabled, items: itemsProp} = props
   const editor = usePortableTextEditor()
@@ -99,21 +99,11 @@ export const BlockStyleSelect = memo(function BlockStyleSelect(
   const handleChange = useCallback(
     (item: BlockStyleItem): void => {
       if (focusBlock && item.style !== focusBlock.style) {
-        const sel = PortableTextEditor.getSelection(editor)
         PortableTextEditor.toggleBlockStyle(editor, item.style)
-        // Force a new selection here, so that the toolbar will be refreshed
-        // It memo'es on the selection for showing the active style.
-        PortableTextEditor.select(editor, null)
-        if (sel) {
-          PortableTextEditor.select(editor, {...sel})
-        }
-      }
-      // Focus will not stick unless this is done through a timeout.
-      setTimeout(() => {
         PortableTextEditor.focus(editor)
-      })
+      }
     },
-    [editor, focusBlock]
+    [editor, focusBlock],
   )
 
   const renderOption = useCallback((style: string, title: string) => {
@@ -138,7 +128,7 @@ export const BlockStyleSelect = memo(function BlockStyleSelect(
         text={menuButtonText}
       />
     ),
-    [_disabled, menuButtonText]
+    [_disabled, menuButtonText],
   )
 
   const menu = useMemo(
@@ -158,7 +148,7 @@ export const BlockStyleSelect = memo(function BlockStyleSelect(
         })}
       </Menu>
     ),
-    [_disabled, activeItems, handleChange, items, renderOption]
+    [_disabled, activeItems, handleChange, items, renderOption],
   )
 
   return (

@@ -8,29 +8,102 @@ import {decodeParams, encodeParams} from './utils/paramsEncoding'
 /**
  * @public
  */
-export type RouteNodeOptions = {
+export interface RouteNodeOptions {
+  /**
+   * The path of the route node.
+   */
   path?: string
+  /**
+   * The children of the route node. See {@link RouteChildren}
+   */
   children?: RouteChildren
+  /**
+   * The transforms to apply to the route node. See {@link RouteTransform}
+   */
   transform?: {
     [key: string]: RouteTransform<any>
   }
+  /**
+   * The scope of the route node.
+   */
   scope?: string
+
+  /**
+   * Optionally disable scoping of search params
+   * Scoped search params will be represented as scope[param]=value in the url
+   * Disabling this will still scope search params based on any parent scope unless the parent scope also has disabled search params scoping
+   * Caution: enabling this can cause conflicts with multiple plugins defining search params with the same name
+   */
+  __unsafe_disableScopedSearchParams?: boolean
 }
 
 /**
+ * Interface for the {@link route} object.
+ *
  * @public
  */
-export const route: {
+export interface RouteObject {
+  /**
+   * Creates a new router.
+   * Returns {@link Router}
+   * See {@link RouteNodeOptions} and {@link RouteChildren}
+   */
   create: (
     routeOrOpts: RouteNodeOptions | string,
     childrenOrOpts?: RouteNodeOptions | RouteChildren | null,
-    children?: Router | RouteChildren
+    children?: Router | RouteChildren,
   ) => Router
+
+  /**
+   * Creates a new router for handling intents.
+   * Returns {@link Router}
+   */
   intents: (base: string) => Router
-  scope: (scopeName: string, ...rest: any[]) => Router
-} = {
+
+  /**
+   * Creates a new router scope.
+   * Returns {@link Router}
+   */
+  scope(
+    scopeName: string,
+    routeOrOpts: RouteNodeOptions | string,
+    childrenOrOpts?: RouteNodeOptions | RouteChildren | null,
+    children?: Router | RouteChildren,
+  ): Router
+}
+
+/**
+ * An object containing functions for creating routers and router scopes.
+ * See {@link RouteObject}
+ *
+ * @public
+ *
+ * @example
+ * ```ts
+ * const router = route.create({
+ *   path: "/foo",
+ *   children: [
+ *     route.create({
+ *       path: "/bar",
+ *       children: [
+ *         route.create({
+ *           path: "/:baz",
+ *           transform: {
+ *             baz: {
+ *               toState: (id) => ({ id }),
+ *               toPath: (state) => state.id,
+ *             },
+ *           },
+ *         }),
+ *       ],
+ *     }),
+ *   ],
+ * });
+ * ```
+ */
+export const route: RouteObject = {
   create: (routeOrOpts, childrenOrOpts, children) =>
-    createNode(normalizeArgs(routeOrOpts, childrenOrOpts, children)),
+    _createNode(normalizeArgs(routeOrOpts, childrenOrOpts, children)),
   intents: (base: string) => {
     const basePath = normalize(base).join('/')
 
@@ -54,14 +127,19 @@ export const route: {
               },
             },
           }),
-        ]
+        ],
       ),
     ])
   },
-  scope: (scopeName, ...rest) => {
-    const options = normalizeArgs(...rest)
+  scope(
+    scopeName: string,
+    routeOrOpts: RouteNodeOptions | string,
+    childrenOrOpts?: RouteNodeOptions | RouteChildren | null,
+    children?: Router | RouteChildren,
+  ) {
+    const options = normalizeArgs(routeOrOpts, childrenOrOpts, children)
 
-    return createNode({
+    return _createNode({
       ...options,
       scope: scopeName,
     })
@@ -83,7 +161,7 @@ function normalizeArgs(...args: any[]): RouteNodeOptions
 function normalizeArgs(
   path: string | RouteNodeOptions,
   childrenOrOpts?: RouteNodeOptions | Router | RouteChildren,
-  children?: Router | RouteChildren
+  children?: Router | RouteChildren,
 ): RouteNodeOptions {
   if (typeof path === 'object') {
     return path
@@ -115,8 +193,13 @@ function isRoot(pathname: string): boolean {
   return pathname.split('/').every((segment) => !segment)
 }
 
-function createNode(options: RouteNodeOptions): Router {
-  const {path, scope, transform, children} = options
+/**
+ * @internal
+ * @param options - Route node options
+ */
+export function _createNode(options: RouteNodeOptions): Router {
+  // eslint-disable-next-line camelcase
+  const {path, scope, transform, children, __unsafe_disableScopedSearchParams} = options
 
   if (!path) {
     throw new TypeError('Missing path')
@@ -127,6 +210,8 @@ function createNode(options: RouteNodeOptions): Router {
   return {
     _isRoute: true, // todo: make a Router class instead
     scope,
+    // eslint-disable-next-line camelcase
+    __unsafe_disableScopedSearchParams,
     route: parsedRoute,
     children: children || [],
     transform,

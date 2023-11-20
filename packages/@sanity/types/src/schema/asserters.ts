@@ -1,5 +1,5 @@
 import type {CrossDatasetReferenceSchemaType} from '../crossDatasetReference'
-import {TitledListValue} from './definition'
+import type {TitledListValue} from './definition'
 import type {
   ArraySchemaType,
   BlockChildrenObjectField,
@@ -58,14 +58,14 @@ export function isArraySchemaType(type: unknown): type is ArraySchemaType {
 
 /** @internal */
 export function isArrayOfBlocksSchemaType(
-  type: unknown
+  type: unknown,
 ): type is ArraySchemaType<ObjectSchemaType> {
   return isArraySchemaType(type) && type.of.some((memberType) => isBlockSchemaType(memberType))
 }
 
 /** @internal */
 export function isArrayOfObjectsSchemaType(
-  type: unknown
+  type: unknown,
 ): type is ArraySchemaType<ObjectSchemaType> {
   return isArraySchemaType(type) && type.of.every((memberType) => isObjectSchemaType(memberType))
 }
@@ -95,7 +95,7 @@ export function isNumberSchemaType(type: unknown): type is NumberSchemaType {
 
 /** @internal */
 export function isPrimitiveSchemaType(
-  type: unknown
+  type: unknown,
 ): type is BooleanSchemaType | StringSchemaType | NumberSchemaType {
   return isBooleanSchemaType(type) || isStringSchemaType(type) || isNumberSchemaType(type)
 }
@@ -107,7 +107,7 @@ export function isReferenceSchemaType(type: unknown): type is ReferenceSchemaTyp
 
 /** @internal */
 export function isCrossDatasetReferenceSchemaType(
-  type: unknown
+  type: unknown,
 ): type is CrossDatasetReferenceSchemaType {
   return (
     isRecord(type) &&
@@ -132,8 +132,9 @@ export function isSpanSchemaType(type: unknown): type is SpanSchemaType {
 export function isBlockSchemaType(type: unknown): type is BlockSchemaType {
   if (!isRecord(type)) return false
   if (!Array.isArray(type.fields)) return false
-
-  const [maybeSpanChildren, maybeStyle, maybeList] = type.fields
+  const maybeSpanChildren = type.fields.find(isBlockChildrenObjectField)
+  const maybeStyle = type.fields.find(isBlockStyleObjectField)
+  const maybeList = type.fields.find(isBlockListObjectField)
   return (
     isBlockChildrenObjectField(maybeSpanChildren) &&
     isBlockStyleObjectField(maybeStyle) &&
@@ -151,7 +152,7 @@ export function isBlockStyleObjectField(field: unknown): field is BlockStyleObje
 /** @internal */
 export function isBlockListObjectField(field: unknown): field is BlockListObjectField {
   if (!isRecord(field)) return false
-  if (field.name !== 'list') return false
+  if (field.name !== 'listItem') return false
   return isRecord(field.type) && field.type.jsonType === 'string'
 }
 

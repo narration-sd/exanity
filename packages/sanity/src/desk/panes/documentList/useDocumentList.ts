@@ -43,8 +43,11 @@ const INITIAL_QUERY_RESULTS: QueryResult = {
  * @internal
  */
 export function useDocumentList(opts: UseDocumentListOpts): DocumentListState {
-  const {filter, params: paramsProp, sortOrder, searchQuery} = opts
-  const client = useClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
+  const {filter, params: paramsProp, sortOrder, searchQuery, apiVersion} = opts
+  const client = useClient({
+    ...DEFAULT_STUDIO_CLIENT_OPTIONS,
+    apiVersion: apiVersion || DEFAULT_STUDIO_CLIENT_OPTIONS.apiVersion,
+  })
   const schema = useSchema()
 
   const [resultState, setResult] = useState<QueryResult>(INITIAL_STATE)
@@ -55,7 +58,7 @@ export function useDocumentList(opts: UseDocumentListOpts): DocumentListState {
   // Filter out published documents that have drafts to avoid duplicates in the list.
   const items = useMemo(
     () => (documents ? removePublishedWithDrafts(documents) : EMPTY_ARRAY),
-    [documents]
+    [documents],
   )
 
   // A state variable to keep track of whether we are currently lazy loading the list.
@@ -71,7 +74,7 @@ export function useDocumentList(opts: UseDocumentListOpts): DocumentListState {
   // Get the type name from the filter, if it is a simple type filter.
   const typeNameFromFilter = useMemo(
     () => getTypeNameFromSingleTypeFilter(filter, paramsProp),
-    [filter, paramsProp]
+    [filter, paramsProp],
   )
 
   // We can't have the loading state as part of the result state, since the loading
@@ -128,7 +131,7 @@ export function useDocumentList(opts: UseDocumentListOpts): DocumentListState {
       setIsLazyLoading(false)
       setResult(res)
     },
-    [shouldFetchFullList]
+    [shouldFetchFullList],
   )
 
   const queryResults$ = useMemo(() => {
@@ -165,11 +168,11 @@ export function useDocumentList(opts: UseDocumentListOpts): DocumentListState {
           of({result: null, error: err}),
           merge(fromEvent(window, 'online'), onRetry$).pipe(
             take(1),
-            mergeMap(() => caught$)
-          )
+            mergeMap(() => caught$),
+          ),
         )
       }),
-      scan((prev, next) => ({...prev, ...next, onRetry: _onRetry}))
+      scan((prev, next) => ({...prev, ...next, onRetry: _onRetry})),
     )
   }, [
     client,

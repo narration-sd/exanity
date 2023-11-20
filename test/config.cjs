@@ -24,7 +24,7 @@ const defaultModuleNameMapper = resolveAliasPaths({
  */
 exports.createJestConfig = function createJestConfig(
   /** @type {import('@jest/types').Config.InitialOptions */
-  config = {}
+  config = {},
 ) {
   const {
     testMatch = [],
@@ -38,6 +38,7 @@ exports.createJestConfig = function createJestConfig(
 
   return {
     globals,
+    prettierPath: null,
     moduleNameMapper: {
       // > The order in which the mappings are defined matters. Patterns are checked one by one
       // > until one fits. The most specific rule should be listed first. This is true for arrays of
@@ -58,12 +59,16 @@ exports.createJestConfig = function createJestConfig(
       '<rootDir>/coverage/',
       '<rootDir>/lib/',
     ],
+    resolver: path.resolve(__dirname, './resolver.cjs'),
+    testEnvironment: path.resolve(__dirname, './jsdom.jest.env.ts'),
     setupFiles: [...setupFiles, path.resolve(__dirname, './setup.ts')],
-    testEnvironment: 'jsdom',
+    // testEnvironment: 'jsdom',
     testEnvironmentOptions: {
       url: 'http://localhost:3333',
     },
     testMatch: [...testMatch, '<rootDir>/**/*.{test,spec}.{js,ts,tsx}'],
+    transformIgnorePatterns: ['/node_modules/(?!(get-random-values-esm)/)'],
+    testPathIgnorePatterns: ['/node_modules/', '/.yalc/'],
     transform: {
       ...transform,
       '\\.[jt]sx?$': [
@@ -71,6 +76,10 @@ exports.createJestConfig = function createJestConfig(
         // rootMode upwards makes use of the global babel.config.js
         {rootMode: 'upward'},
       ],
+    },
+    snapshotFormat: {
+      escapeString: true,
+      printBasicPrototype: true,
     },
     ...restOfInputConfig,
   }
@@ -83,7 +92,7 @@ exports.createJestConfig = function createJestConfig(
  */
 function aliasesToModuleNameWrapper(
   /** @type Record<string, string | string[]> */
-  aliases
+  aliases,
 ) {
   /** @type Record<string, string | string[]> */
   const moduleNameMapper = {}
@@ -102,7 +111,7 @@ function aliasesToModuleNameWrapper(
 
 function resolveAliasPaths(
   /** @type Record<string, string> */
-  aliases
+  aliases,
 ) {
   const result = {}
 

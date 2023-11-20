@@ -3,7 +3,7 @@
  * Some of these tests have no expect statement;
  * use of ts-expect-error serves the same purpose - TypeScript is the testrunner here
  */
-import {ArrayDefinition, BooleanDefinition} from '../definition'
+import type {ArrayDefinition, BooleanDefinition} from '../definition'
 import {defineArrayMember, defineField, defineType} from '../types'
 
 describe('array types', () => {
@@ -26,7 +26,7 @@ describe('array types', () => {
             // That seemed less ideal than having to type custom value here,
             // so the implementation was dropped
             .custom((value?: string[]) =>
-              value?.length === 2 && value[0].toLowerCase() == 'yolo' ? 'Error' : true
+              value?.length === 2 && value[0].toLowerCase() == 'yolo' ? 'Error' : true,
             )
             .warning(),
           // @ts-expect-error greaterThan does not exist on ArrayRule

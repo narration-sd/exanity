@@ -11,13 +11,15 @@ import {PortableTextMemberSchemaTypes} from '../types/editor'
 
 const EMPTY_MARKDEFS: PortableTextObject[] = []
 
+export const VOID_CHILD_KEY = 'void-child'
+
 type Partial<T> = {
   [P in keyof T]?: T[P]
 }
 
 function keepObjectEquality(
   object: PortableTextBlock | PortableTextChild,
-  keyMap: Record<string, PortableTextBlock | PortableTextChild>
+  keyMap: Record<string, PortableTextBlock | PortableTextChild>,
 ) {
   const value = keyMap[object._key]
   if (value && isEqual(object, value)) {
@@ -30,12 +32,12 @@ function keepObjectEquality(
 export function toSlateValue(
   value: PortableTextBlock[] | undefined,
   {schemaTypes}: {schemaTypes: PortableTextMemberSchemaTypes},
-  keyMap: Record<string, any> = {}
+  keyMap: Record<string, any> = {},
 ): Descendant[] {
   if (value && Array.isArray(value)) {
     return value.map((block) => {
       const {_type, _key, ...rest} = block
-      const voidChildren = [{_key: `${_key}-void-child`, _type: 'span', text: '', marks: []}]
+      const voidChildren = [{_key: VOID_CHILD_KEY, _type: 'span', text: '', marks: []}]
       const isPortableText = block && block._type === schemaTypes.block.name
       if (isPortableText) {
         const textBlock = block as PortableTextTextBlock
@@ -54,7 +56,7 @@ export function toSlateValue(
                 value: cRest,
                 __inline: true,
               },
-              keyMap
+              keyMap,
             )
           }
           // Original object
@@ -79,7 +81,7 @@ export function toSlateValue(
           children: voidChildren,
           value: rest,
         },
-        keyMap
+        keyMap,
       )
     }) as Descendant[]
   }
@@ -87,9 +89,9 @@ export function toSlateValue(
 }
 
 export function fromSlateValue(
-  value: (Node | Partial<Node>)[],
+  value: Descendant[],
   textBlockType: string,
-  keyMap: Record<string, PortableTextBlock | PortableTextChild> = {}
+  keyMap: Record<string, PortableTextBlock | PortableTextChild> = {},
 ): PortableTextBlock[] {
   return value.map((block) => {
     const {_key, _type} = block
@@ -116,14 +118,14 @@ export function fromSlateValue(
     const blockValue = 'value' in block && block.value
     return keepObjectEquality(
       {_key, _type, ...(typeof blockValue === 'object' ? blockValue : {})},
-      keyMap
+      keyMap,
     ) as PortableTextBlock
   })
 }
 
 export function isEqualToEmptyEditor(
   children: Descendant[] | PortableTextBlock[],
-  schemaTypes: PortableTextMemberSchemaTypes
+  schemaTypes: PortableTextMemberSchemaTypes,
 ): boolean {
   return (
     children === undefined ||
@@ -147,7 +149,7 @@ export function isEqualToEmptyEditor(
 
 export function findBlockAndIndexFromPath(
   firstPathSegment: PathSegment,
-  children: (Node | Partial<Node>)[]
+  children: (Node | Partial<Node>)[],
 ): [Element | undefined, number | undefined] {
   let blockIndex = -1
   const isNumber = Number.isInteger(Number(firstPathSegment))
@@ -155,7 +157,7 @@ export function findBlockAndIndexFromPath(
     blockIndex = Number(firstPathSegment)
   } else if (children) {
     blockIndex = children.findIndex(
-      (blk) => Element.isElement(blk) && isEqual({_key: blk._key}, firstPathSegment)
+      (blk) => Element.isElement(blk) && isEqual({_key: blk._key}, firstPathSegment),
     )
   }
   if (blockIndex > -1) {
@@ -166,7 +168,7 @@ export function findBlockAndIndexFromPath(
 
 export function findChildAndIndexFromPath(
   secondPathSegment: PathSegment,
-  block: Element
+  block: Element,
 ): [Element | Text | undefined, number] {
   let childIndex = -1
   const isNumber = Number.isInteger(Number(secondPathSegment))
@@ -183,7 +185,7 @@ export function findChildAndIndexFromPath(
 
 export function getValueOrInitialValue(
   value: unknown,
-  initialValue: PortableTextBlock[]
+  initialValue: PortableTextBlock[],
 ): PortableTextBlock[] | undefined {
   if (value && Array.isArray(value) && value.length > 0) {
     return value

@@ -52,7 +52,7 @@ function isFieldEnabledByGroupFilter(
   // the groups config for the "enclosing object" type
   groupsConfig: FormFieldGroup[],
   fieldGroup: string | string[] | undefined,
-  selectedGroup: FormFieldGroup
+  selectedGroup: FormFieldGroup,
 ) {
   if (selectedGroup.name === ALL_FIELDS_GROUP.name) {
     return true
@@ -80,7 +80,7 @@ function isValidArrayOfObjectsValue(value: any): value is unknown[] | undefined 
 }
 
 function isValidArrayOfPrimitivesValue(
-  value: any
+  value: any,
 ): value is (boolean | number | string)[] | undefined {
   return typeof value === 'undefined' || Array.isArray(value)
 }
@@ -109,6 +109,17 @@ function everyItemHasKey<T extends object>(array: T[]): array is (T & {_key: str
 }
 
 function isChangedValue(value: any, comparisonValue: any) {
+  // changes panel is not being able to identify changes in array of objects
+  // (especially when it comes to unpublished changes)
+  // the main issue it fixes is in instances where the array removes a last item but instead of turning
+  // "undefined" it returns an empty array (and so the change indicator remains active when it shouldn't)
+  if (
+    (Array.isArray(value) && typeof comparisonValue === 'undefined') ||
+    (Array.isArray(comparisonValue) && typeof value === 'undefined')
+  ) {
+    return false
+  }
+
   if (value && !comparisonValue) {
     return true
   }
@@ -142,7 +153,7 @@ function prepareFieldMember(props: {
   const inSelectedGroup = isFieldEnabledByGroupFilter(
     parent.groups,
     field.group,
-    parent.selectedGroup
+    parent.selectedGroup,
   )
 
   if (isObjectSchemaType(field.type)) {
@@ -514,15 +525,15 @@ interface RawState<SchemaType, T> {
 
 function prepareObjectInputState<T>(
   props: RawState<ObjectSchemaType, T>,
-  enableHiddenCheck?: false
+  enableHiddenCheck?: false,
 ): ObjectFormNode
 function prepareObjectInputState<T>(
   props: RawState<ObjectSchemaType, T>,
-  enableHiddenCheck?: true
+  enableHiddenCheck?: true,
 ): ObjectFormNode | null
 function prepareObjectInputState<T>(
   props: RawState<ObjectSchemaType, T>,
-  enableHiddenCheck = true
+  enableHiddenCheck = true,
 ): ObjectFormNode | null {
   if (props.level === MAX_FIELD_DEPTH) {
     return null
@@ -625,7 +636,7 @@ function prepareObjectInputState<T>(
           }) as FieldMember | FieldError | HiddenField
 
           return fieldMember ? [fieldMember] : []
-        }
+        },
       )
 
       const defaultCollapsedState = getCollapsedWithDefaults(fieldSet.options, props.level)
@@ -648,7 +659,7 @@ function prepareObjectInputState<T>(
             hidden: false,
             level: props.level + 1,
             members: fieldsetMembers.filter(
-              (member): member is FieldMember => member.kind !== 'hidden'
+              (member): member is FieldMember => member.kind !== 'hidden',
             ),
             collapsible: defaultCollapsedState?.collapsible,
             collapsed,
@@ -656,7 +667,7 @@ function prepareObjectInputState<T>(
           },
         },
       ]
-    }
+    },
   )
 
   const hasFieldGroups = schemaTypeGroupConfig.length > 0
@@ -669,7 +680,7 @@ function prepareObjectInputState<T>(
     .map((v) => ({level: v.level, message: v.item.message, path: v.path}))
 
   const visibleMembers = members.filter(
-    (member): member is ObjectMember => member.kind !== 'hidden'
+    (member): member is ObjectMember => member.kind !== 'hidden',
   )
 
   // Return null here only when enableHiddenCheck, or we end up with array members that have 'item: null' when they
@@ -697,7 +708,7 @@ function prepareObjectInputState<T>(
             member.groups.includes(group.name) ||
             member.fieldSet.members.some(
               (fieldsetMember) =>
-                fieldsetMember.kind !== 'error' && fieldsetMember.groups.includes(group.name)
+                fieldsetMember.kind !== 'error' && fieldsetMember.groups.includes(group.name),
             )
           )
         })
@@ -715,7 +726,7 @@ function prepareObjectInputState<T>(
       }
 
       const filteredFieldsetMembers: ObjectMember[] = member.fieldSet.members.filter(
-        (fieldsetMember) => fieldsetMember.kind !== 'field' || fieldsetMember.inSelectedGroup
+        (fieldsetMember) => fieldsetMember.kind !== 'field' || fieldsetMember.inSelectedGroup,
       )
       return filteredFieldsetMembers.length > 0
         ? [
@@ -725,7 +736,7 @@ function prepareObjectInputState<T>(
             } as FieldSetMember,
           ]
         : []
-    }
+    },
   )
 
   return {
@@ -749,7 +760,7 @@ function prepareObjectInputState<T>(
 }
 
 function prepareArrayOfPrimitivesInputState<T extends (boolean | string | number)[]>(
-  props: RawState<ArraySchemaType, T>
+  props: RawState<ArraySchemaType, T>,
 ): ArrayOfPrimitivesFormNode | null {
   if (props.level === MAX_FIELD_DEPTH) {
     return null
@@ -782,10 +793,11 @@ function prepareArrayOfPrimitivesInputState<T extends (boolean | string | number
     .filter((item) => isEqual(item.path, props.path))
     .map((v) => ({level: v.level, message: v.item.message, path: v.path}))
   const members = items.flatMap((item, index) =>
-    prepareArrayOfPrimitivesMember({arrayItem: item, parent: props, index})
+    prepareArrayOfPrimitivesMember({arrayItem: item, parent: props, index}),
   )
   return {
-    changed: members.some((m) => m.kind === 'item' && m.item.changed), // TODO: is this correct? There could be field and fieldsets here?
+    // checks for changes not only on the array itself, but also on any of its items
+    changed: props.changed || members.some((m) => m.kind === 'item' && m.item.changed),
     value: props.value as T,
     readOnly,
     schemaType: props.schemaType,
@@ -801,7 +813,7 @@ function prepareArrayOfPrimitivesInputState<T extends (boolean | string | number
 }
 
 function prepareArrayOfObjectsInputState<T extends {_key: string}[]>(
-  props: RawState<ArraySchemaType, T>
+  props: RawState<ArraySchemaType, T>,
 ): ArrayOfObjectsFormNode | null {
   if (props.level === MAX_FIELD_DEPTH) {
     return null
@@ -837,11 +849,12 @@ function prepareArrayOfObjectsInputState<T extends {_key: string}[]>(
       arrayItem: item,
       parent: props,
       index,
-    })
+    }),
   )
 
   return {
-    changed: members.some((m) => m.kind === 'item' && m.item.changed),
+    // checks for changes not only on the array itself, but also on any of its items
+    changed: props.changed || members.some((m) => m.kind === 'item' && m.item.changed),
     value: props.value as T,
     readOnly,
     schemaType: props.schemaType,
@@ -925,7 +938,7 @@ function prepareArrayOfObjectsMember(props: {
       fieldGroupState,
       readOnly,
     },
-    false
+    false,
   ) as ObjectArrayFormNode
 
   const defaultCollapsedState = getCollapsedWithDefaults(itemType.options, itemLevel)
@@ -1011,7 +1024,7 @@ function prepareArrayOfPrimitivesMember(props: {
 }
 
 function preparePrimitiveInputState<SchemaType extends PrimitiveSchemaType>(
-  props: RawState<SchemaType, unknown>
+  props: RawState<SchemaType, unknown>,
 ): PrimitiveFormNode {
   const filteredPresence = props.presence.filter((item) => isEqual(item.path, props.path))
   const presence = filteredPresence.length ? filteredPresence : EMPTY_ARRAY
@@ -1038,7 +1051,7 @@ export type FIXME_SanityDocument = Record<string, unknown>
 
 /** @internal */
 export function prepareFormState<T extends FIXME_SanityDocument>(
-  props: RawState<ObjectSchemaType, T>
+  props: RawState<ObjectSchemaType, T>,
 ): ObjectFormNode | null {
   return prepareObjectInputState(props)
 }

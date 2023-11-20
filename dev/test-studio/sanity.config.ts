@@ -4,10 +4,9 @@ import {defineConfig, definePlugin} from 'sanity'
 import {deskTool} from 'sanity/desk'
 import {muxInput} from 'sanity-plugin-mux-input'
 import {assist} from '@sanity/assist'
-import {theme as tailwindTheme} from 'https://themer.sanity.build/api/hues?preset=tw-cyan&default=64748b&primary=d946ef;lightest:fdf4ff;darkest:701a75&transparent=6b7180;darkest:111826&positive=43d675;400;lightest:f8fafc&caution=f59e09;300;lightest:fffbeb;darkest:783510&critical=f43f5e;lightest:fef1f2;darkest:881337&lightest=ffffff&darkest=0f172a'
 import {googleMapsInput} from '@sanity/google-maps-input'
-// eslint-disable-next-line import/no-extraneous-dependencies
 import {tsdoc} from '@sanity/tsdoc/studio'
+import {theme as tailwindTheme} from './sanity.theme.mjs'
 import {imageAssetSource} from './assetSources'
 import {Branding} from './components/Branding'
 import {resolveDocumentActions as documentActions} from './documentActions'
@@ -39,9 +38,10 @@ import {vercelTheme} from './themes/vercel'
 import {GoogleLogo, TailwindLogo, VercelLogo} from './components/workspaceLogos'
 import {copyAction} from './fieldActions/copyAction'
 import {assistFieldActionGroup} from './fieldActions/assistFieldActionGroup'
-import {commentAction} from './fieldActions/commentFieldAction'
 import {customInspector} from './inspectors/custom'
 import {pasteAction} from './fieldActions/pasteAction'
+import {routerDebugTool} from './plugins/router-debug'
+import {StegaDebugger} from './schema/debug/components/DebugStega'
 
 const sharedSettings = definePlugin({
   name: 'sharedSettings',
@@ -70,18 +70,20 @@ const sharedSettings = definePlugin({
     },
     unstable_fieldActions: (prev, ctx) => {
       if (['fieldActionsTest', 'stringsTest'].includes(ctx.documentType)) {
-        return [...prev, commentAction, assistFieldActionGroup, copyAction, pasteAction]
+        return [...prev, assistFieldActionGroup, copyAction, pasteAction]
       }
 
       return prev
     },
     newDocumentOptions,
+
+    unstable_comments: {
+      enabled: true,
+    },
   },
   plugins: [
     deskTool({
       icon: BookIcon,
-      name: 'content',
-      title: 'Content',
       structure,
       defaultDocumentNode,
     }),
@@ -119,6 +121,7 @@ const sharedSettings = definePlugin({
     // eslint-disable-next-line camelcase
     muxInput({mp4_support: 'standard'}),
     presenceTool(),
+    routerDebugTool(),
     tsdoc(),
   ],
 })
@@ -158,6 +161,9 @@ export default defineConfig([
     plugins: [sharedSettings()],
     basePath: '/staging',
     apiHost: 'https://api.sanity.work',
+    auth: {
+      loginMethod: 'token',
+    },
   },
   {
     name: 'custom-components',
@@ -224,5 +230,18 @@ export default defineConfig([
     dataset: 'test',
     plugins: [sharedSettings(), assist()],
     basePath: '/ai-assist',
+  },
+  {
+    name: 'stega',
+    title: 'Debug Stega Studio',
+    projectId: 'ppsg7ml5',
+    dataset: 'test',
+    plugins: [sharedSettings()],
+    basePath: '/stega',
+    form: {
+      components: {
+        input: StegaDebugger,
+      },
+    },
   },
 ])

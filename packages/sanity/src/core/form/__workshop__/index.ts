@@ -12,7 +12,7 @@ export default defineScope({
     },
     {
       name: 'form-builder',
-      title: 'Form builder',
+      title: 'Form builder (unfinished)',
       component: lazy(() => import('./FormBuilderStory')),
     },
   ],

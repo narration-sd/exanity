@@ -11,11 +11,12 @@ import React, {
 } from 'react'
 import styled from 'styled-components'
 import {NoToolsScreen} from './screens/NoToolsScreen'
+import {RedirectingScreen} from './screens/RedirectingScreen'
 import {ToolNotFoundScreen} from './screens/ToolNotFoundScreen'
 import {useNavbarComponent} from './studio-components-hooks'
 import {StudioErrorBoundary} from './StudioErrorBoundary'
 import {useWorkspace} from './workspace'
-import {RouteScope, useRouterState} from 'sanity/router'
+import {RouteScope, useRouter, useRouterState} from 'sanity/router'
 
 const SearchFullscreenPortalCard = styled(Card)`
   height: 100%;
@@ -42,37 +43,62 @@ export const NavbarContext = createContext<NavbarContextValue>({
   searchFullscreenPortalEl: null,
 })
 
-/** @public */
+/**
+ * The Studio Layout component is the root component of the Sanity Studio UI.
+ * It renders the navbar, the active tool, and the search modal as well as the error boundary.
+ *
+ * @public
+ * @returns A Studio Layout element that renders the navbar, the active tool, and the search modal as well as the error boundary
+ * @remarks This component should be used as a child component to the StudioProvider
+ * @example Rendering a Studio Layout
+ * ```ts
+ * <StudioProvider
+ *  basePath={basePath}
+ *  config={config}
+ *  onSchemeChange={onSchemeChange}
+ *  scheme={scheme}
+ *  unstable_history={unstable_history}
+ *  unstable_noAuthBoundary={unstable_noAuthBoundary}
+ * >
+ *   <StudioLayout />
+ *</StudioProvider>
+ * ```
+ */
 export function StudioLayout() {
   const {name, title, tools} = useWorkspace()
+  const router = useRouter()
   const activeToolName = useRouterState(
     useCallback(
       (routerState) => (typeof routerState.tool === 'string' ? routerState.tool : undefined),
-      []
-    )
+      [],
+    ),
   )
   const activeTool = useMemo(
     () => tools.find((tool) => tool.name === activeToolName),
-    [activeToolName, tools]
+    [activeToolName, tools],
   )
   const [searchFullscreenOpen, setSearchFullscreenOpen] = useState<boolean>(false)
   const [searchFullscreenPortalEl, setSearchFullscreenPortalEl] = useState<HTMLDivElement | null>(
-    null
+    null,
   )
 
   const documentTitle = useMemo(() => {
     const mainTitle = title || startCase(name)
 
     if (activeToolName) {
-      return `${mainTitle} – ${startCase(activeToolName)}`
+      return `${startCase(activeToolName)} | ${mainTitle}`
     }
 
     return mainTitle
   }, [activeToolName, name, title])
+  const toolControlsDocumentTitle = !!activeTool?.controlsDocumentTitle
 
   useEffect(() => {
+    if (toolControlsDocumentTitle) {
+      return
+    }
     document.title = documentTitle
-  }, [documentTitle])
+  }, [documentTitle, toolControlsDocumentTitle])
 
   const handleSearchFullscreenOpenChange = useCallback((open: boolean) => {
     setSearchFullscreenOpen(open)
@@ -84,18 +110,40 @@ export function StudioLayout() {
       searchFullscreenPortalEl,
       onSearchFullscreenOpenChange: handleSearchFullscreenOpenChange,
     }),
-    [searchFullscreenOpen, searchFullscreenPortalEl, handleSearchFullscreenOpenChange]
+    [searchFullscreenOpen, searchFullscreenPortalEl, handleSearchFullscreenOpenChange],
   )
 
   const Navbar = useNavbarComponent()
+
+  /**
+   * Handle legacy URL redirects from `/desk` to `/structure`
+   */
+  const isLegacyDeskRedirect =
+    !activeTool &&
+    (activeToolName === 'desk' || !activeToolName) &&
+    typeof window !== 'undefined' &&
+    /\/desk(\/|$)/.test(window.location.pathname) &&
+    tools.some((tool) => tool.name === 'structure')
+
+  useEffect(() => {
+    if (!isLegacyDeskRedirect) {
+      return
+    }
+
+    router.navigateUrl({
+      path: window.location.pathname.replace(/\/desk/, '/structure'),
+      replace: true,
+    })
+  }, [isLegacyDeskRedirect, router])
 
   return (
     <Flex data-ui="ToolScreen" direction="column" height="fill" data-testid="studio-layout">
       <NavbarContext.Provider value={navbarContextValue}>
         <Navbar />
       </NavbarContext.Provider>
+      {isLegacyDeskRedirect && <RedirectingScreen />}
       {tools.length === 0 && <NoToolsScreen />}
-      {tools.length > 0 && !activeTool && activeToolName && (
+      {tools.length > 0 && !activeTool && activeToolName && !isLegacyDeskRedirect && (
         <ToolNotFoundScreen toolName={activeToolName} />
       )}
       {searchFullscreenOpen && (
@@ -106,7 +154,12 @@ export function StudioLayout() {
       <StudioErrorBoundary key={activeTool?.name} heading={`The ${activeTool?.name} tool crashed`}>
         <Card flex={1} hidden={searchFullscreenOpen}>
           {activeTool && activeToolName && (
-            <RouteScope scope={activeToolName}>
+            <RouteScope
+              scope={activeToolName}
+              __unsafe_disableScopedSearchParams={
+                activeTool.router?.__unsafe_disableScopedSearchParams
+              }
+            >
               <Suspense fallback={<LoadingTool />}>
                 {createElement(activeTool.component, {tool: activeTool})}
               </Suspense>

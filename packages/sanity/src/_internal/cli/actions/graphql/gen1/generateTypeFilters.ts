@@ -27,7 +27,7 @@ export function generateTypeFilters(types: (ConvertedType | ConvertedUnion)[]): 
   const queryable = types
     .filter(isNonUnion)
     .filter(
-      (type) => type.type === 'Object' && type.interfaces && type.interfaces.includes('Document')
+      (type) => type.type === 'Object' && type.interfaces && type.interfaces.includes('Document'),
     )
 
   return queryable.map((type) => {
@@ -80,6 +80,18 @@ function getDocumentFilters(): InputFilterField[] {
   ]
 }
 
+function createIsDefinedFilter(field: ConvertedFieldDefinition): InputFilterField {
+  return {
+    fieldName: getFieldName(field, 'is_defined'),
+    type: 'Boolean',
+    description: 'All documents that have a value for this field',
+    constraint: {
+      field: field.fieldName,
+      comparator: 'IS_DEFINED',
+    },
+  }
+}
+
 function createEqualityFilter(field: ConvertedFieldDefinition): InputFilterField {
   return {
     fieldName: getFieldName(field),
@@ -105,7 +117,7 @@ function createInequalityFilter(field: ConvertedFieldDefinition): InputFilterFie
 }
 
 function createDefaultFilters(field: ConvertedFieldDefinition): InputFilterField[] {
-  return [createEqualityFilter(field), createInequalityFilter(field)]
+  return [createEqualityFilter(field), createInequalityFilter(field), createIsDefinedFilter(field)]
 }
 
 function createGtLtFilters(field: ConvertedFieldDefinition): InputFilterField[] {

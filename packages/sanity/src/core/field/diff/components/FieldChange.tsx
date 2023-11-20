@@ -1,7 +1,6 @@
 import React, {useCallback, useMemo, useState} from 'react'
 import {Stack, Box, Button, Text, Grid, useClickOutside} from '@sanity/ui'
 import {ObjectSchemaType} from '@sanity/types'
-import {useConditionalReadOnly} from '../../conditional-property/conditionalReadOnly'
 import {useDocumentOperation} from '../../../hooks'
 import {FieldChangeNode, FieldOperationsAPI} from '../../types'
 import {undoChange} from '../changes/undoChange'
@@ -22,10 +21,9 @@ export function FieldChange(
     change: FieldChangeNode
     readOnly?: boolean
     hidden?: boolean
-  } & React.HTMLAttributes<HTMLDivElement>
+  } & React.HTMLAttributes<HTMLDivElement>,
 ) {
   const {change, hidden, readOnly} = props
-  const conditionalReadOnly = useConditionalReadOnly() ?? readOnly
   const DiffComponent = change.diffComponent || FallbackDiff
   const {
     documentId,
@@ -69,13 +67,22 @@ export function FieldChange(
 
   useClickOutside(handleClickOutside, [revertButtonElement])
 
+  const isArray = change.parentSchema?.jsonType === 'array'
+
+  /* this condition is required in order to avoid situations where an array change has happened
+   * but not necessarily an array item change. E.g. when adding one new item to an array, the changes pane
+   * would be able to identify that a new item was addded but not what array it belonged to (because the change path
+   * is only related to the item itself, not the array)
+   */
+  const fieldPath = isArray ? change.path.slice(0, -1) : change.path
+
   const content = useMemo(
     () =>
       hidden ? null : (
         <Stack space={1} as={FieldChangeContainer}>
           {change.showHeader && <ChangeBreadcrumb change={change} titlePath={change.titlePath} />}
 
-          <FieldWrapper path={change.path} hasHover={revertHovered}>
+          <FieldWrapper path={fieldPath} hasHover={revertHovered}>
             <DiffInspectWrapper
               change={change}
               as={DiffBorder}
@@ -122,7 +129,7 @@ export function FieldChange(
                       onMouseEnter={handleRevertButtonMouseEnter}
                       onMouseLeave={handleRevertButtonMouseLeave}
                       selected={confirmRevertOpen}
-                      disabled={conditionalReadOnly}
+                      disabled={readOnly}
                       data-testid={`single-change-revert-button-${change?.key}`}
                     />
                   </Box>
@@ -135,7 +142,7 @@ export function FieldChange(
     [
       change,
       closeRevertChangesConfirmDialog,
-      conditionalReadOnly,
+      readOnly,
       confirmRevertOpen,
       DiffComponent,
       FieldWrapper,
@@ -148,7 +155,8 @@ export function FieldChange(
       isPermissionsLoading,
       permissions,
       revertHovered,
-    ]
+      fieldPath,
+    ],
   )
 
   return content

@@ -13,18 +13,21 @@ import {usePrevious} from './usePrevious'
  *   }
  * })
  * ```
+ *
+ * @beta
+ * @hidden
  */
 export function useDidUpdate<T>(
   /** The value you want to respond to changes in. */
   current: T,
   /** Callback to run when the value changes. */
   didUpdate: (previous: T | undefined, current: T) => void,
-  compare?: (previous: T | undefined, current: T) => boolean
+  compare?: (previous: T | undefined, current: T) => boolean,
 ): void
 export function useDidUpdate<T>(
   current: T,
   didUpdate: (previous: T | undefined, current: T | undefined) => void,
-  compare: (previous: T | undefined, current: T) => boolean = shallowEquals
+  compare: (previous: T | undefined, current: T) => boolean = shallowEquals,
 ): void {
   const previous = usePrevious<T | undefined>(current)
   useEffect(() => {

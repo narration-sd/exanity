@@ -40,10 +40,10 @@ const originalFnMap = new WeakMap<PortableTextSlateEditor, OriginalEditorFunctio
 
 export const withPlugins = <T extends Editor>(
   editor: T,
-  options: createEditorOptions
+  options: createEditorOptions,
 ): {editor: PortableTextSlateEditor; subscribe: () => () => void} => {
   const e = editor as T & PortableTextSlateEditor
-  const {keyGenerator, portableTextEditor, patches$, readOnly, maxBlocks, isPending} = options
+  const {keyGenerator, portableTextEditor, patches$, readOnly, maxBlocks} = options
   const {schemaTypes, change$} = portableTextEditor
   e.subscriptions = []
   if (e.destroy) {
@@ -59,11 +59,10 @@ export const withPlugins = <T extends Editor>(
   }
   const operationToPatches = createOperationToPatches(schemaTypes)
   const withObjectKeys = createWithObjectKeys(schemaTypes, keyGenerator)
-  const withSchemaTypes = createWithSchemaTypes(schemaTypes)
+  const withSchemaTypes = createWithSchemaTypes({schemaTypes, keyGenerator})
   const withEditableAPI = createWithEditableAPI(portableTextEditor, schemaTypes, keyGenerator)
   const withPatches = createWithPatches({
     change$,
-    isPending,
     keyGenerator,
     patches$,
     patchFunctions: operationToPatches,
@@ -72,9 +71,13 @@ export const withPlugins = <T extends Editor>(
   })
   const withMaxBlocks = createWithMaxBlocks(maxBlocks || -1)
   const withPortableTextLists = createWithPortableTextLists(schemaTypes)
-  const withUndoRedo = createWithUndoRedo({readOnly, patches$})
-  const withPortableTextMarkModel = createWithPortableTextMarkModel(schemaTypes)
-  const withPortableTextBlockStyle = createWithPortableTextBlockStyle(schemaTypes, change$)
+  const withUndoRedo = createWithUndoRedo({
+    readOnly,
+    patches$,
+    blockSchemaType: schemaTypes.block,
+  })
+  const withPortableTextMarkModel = createWithPortableTextMarkModel(schemaTypes, change$)
+  const withPortableTextBlockStyle = createWithPortableTextBlockStyle(schemaTypes)
 
   const withPlaceholderBlock = createWithPlaceholderBlock({
     keyGenerator,
@@ -89,9 +92,10 @@ export const withPlugins = <T extends Editor>(
     if (!originalFunctions) {
       throw new Error('Could not find pristine versions of editor functions')
     }
-    e.onChange = originalFunctions.onChange
     e.apply = originalFunctions.apply
+    e.history = {undos: [], redos: []}
     e.normalizeNode = originalFunctions.normalizeNode
+    e.onChange = originalFunctions.onChange
   }
   if (readOnly) {
     return {
@@ -101,12 +105,12 @@ export const withPlugins = <T extends Editor>(
             withPortableTextBlockStyle(
               withUtils(
                 withPlaceholderBlock(
-                  withPortableTextLists(withPortableTextSelections(withEditableAPI(e)))
-                )
-              )
-            )
-          )
-        )
+                  withPortableTextLists(withPortableTextSelections(withEditableAPI(e))),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
       subscribe: () => noop,
     }
@@ -122,14 +126,14 @@ export const withPlugins = <T extends Editor>(
               withPlaceholderBlock(
                 withUtils(
                   withMaxBlocks(
-                    withUndoRedo(withPatches(withPortableTextSelections(withEditableAPI(e))))
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
+                    withUndoRedo(withPatches(withPortableTextSelections(withEditableAPI(e)))),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     ),
     subscribe: () => {
       const unsubscribes: (() => void)[] = []

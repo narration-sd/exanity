@@ -1,4 +1,4 @@
-import {PortalProvider, useToast} from '@sanity/ui'
+import {PortalProvider, useTheme, useToast} from '@sanity/ui'
 import React, {memo, Fragment, useState, useEffect, useCallback} from 'react'
 import styled from 'styled-components'
 import isHotkey from 'is-hotkey'
@@ -9,6 +9,7 @@ import {PaneNode} from '../../types'
 import {PaneLayout} from '../pane'
 import {useDeskTool} from '../../useDeskTool'
 import {NoDocumentTypesScreen} from './NoDocumentTypesScreen'
+import {DeskTitle} from './DeskTitle'
 import {useSchema, _isCustomDocumentTypeDefinition} from 'sanity'
 import {useRouterState} from 'sanity/router'
 
@@ -35,8 +36,11 @@ export const DeskTool = memo(function DeskTool({onPaneChange}: DeskToolProps) {
   // We handle that here, so if there are only 1 pane (the root structure), and there's an intent state in the router, we need to show a placeholder LoadingPane until
   // the structure is resolved and we know what panes to load/display
   const isResolvingIntent = useRouterState(
-    useCallback((routerState) => typeof routerState.intent === 'string', [])
+    useCallback((routerState) => typeof routerState.intent === 'string', []),
   )
+  const {
+    sanity: {media},
+  } = useTheme()
 
   const [portalElement, setPortalElement] = useState<HTMLDivElement | null>(null)
 
@@ -83,7 +87,7 @@ export const DeskTool = memo(function DeskTool({onPaneChange}: DeskToolProps) {
       <StyledPaneLayout
         flex={1}
         height={layoutCollapsed ? undefined : 'fill'}
-        minWidth={512}
+        minWidth={media[1]}
         onCollapse={handleRootCollapse}
         onExpand={handleRootExpand}
       >
@@ -122,7 +126,7 @@ export const DeskTool = memo(function DeskTool({onPaneChange}: DeskToolProps) {
                 />
               )}
             </Fragment>
-          )
+          ),
         )}
         {/* If there's just 1 pane (the root), or less, and we're resolving an intent then it's necessary to show */}
         {/* a loading indicator as the intent resolving is async, could take a while and can also be interrupted/redirected */}
@@ -130,6 +134,7 @@ export const DeskTool = memo(function DeskTool({onPaneChange}: DeskToolProps) {
           <LoadingPane paneKey="intent-resolver" />
         )}
       </StyledPaneLayout>
+      <DeskTitle resolvedPanes={resolvedPanes} />
       <div data-portal="" ref={setPortalElement} />
     </PortalProvider>
   )

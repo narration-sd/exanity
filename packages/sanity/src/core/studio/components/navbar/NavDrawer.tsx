@@ -128,7 +128,7 @@ export const NavDrawer = memo(function NavDrawer(props: NavDrawerProps) {
         onClose()
       }
     },
-    [onClose]
+    [onClose],
   )
 
   return (
@@ -182,9 +182,7 @@ export const NavDrawer = memo(function NavDrawer(props: NavDrawerProps) {
                     </Box>
                   </Flex>
 
-                  {workspaces.length > 1 && (
-                    <WorkspaceMenuButton text="Select workspace" justify="flex-start" />
-                  )}
+                  {workspaces.length > 1 && <WorkspaceMenuButton />}
                 </Stack>
               </Card>
 

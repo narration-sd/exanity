@@ -2,6 +2,7 @@ import {omit, isPlainObject} from 'lodash'
 import humanizeList from 'humanize-list'
 import {error, HELP_IDS, warning} from '../createValidationResult'
 import {isJSONTypeOf} from '../utils/isJSONTypeOf'
+import {coreTypeNames} from '../../coreTypes'
 
 const getTypeOf = (thing) => (Array.isArray(thing) ? 'array' : typeof thing)
 const quote = (str) => `"${str}"`
@@ -21,6 +22,7 @@ const allowedMarkKeys = ['decorators', 'annotations']
 const allowedStyleKeys = ['blockEditor', 'title', 'value', 'component']
 const allowedDecoratorKeys = ['blockEditor', 'title', 'value', 'icon', 'component']
 const allowedListKeys = ['title', 'value', 'icon', 'component']
+const supportedBuiltInObjectTypes = ['file', 'image', 'object', 'reference']
 
 export default function validateBlockType(typeDef, visitorContext) {
   const problems = []
@@ -30,14 +32,16 @@ export default function validateBlockType(typeDef, visitorContext) {
   let members = typeDef.of
 
   const disallowedKeys = Object.keys(typeDef).filter(
-    (key) => !allowedKeys.includes(key) && !key.startsWith('_')
+    (key) => !allowedKeys.includes(key) && !key.startsWith('_'),
   )
 
   if (disallowedKeys.length > 0) {
     problems.push(
       error(
-        `Found unknown properties for block declaration: ${humanizeList(disallowedKeys.map(quote))}`
-      )
+        `Found unknown properties for block declaration: ${humanizeList(
+          disallowedKeys.map(quote),
+        )}`,
+      ),
     )
   }
 
@@ -76,22 +80,22 @@ function validateMarks(marks, visitorContext, problems) {
   }
 
   const disallowedMarkKeys = Object.keys(marks).filter(
-    (key) => !allowedMarkKeys.includes(key) && !key.startsWith('_')
+    (key) => !allowedMarkKeys.includes(key) && !key.startsWith('_'),
   )
 
   if (disallowedMarkKeys.length > 0) {
     problems.push(
       error(
         `Found unknown properties for block declaration: ${humanizeList(
-          disallowedMarkKeys.map(quote)
-        )}`
-      )
+          disallowedMarkKeys.map(quote),
+        )}`,
+      ),
     )
   }
 
   if (decorators && !Array.isArray(decorators)) {
     problems.push(
-      error(`"marks.decorators" declaration should be an array, got ${getTypeOf(decorators)}`)
+      error(`"marks.decorators" declaration should be an array, got ${getTypeOf(decorators)}`),
     )
   } else if (decorators) {
     decorators
@@ -105,7 +109,7 @@ function validateMarks(marks, visitorContext, problems) {
 
   if (annotations && !Array.isArray(annotations)) {
     problems.push(
-      error(`"marks.annotations" declaration should be an array, got ${getTypeOf(annotations)}`)
+      error(`"marks.annotations" declaration should be an array, got ${getTypeOf(annotations)}`),
     )
   } else if (annotations) {
     annotations = validateAnnotations(annotations, visitorContext, problems)
@@ -128,14 +132,14 @@ function validateLists(lists, visitorContext, problems) {
 
     const name = list.value || `#${index}`
     const disallowedKeys = Object.keys(list).filter(
-      (key) => !allowedListKeys.includes(key) && !key.startsWith('_')
+      (key) => !allowedListKeys.includes(key) && !key.startsWith('_'),
     )
 
     if (disallowedKeys.length > 0) {
       problems.push(
         error(
-          `Found unknown properties for list ${name}: ${humanizeList(disallowedKeys.map(quote))}`
-        )
+          `Found unknown properties for list ${name}: ${humanizeList(disallowedKeys.map(quote))}`,
+        ),
       )
     }
 
@@ -145,9 +149,9 @@ function validateLists(lists, visitorContext, problems) {
       problems.push(
         error(
           `List type #${index} has an invalid "value" property, expected string, got ${getTypeOf(
-            list.value
-          )}`
-        )
+            list.value,
+          )}`,
+        ),
       )
     } else if (!list.title) {
       problems.push(warning(`List type ${name} is missing recommended "title" property`))
@@ -170,14 +174,14 @@ function validateStyles(styles, visitorContext, problems) {
 
     const name = style.value || `#${index}`
     const disallowedKeys = Object.keys(style).filter(
-      (key) => !allowedStyleKeys.includes(key) && !key.startsWith('_')
+      (key) => !allowedStyleKeys.includes(key) && !key.startsWith('_'),
     )
 
     if (disallowedKeys.length > 0) {
       problems.push(
         error(
-          `Found unknown properties for style ${name}: ${humanizeList(disallowedKeys.map(quote))}`
-        )
+          `Found unknown properties for style ${name}: ${humanizeList(disallowedKeys.map(quote))}`,
+        ),
       )
     }
 
@@ -187,9 +191,9 @@ function validateStyles(styles, visitorContext, problems) {
       problems.push(
         error(
           `Style #${index} has an invalid "value" property, expected string, got ${getTypeOf(
-            style.value
-          )}`
-        )
+            style.value,
+          )}`,
+        ),
       )
     } else if (!style.title) {
       problems.push(warning(`Style ${name} is missing recommended "title" property`))
@@ -198,8 +202,8 @@ function validateStyles(styles, visitorContext, problems) {
       problems.push(
         warning(
           `Style has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.`,
-          HELP_IDS.DEPRECATED_BLOCKEDITOR_KEY
-        )
+          HELP_IDS.DEPRECATED_BLOCKEDITOR_KEY,
+        ),
       )
       // TODO remove this backward compatibility at some point.
       style.component = style.component || style.blockEditor.render
@@ -217,16 +221,16 @@ function validateDecorators(decorators, visitorContext, problems) {
 
     const name = decorator.value || `#${index}`
     const disallowedKeys = Object.keys(decorator).filter(
-      (key) => !allowedDecoratorKeys.includes(key) && !key.startsWith('_')
+      (key) => !allowedDecoratorKeys.includes(key) && !key.startsWith('_'),
     )
 
     if (disallowedKeys.length > 0) {
       problems.push(
         error(
           `Found unknown properties for decorator ${name}: ${humanizeList(
-            disallowedKeys.map(quote)
-          )}`
-        )
+            disallowedKeys.map(quote),
+          )}`,
+        ),
       )
     }
 
@@ -236,9 +240,9 @@ function validateDecorators(decorators, visitorContext, problems) {
       problems.push(
         error(
           `Decorator #${index} has an invalid "value" property, expected string, got ${getTypeOf(
-            decorator.value
-          )}`
-        )
+            decorator.value,
+          )}`,
+        ),
       )
     } else if (!decorator.title) {
       problems.push(warning(`Decorator ${name} is missing recommended "title" property`))
@@ -247,8 +251,8 @@ function validateDecorators(decorators, visitorContext, problems) {
       problems.push(
         warning(
           `Decorator "${name}" has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.`,
-          HELP_IDS.DEPRECATED_BLOCKEDITOR_KEY
-        )
+          HELP_IDS.DEPRECATED_BLOCKEDITOR_KEY,
+        ),
       )
       // TODO remove this backward compatibility at some point.
       decorator.icon = decorator.icon || decorator.blockEditor.icon
@@ -272,8 +276,8 @@ function validateAnnotations(annotations, visitorContext, problems) {
     if (targetType && !isJSONTypeOf(targetType, 'object', visitorContext)) {
       _problems.push(
         error(
-          `Annotation cannot have type "${annotation.type}" - annotation types must inherit from object`
-        )
+          `Annotation cannot have type "${annotation.type}" - annotation types must inherit from object`,
+        ),
       )
     }
 
@@ -281,8 +285,8 @@ function validateAnnotations(annotations, visitorContext, problems) {
       problems.push(
         warning(
           `Annotation has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.`,
-          HELP_IDS.DEPRECATED_BLOCKEDITOR_KEY
-        )
+          HELP_IDS.DEPRECATED_BLOCKEDITOR_KEY,
+        ),
       )
       // TODO remove this backward compatibility at some point.
       annotation.icon = annotation.icon || annotation.blockEditor.icon
@@ -305,6 +309,42 @@ function validateMembers(members, visitorContext, problems) {
 
   return members.map((member) => {
     const {_problems} = visitorContext.visit(member, visitorContext)
+    if (member.type === 'object' && member.name && visitorContext.getType(member.name)) {
+      return {
+        ...member,
+        _problems: [
+          warning(
+            `Found array member declaration with the same name as the global schema type "${member.name}". It's recommended to use a unique name to avoid possibly incompatible data types that shares the same name.`,
+            HELP_IDS.ARRAY_OF_TYPE_GLOBAL_TYPE_CONFLICT,
+          ),
+        ],
+      }
+    }
+
+    // Test that each member is of a support object-like type
+    let type = member
+    while (type && !type.jsonType) {
+      type = visitorContext.getType(type.type)
+    }
+    const nonObjectCoreTypes = coreTypeNames.filter((n) => !supportedBuiltInObjectTypes.includes(n))
+    if (
+      // Must be object-like type (to validate hoisted types)
+      (type && type.jsonType !== 'object') ||
+      // Can't be a core type, or core object type that isn't supported (like 'span')
+      nonObjectCoreTypes.some((coreName) => coreName === member.type)
+    ) {
+      return {
+        ...member,
+        _problems: [
+          error(
+            `Block member types must be a supported object-like type. The following built-in types are supported: '${supportedBuiltInObjectTypes.join(
+              "', '",
+            )}'. You can also use shorthands for previously defined object types like {type: 'myObjectType'}`,
+            HELP_IDS.ARRAY_OF_TYPE_BUILTIN_TYPE_CONFLICT,
+          ),
+        ],
+      }
+    }
     return {...member, _problems}
   })
 }

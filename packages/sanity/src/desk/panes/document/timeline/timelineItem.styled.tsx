@@ -1,11 +1,7 @@
-import {Text, Box, Button, Theme, Flex, rem} from '@sanity/ui'
+import {Text, Box, Button, Flex, rem} from '@sanity/ui'
 import styled, {css} from 'styled-components'
 
-export interface IconWrapperProps {
-  theme: Theme
-}
-
-export const IconWrapper = styled(Flex)(({theme}: IconWrapperProps) => {
+export const IconWrapper = styled(Flex)(({theme}) => {
   const borderColor = theme.sanity.color.base.skeleton?.from
 
   return css`
@@ -28,7 +24,10 @@ export const IconWrapper = styled(Flex)(({theme}: IconWrapperProps) => {
   `
 })
 
-export const Root = styled(Button)(({$selected}: {$selected: boolean}) => {
+export const Root = styled(Button)<{
+  $selected: boolean
+  $disabled: boolean
+}>(({$selected, $disabled}) => {
   return css`
     position: relative;
     width: 100%;
@@ -49,6 +48,11 @@ export const Root = styled(Button)(({$selected}: {$selected: boolean}) => {
       ${IconWrapper}::before {
         background: transparent;
       }
+    `}
+
+    ${$disabled &&
+    css`
+      cursor: not-allowed;
     `}
   `
 })

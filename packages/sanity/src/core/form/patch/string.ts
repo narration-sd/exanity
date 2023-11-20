@@ -1,9 +1,6 @@
-import * as DMP from 'diff-match-patch'
-import {FIXME} from '../../FIXME'
-import {FormPatch} from '../patch'
-
-// eslint-disable-next-line new-cap
-const dmp = new DMP.diff_match_patch()
+import {applyPatches, parsePatch} from '@sanity/diff-match-patch'
+import type {FIXME} from '../../FIXME'
+import type {FormPatch} from '../patch'
 
 const OPERATIONS = {
   replace(currentValue: unknown, nextValue: unknown) {
@@ -18,8 +15,9 @@ const OPERATIONS = {
   unset(currentValue: unknown, nextValue: unknown) {
     return undefined
   },
-  diffMatchPatch(currentValue: string, nextValue: string) {
-    return dmp.patch_apply(dmp.patch_fromText(nextValue), currentValue)[0]
+  diffMatchPatch(currentValue: string, dmpPatch: string) {
+    const [result] = applyPatches(parsePatch(dmpPatch), currentValue, {allowExceedingIndices: true})
+    return result
   },
 }
 
@@ -29,8 +27,8 @@ export function _stringApply(value: unknown, patch: FormPatch) {
   if (!SUPPORTED_PATCH_TYPES.includes(patch.type)) {
     throw new Error(
       `Received patch of unsupported type: "${JSON.stringify(
-        patch.type
-      )}" for string. This is most likely a bug.`
+        patch.type,
+      )}" for string. This is most likely a bug.`,
     )
   }
 
@@ -38,7 +36,7 @@ export function _stringApply(value: unknown, patch: FormPatch) {
     throw new Error(
       `Cannot apply deep operations on string values. Received patch with type "${
         patch.type
-      }" and path "${patch.path.join('.')} that targeted the value "${JSON.stringify(value)}"`
+      }" and path "${patch.path.join('.')} that targeted the value "${JSON.stringify(value)}"`,
     )
   }
 

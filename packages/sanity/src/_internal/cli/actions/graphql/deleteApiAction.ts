@@ -22,7 +22,7 @@ function parseCliFlags(args: {argv?: string[]}) {
 
 export default async function deleteGraphQLApi(
   args: CliCommandArguments<DeleteGraphQLApiFlags>,
-  context: CliCommandContext
+  context: CliCommandContext,
 ): Promise<void> {
   // Reparsing CLI flags for better control of binary flags
   const flags = await parseCliFlags(args)
@@ -66,7 +66,7 @@ export default async function deleteGraphQLApi(
     client = apiClient({
       requireUser: true,
       requireProject: true,
-    }).config({apiVersion: '1'})
+    }).config({apiVersion: '2023-08-01'})
 
     projectId = projectId || client.config().projectId
     dataset = dataset || client.config().dataset

@@ -1,6 +1,6 @@
 {
   "name": "@sanity/diff",
-  "version": "3.14.1",
+  "version": "3.20.0",
   "description": "Generates diffs between documents and primitive types",
   "keywords": [
     "sanity",
@@ -27,8 +27,7 @@
       "source": "./src/index.ts",
       "require": "./lib/index.js",
       "node": {
-        "import": "./lib/index.cjs.mjs",
-        "require": "./lib/index.js"
+        "import": "./lib/index.cjs.mjs"
       },
       "import": "./lib/index.esm.js",
       "default": "./lib/index.esm.js"
@@ -49,19 +48,19 @@
     "postbuild": "run-s check:package",
     "check:package": "pkg-utils --strict --tsconfig tsconfig.lib.json",
     "clean": "rimraf lib coverage",
+    "lint": "eslint .",
     "watch": "pkg-utils watch --tsconfig tsconfig.lib.json"
   },
   "dependencies": {
-    "diff-match-patch": "^1.0.4"
+    "@sanity/diff-match-patch": "^3.1.1"
   },
   "devDependencies": {
     "rimraf": "^3.0.2"
   },
   "engines": {
-    "node": ">=14.18.0"
+    "node": ">=18"
   },
   "publishConfig": {
     "access": "public"
-  },
-  "gitHead": "a7b7dad6bdfde05883a61f78e998b2571dfbe0e2"
+  }
 }

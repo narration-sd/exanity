@@ -2,7 +2,6 @@ import {Path, PortableTextSpan, PortableTextTextBlock} from '@sanity/types'
 import {omitBy, isUndefined, get} from 'lodash'
 import {
   Descendant,
-  Editor,
   InsertNodeOperation,
   InsertTextOperation,
   MergeNodeOperation,
@@ -11,24 +10,28 @@ import {
   RemoveTextOperation,
   SetNodeOperation,
   SplitNodeOperation,
+  Text,
 } from 'slate'
 import {set, insert, unset, diffMatchPatch, setIfMissing} from '../patch/PatchEvent'
 import type {Patch, InsertPosition} from '../types/patch'
 import {PatchFunctions} from '../editor/plugins/createWithPatches'
-import {PortableTextMemberSchemaTypes} from '../types/editor'
+import {PortableTextMemberSchemaTypes, PortableTextSlateEditor} from '../types/editor'
 import {fromSlateValue} from './values'
 import {debugWithName} from './debug'
 
 const debug = debugWithName('operationToPatches')
+debug.enabled = false
 
 export function createOperationToPatches(types: PortableTextMemberSchemaTypes): PatchFunctions {
   const textBlockName = types.block.name
   function insertTextPatch(
-    editor: Editor,
+    editor: PortableTextSlateEditor,
     operation: InsertTextOperation,
-    beforeValue: Descendant[]
+    beforeValue: Descendant[],
   ) {
-    debug('Operation', JSON.stringify(operation, null, 2))
+    if (debug.enabled) {
+      debug('Operation', JSON.stringify(operation, null, 2))
+    }
     const block =
       editor.isTextBlock(editor.children[operation.path[0]]) && editor.children[operation.path[0]]
     if (!block) {
@@ -50,9 +53,9 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
   }
 
   function removeTextPatch(
-    editor: Editor,
+    editor: PortableTextSlateEditor,
     operation: RemoveTextOperation,
-    beforeValue: Descendant[]
+    beforeValue: Descendant[],
   ) {
     const block = editor && editor.children[operation.path[0]]
     if (!block) {
@@ -74,7 +77,7 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
     return patch.value ? [patch] : []
   }
 
-  function setNodePatch(editor: Editor, operation: SetNodeOperation) {
+  function setNodePatch(editor: PortableTextSlateEditor, operation: SetNodeOperation) {
     if (operation.path.length === 1) {
       const block = editor.children[operation.path[0]]
       if (typeof block._key !== 'string') {
@@ -82,8 +85,8 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
       }
       const setNode = omitBy(
         {...editor.children[operation.path[0]], ...operation.newProperties},
-        isUndefined
-      )
+        isUndefined,
+      ) as unknown as Descendant
       return [set(fromSlateValue([setNode], textBlockName)[0], [{_key: block._key}])]
     } else if (operation.path.length === 2) {
       const block = editor.children[operation.path[0]]
@@ -108,9 +111,9 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
   }
 
   function insertNodePatch(
-    editor: Editor,
+    editor: PortableTextSlateEditor,
     operation: InsertNodeOperation,
-    beforeValue: Descendant[]
+    beforeValue: Descendant[],
   ): Patch[] {
     const block = beforeValue[operation.path[0]]
     const isTextBlock = editor.isTextBlock(block)
@@ -120,27 +123,34 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
       const targetKey = operation.path[0] === 0 ? block?._key : beforeBlock?._key
       if (targetKey) {
         return [
-          insert([fromSlateValue([operation.node], textBlockName)[0]], position, [
+          insert([fromSlateValue([operation.node as Descendant], textBlockName)[0]], position, [
             {_key: targetKey},
           ]),
         ]
       }
       return [
         setIfMissing(beforeValue, []),
-        insert([fromSlateValue([operation.node], textBlockName)[0]], 'before', [operation.path[0]]),
+        insert([fromSlateValue([operation.node as Descendant], textBlockName)[0]], 'before', [
+          operation.path[0],
+        ]),
       ]
     } else if (isTextBlock && operation.path.length === 2 && editor.children[operation.path[0]]) {
       const position =
         block.children.length === 0 || !block.children[operation.path[1] - 1] ? 'before' : 'after'
+      const node = {...operation.node} as Descendant
+      if (!node._type && Text.isText(node)) {
+        node._type = 'span'
+        node.marks = []
+      }
       const blk = fromSlateValue(
         [
           {
             _key: 'bogus',
             _type: textBlockName,
-            children: [operation.node as Descendant],
+            children: [node],
           },
         ],
-        textBlockName
+        textBlockName,
       )[0] as PortableTextTextBlock
       const child = blk.children[0]
       return [
@@ -158,17 +168,17 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
   }
 
   function splitNodePatch(
-    editor: Editor,
+    editor: PortableTextSlateEditor,
     operation: SplitNodeOperation,
-    beforeValue: Descendant[]
+    beforeValue: Descendant[],
   ) {
     const patches: Patch[] = []
     const splitBlock = editor.children[operation.path[0]]
     if (!editor.isTextBlock(splitBlock)) {
       throw new Error(
         `Block with path ${JSON.stringify(
-          operation.path[0]
-        )} is not a text block and can't be split`
+          operation.path[0],
+        )} is not a text block and can't be split`,
       )
     }
     if (operation.path.length === 1) {
@@ -176,7 +186,7 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
       if (editor.isTextBlock(oldBlock)) {
         const targetValue = fromSlateValue(
           [editor.children[operation.path[0] + 1]],
-          textBlockName
+          textBlockName,
         )[0]
         if (targetValue) {
           patches.push(insert([targetValue], 'after', [{_key: splitBlock._key}]))
@@ -200,7 +210,7 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
                 children: splitBlock.children.slice(operation.path[1] + 1, operation.path[1] + 2),
               } as Descendant,
             ],
-            textBlockName
+            textBlockName,
           )[0] as PortableTextTextBlock
         ).children
 
@@ -209,10 +219,15 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
             {_key: splitBlock._key},
             'children',
             {_key: splitSpan._key},
-          ])
+          ]),
         )
         patches.push(
-          set(splitSpan.text, [{_key: splitBlock._key}, 'children', {_key: splitSpan._key}, 'text'])
+          set(splitSpan.text, [
+            {_key: splitBlock._key},
+            'children',
+            {_key: splitSpan._key},
+            'text',
+          ]),
         )
       }
       return patches
@@ -221,9 +236,9 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
   }
 
   function removeNodePatch(
-    editor: Editor,
+    editor: PortableTextSlateEditor,
     operation: RemoveNodeOperation,
-    beforeValue: Descendant[]
+    beforeValue: Descendant[],
   ) {
     const block = beforeValue[operation.path[0]]
     if (operation.path.length === 1) {
@@ -247,9 +262,9 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
   }
 
   function mergeNodePatch(
-    editor: Editor,
+    editor: PortableTextSlateEditor,
     operation: MergeNodeOperation,
-    beforeValue: Descendant[]
+    beforeValue: Descendant[],
   ) {
     const patches: Patch[] = []
 
@@ -271,7 +286,7 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
       if (editor.isTextSpan(targetSpan)) {
         // Set the merged span with it's new value
         patches.push(
-          set(targetSpan.text, [{_key: block._key}, 'children', {_key: targetSpan._key}, 'text'])
+          set(targetSpan.text, [{_key: block._key}, 'children', {_key: targetSpan._key}, 'text']),
         )
         if (mergedSpan) {
           patches.push(unset([{_key: block._key}, 'children', {_key: mergedSpan._key}]))
@@ -283,7 +298,11 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
     return patches
   }
 
-  function moveNodePatch(editor: Editor, operation: MoveNodeOperation, beforeValue: Descendant[]) {
+  function moveNodePatch(
+    editor: PortableTextSlateEditor,
+    operation: MoveNodeOperation,
+    beforeValue: Descendant[],
+  ) {
     const patches: Patch[] = []
     const block = beforeValue[operation.path[0]]
     const targetBlock = beforeValue[operation.newPath[0]]
@@ -291,7 +310,7 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
       const position: InsertPosition = operation.path[0] > operation.newPath[0] ? 'before' : 'after'
       patches.push(unset([{_key: block._key}]))
       patches.push(
-        insert([fromSlateValue([block], textBlockName)[0]], position, [{_key: targetBlock._key}])
+        insert([fromSlateValue([block], textBlockName)[0]], position, [{_key: targetBlock._key}]),
       )
     } else if (
       operation.path.length === 2 &&
@@ -309,7 +328,7 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
           {_key: targetBlock._key},
           'children',
           {_key: targetChild._key},
-        ])
+        ]),
       )
     }
     return patches

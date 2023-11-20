@@ -103,7 +103,7 @@ export function StudioNavbar() {
       workspaces: mediaIndex >= 3 && workspaces.length > 1,
       tools: mediaIndex >= 3,
     }),
-    [mediaIndex, workspaces.length]
+    [mediaIndex, workspaces.length],
   )
   const formattedName = typeof name === 'string' && name !== 'root' ? startCase(name) : null
   const title = workspace.title || formattedName || 'Studio'
@@ -170,20 +170,7 @@ export function StudioNavbar() {
 
             {shouldRender.workspaces && (
               <Box marginRight={2}>
-                <Tooltip
-                  content={
-                    <Box padding={2}>
-                      <Text size={1}>Select workspace</Text>
-                    </Box>
-                  }
-                  placement="bottom"
-                  portal
-                  scheme={scheme}
-                >
-                  <Box>
-                    <WorkspaceMenuButton />
-                  </Box>
-                </Tooltip>
+                <WorkspaceMenuButton collapsed />
               </Box>
             )}
 

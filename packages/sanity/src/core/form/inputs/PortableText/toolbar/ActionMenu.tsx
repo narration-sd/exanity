@@ -42,11 +42,11 @@ export const ActionMenu = memo(function ActionMenu(props: ActionMenuProps) {
             (action: PTEToolbarAction, actionIndex) => {
               if (actionIndex === 0) return {...action, firstInGroup: true}
               return action
-            }
-          )
+            },
+          ),
         )
       }, []),
-    [groups]
+    [groups],
   )
 
   const activeKeys = useActiveActionKeys({actions})
@@ -62,6 +62,7 @@ export const ActionMenu = memo(function ActionMenu(props: ActionMenuProps) {
         const active = activeKeys.includes(action.key)
         return (
           <CollapseMenuButton
+            data-testid={`action-button-${action.key}`}
             disabled={disabled || annotationDisabled}
             {...COLLAPSE_BUTTON_PROPS}
             dividerBefore={action.firstInGroup}
@@ -80,7 +81,7 @@ export const ActionMenu = memo(function ActionMenu(props: ActionMenuProps) {
           />
         )
       }),
-    [actions, activeKeys, disabled, isEmptyTextBlock, isFullscreen]
+    [actions, activeKeys, disabled, isEmptyTextBlock, isFullscreen],
   )
 
   const menuButtonProps = useMemo(
@@ -89,7 +90,7 @@ export const ActionMenu = memo(function ActionMenu(props: ActionMenuProps) {
       popover: MENU_POPOVER_PROPS,
     }),
 
-    [disabled]
+    [disabled],
   )
 
   return (

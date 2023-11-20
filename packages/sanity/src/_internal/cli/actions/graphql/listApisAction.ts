@@ -11,14 +11,14 @@ type ListApisResponse = {
 
 export default async function listGraphQLApis(
   args: CliCommandArguments<Record<string, unknown>>,
-  context: CliCommandContext
+  context: CliCommandContext,
 ): Promise<void> {
   const {apiClient, output, chalk} = context
 
   const client = apiClient({
     requireUser: true,
     requireProject: true,
-  }).config({apiVersion: '1'})
+  }).config({apiVersion: '2023-08-01'})
 
   let endpoints: ListApisResponse | undefined
   try {

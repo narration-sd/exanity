@@ -1,7 +1,6 @@
 import {CheckmarkIcon, PublishIcon} from '@sanity/icons'
 import {isValidationErrorMarker} from '@sanity/types'
 import React, {useCallback, useEffect, useState} from 'react'
-import {TimeAgo} from '../components'
 import {useDocumentPane} from '../panes/document/useDocumentPane'
 import {
   DocumentActionComponent,
@@ -11,6 +10,7 @@ import {
   useDocumentPairPermissions,
   useEditState,
   useSyncState,
+  useTimeAgo,
   useValidationStatus,
 } from 'sanity'
 
@@ -23,14 +23,12 @@ const DISABLED_REASON_TITLE = {
 
 function getDisabledReason(
   reason: keyof typeof DISABLED_REASON_TITLE,
-  publishedAt: string | undefined
+  publishedAt: string | undefined,
 ) {
   if (reason === 'ALREADY_PUBLISHED' && publishedAt) {
     return (
       <>
-        <span>
-          Published <TimeAgo time={publishedAt} />
-        </span>
+        <span>Published {publishedAt}</span>
       </>
     )
   }
@@ -63,12 +61,17 @@ export const PublishAction: DocumentActionComponent = (props) => {
 
   const currentUser = useCurrentUser()
 
+  const lastPublishedTimeAgo = useTimeAgo(published?._updatedAt || '', {
+    minimal: true,
+    agoSuffix: true,
+  })
+
   // eslint-disable-next-line no-nested-ternary
   const title = publish.disabled
-    ? getDisabledReason(publish.disabled, (published || {})._updatedAt) || ''
+    ? getDisabledReason(publish.disabled, lastPublishedTimeAgo) || ''
     : hasValidationErrors
-    ? 'There are validation errors that need to be fixed before this document can be published'
-    : ''
+      ? 'There are validation errors that need to be fixed before this document can be published'
+      : ''
 
   const hasDraft = Boolean(draft)
 
@@ -165,7 +168,7 @@ export const PublishAction: DocumentActionComponent = (props) => {
       publishState === 'publishing' ||
       publishState === 'published' ||
       hasValidationErrors ||
-      publish.disabled
+      publish.disabled,
   )
 
   return {
@@ -176,8 +179,8 @@ export const PublishAction: DocumentActionComponent = (props) => {
       publishState === 'published'
         ? 'Published'
         : publishScheduled || publishState === 'publishing'
-        ? 'Publishing…'
-        : 'Publish',
+          ? 'Publishing…'
+          : 'Publish',
     // @todo: Implement loading state, to show a `<Button loading />` state
     // loading: publishScheduled || publishState === 'publishing',
     icon: publishState === 'published' ? CheckmarkIcon : PublishIcon,
@@ -185,8 +188,8 @@ export const PublishAction: DocumentActionComponent = (props) => {
     title: publishScheduled
       ? 'Waiting for tasks to finish before publishing'
       : publishState === 'published' || publishState === 'publishing'
-      ? null
-      : title,
+        ? null
+        : title,
     shortcut: disabled || publishScheduled ? null : 'Ctrl+Alt+P',
     onHandle: handle,
   }

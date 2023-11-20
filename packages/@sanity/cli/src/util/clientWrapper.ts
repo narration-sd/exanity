@@ -27,21 +27,25 @@ const defaults = {
 }
 
 const authErrors = () => ({
-  onError: (err: Error | ClientError | ServerError) => {
-    if (!('response' in err)) {
+  onError: (err: Error | null) => {
+    if (!err || !isReqResError(err)) {
       return err
     }
 
     const statusCode = err.response && err.response.body && err.response.body.statusCode
     if (statusCode === 401) {
       err.message = `${err.message}. You may need to login again with ${chalk.cyan(
-        'sanity login'
+        'sanity login',
       )}.\nFor more information, see ${generateHelpUrl('cli-errors')}.`
     }
 
     return err
   },
 })
+
+function isReqResError(err: Error): err is ClientError | ServerError {
+  return err.hasOwnProperty('response')
+}
 
 export function getCliToken(): string | undefined {
   // eslint-disable-next-line no-process-env
@@ -64,7 +68,7 @@ export interface ClientRequirements {
 
 export function getClientWrapper(
   cliApiConfig: CliApiConfig | null,
-  configPath: string
+  configPath: string,
 ): (options?: ClientRequirements) => SanityClient {
   const requester = defaultRequester.clone()
   requester.use(authErrors())
@@ -96,7 +100,7 @@ export function getClientWrapper(
       const relativeConfigPath = path.relative(process.cwd(), configPath)
       throw new Error(
         `${relativeConfigPath} does not contain a project identifier ("api.projectId"), ` +
-          'which is required for the Sanity CLI to communicate with the Sanity API'
+          'which is required for the Sanity CLI to communicate with the Sanity API',
       )
     }
 

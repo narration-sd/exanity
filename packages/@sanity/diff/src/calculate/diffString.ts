@@ -1,18 +1,17 @@
 import {
-  diff_match_patch as DiffMatchPatch,
-  DIFF_DELETE,
+  makeDiff,
+  cleanupSemantic,
   DIFF_EQUAL,
+  DIFF_DELETE,
   DIFF_INSERT,
-} from 'diff-match-patch'
+} from '@sanity/diff-match-patch'
 import type {StringDiffSegment, StringDiff, StringInput, DiffOptions} from '../types'
 import {replaceProperty} from '../helpers'
-
-const dmp = new DiffMatchPatch()
 
 export function diffString<A>(
   fromInput: StringInput<A>,
   toInput: StringInput<A>,
-  options: DiffOptions
+  options: DiffOptions,
 ): StringDiff<A> {
   const fromValue = fromInput.value
   const toValue = toInput.value
@@ -46,12 +45,10 @@ export function diffString<A>(
 
 function buildSegments<A>(
   fromInput: StringInput<A>,
-  toInput: StringInput<A>
+  toInput: StringInput<A>,
 ): StringDiffSegment<A>[] {
   const segments: StringDiffSegment<A>[] = []
-
-  const dmpDiffs = dmp.diff_main(fromInput.value, toInput.value)
-  dmp.diff_cleanupSemantic(dmpDiffs)
+  const dmpDiffs = cleanupSemantic(makeDiff(fromInput.value, toInput.value))
 
   let fromIdx = 0
   let toIdx = 0
@@ -96,7 +93,7 @@ function buildSegments<A>(
 export function removedString<A>(
   input: StringInput<A>,
   toValue: null | undefined,
-  options: DiffOptions
+  options: DiffOptions,
 ): StringDiff<A> & {action: 'removed'} {
   return {
     type: 'string',
@@ -119,7 +116,7 @@ export function removedString<A>(
 export function addedString<A>(
   input: StringInput<A>,
   fromValue: null | undefined,
-  options: DiffOptions
+  options: DiffOptions,
 ): StringDiff<A> & {action: 'added'} {
   return {
     type: 'string',

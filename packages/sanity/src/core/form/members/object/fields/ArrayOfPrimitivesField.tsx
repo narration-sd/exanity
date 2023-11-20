@@ -1,6 +1,5 @@
-import React, {useCallback, useMemo, useRef, useState} from 'react'
+import React, {useCallback, useMemo, useRef} from 'react'
 import {
-  ArraySchemaType,
   BooleanSchemaType,
   isBooleanSchemaType,
   isNumberSchemaType,
@@ -36,15 +35,8 @@ import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../../studioClient'
 import {readAsText} from '../../../studio/uploads/file/readAsText'
 import {accepts} from '../../../studio/uploads/accepts'
 import {applyAll} from '../../../patch/applyPatch'
-import {
-  FieldActionMenu,
-  FieldActionsProvider,
-  FieldActionsResolver,
-  useFieldActions,
-} from '../../../field'
-import {useFormPublishedId} from '../../../useFormPublishedId'
 import {useFormBuilder} from '../../../useFormBuilder'
-import {DocumentFieldActionNode} from '../../../../config'
+import {createDescriptionId} from '../../common/createDescriptionId'
 
 function move<T>(arr: T[], from: number, to: number): T[] {
   const copy = arr.slice()
@@ -74,7 +66,7 @@ function insertAfter<T>(
   /**
    * the item to insert
    */
-  items: T[]
+  items: T[],
 ): T[] {
   const copy = arr.slice()
   copy.splice(index + 1, 0, ...items)
@@ -114,17 +106,18 @@ function createPlainTextUploader(itemTypes: PrimitiveSchemaType[]): Uploader<Pri
     type: 'string',
     upload(client, file) {
       return readAsText(file, 'utf-8').pipe(
-        map((textContent) =>
-          textContent
-            ?.split(/[\n\r]/)
-            .map((value) => convertToSchemaType(value, itemTypes))
-            .filter((v) => v !== undefined)
+        map(
+          (textContent) =>
+            textContent
+              ?.split(/[\n\r]/)
+              .map((value) => convertToSchemaType(value, itemTypes))
+              .filter((v) => v !== undefined),
         ),
         filter((v: unknown[] | undefined): v is unknown[] => Array.isArray(v)),
         map((lines: unknown[]) => ({
           type: 'uploadProgress',
           patches: [insert(lines, 'after', [-1])],
-        }))
+        })),
       )
     },
   }
@@ -168,8 +161,6 @@ export function ArrayOfPrimitivesField(props: {
   const {
     field: {actions: fieldActions},
   } = useFormBuilder().__internal
-  const documentId = useFormPublishedId()
-  const [fieldActionNodes, setFieldActionNodes] = useState<DocumentFieldActionNode[]>([])
 
   const focusRef = useRef<Element & {focus: () => void}>()
   const uploadSubscriptions = useRef<Subscription>()
@@ -191,7 +182,7 @@ export function ArrayOfPrimitivesField(props: {
         onPathFocus(member.field.path)
       }
     },
-    [member.field.path, onPathFocus]
+    [member.field.path, onPathFocus],
   )
 
   const handleBlur = useCallback(
@@ -204,7 +195,7 @@ export function ArrayOfPrimitivesField(props: {
         onPathBlur(member.field.path)
       }
     },
-    [member.field.path, onPathBlur]
+    [member.field.path, onPathBlur],
   )
 
   const handleChange = useCallback(
@@ -212,7 +203,7 @@ export function ArrayOfPrimitivesField(props: {
       const patches = PatchEvent.from(event).patches
       // if the patch is an unset patch that targets an item in the array (as opposed to unsetting a field somewhere deeper)
       const isRemovingLastItem = patches.some(
-        (patch) => patch.type === 'unset' && patch.path.length === 1
+        (patch) => patch.type === 'unset' && patch.path.length === 1,
       )
 
       if (isRemovingLastItem) {
@@ -229,14 +220,14 @@ export function ArrayOfPrimitivesField(props: {
       // otherwise apply the patch
       onChange(PatchEvent.from(event).prepend(setIfMissing([])).prefixAll(member.name))
     },
-    [onChange, member.name, member.field.value]
+    [onChange, member.name, member.field.value],
   )
 
   const handleSetCollapsed = useCallback(
     (collapsed: boolean) => {
       onSetPathCollapsed(member.field.path, collapsed)
     },
-    [onSetPathCollapsed, member.field.path]
+    [onSetPathCollapsed, member.field.path],
   )
 
   const handleCollapse = useCallback(() => {
@@ -250,7 +241,7 @@ export function ArrayOfPrimitivesField(props: {
     (nextValue: PrimitiveValue[]) => {
       handleChange(nextValue.length === 0 ? unset() : set(nextValue))
     },
-    [handleChange]
+    [handleChange],
   )
 
   const handleMoveItem = useCallback(
@@ -262,7 +253,7 @@ export function ArrayOfPrimitivesField(props: {
 
       setValue(move(value, event.fromIndex, event.toIndex))
     },
-    [member.field, setValue]
+    [member.field, setValue],
   )
 
   const handleAppend = useCallback(
@@ -270,7 +261,7 @@ export function ArrayOfPrimitivesField(props: {
       const {value = []} = member.field
       setValue(value.concat(itemValue))
     },
-    [member.field, setValue]
+    [member.field, setValue],
   )
 
   const handlePrepend = useCallback(
@@ -278,7 +269,7 @@ export function ArrayOfPrimitivesField(props: {
       const {value = []} = member.field
       setValue([itemValue].concat(value || []))
     },
-    [member.field, setValue]
+    [member.field, setValue],
   )
 
   const handleInsert = useCallback(
@@ -288,21 +279,21 @@ export function ArrayOfPrimitivesField(props: {
       const insertIndex = event.referenceIndex + (event.position === 'before' ? -1 : 0)
       setValue(insertAfter(insertIndex, value, event.items))
     },
-    [member.field, setValue]
+    [member.field, setValue],
   )
 
   const handleRemoveItem = useCallback(
     (index: number) => {
       handleChange(unset([index]))
     },
-    [handleChange]
+    [handleChange],
   )
 
   const handleFocusIndex = useCallback(
     (index: number) => {
       onPathFocus(member.field.path.concat([index]))
     },
-    [member.field.path, onPathFocus]
+    [member.field.path, onPathFocus],
   )
 
   const elementProps = useMemo(
@@ -311,27 +302,28 @@ export function ArrayOfPrimitivesField(props: {
       onFocus: handleFocus,
       id: member.field.id,
       ref: focusRef,
+      'aria-describedby': createDescriptionId(member.field.id, member.field.schemaType.description),
     }),
-    [handleBlur, handleFocus, member.field.id]
+    [handleBlur, handleFocus, member.field.id, member.field.schemaType.description],
   )
 
   const plainTextUploader = useMemo(
     () => createPlainTextUploader(member.field.schemaType.of as PrimitiveSchemaType[]),
-    [member.field.schemaType.of]
+    [member.field.schemaType.of],
   )
 
   const resolveUploader: UploaderResolver<PrimitiveSchemaType> = useCallback(
     (schemaType, file) => (accepts(file, 'text/*') ? plainTextUploader : null),
-    [plainTextUploader]
+    [plainTextUploader],
   )
 
   const handleUpload = useCallback(
     ({file, schemaType, uploader}: UploadEvent) => {
       const events$ = uploader.upload(client, file, schemaType).pipe(
         map((uploadProgressEvent: UploadProgressEvent) =>
-          PatchEvent.from(uploadProgressEvent.patches || [])
+          PatchEvent.from(uploadProgressEvent.patches || []),
         ),
-        tap((event) => handleChange(event.patches))
+        tap((event) => handleChange(event.patches)),
       )
 
       if (uploadSubscriptions.current) {
@@ -339,7 +331,7 @@ export function ArrayOfPrimitivesField(props: {
       }
       uploadSubscriptions.current = events$.subscribe()
     },
-    [client, handleChange]
+    [client, handleChange],
   )
 
   const inputProps = useMemo((): Omit<ArrayOfPrimitivesInputProps, 'renderDefault'> => {
@@ -410,10 +402,7 @@ export function ArrayOfPrimitivesField(props: {
 
   const fieldProps: Omit<ArrayOfPrimitivesFieldProps, 'renderDefault'> = useMemo(() => {
     return {
-      actions:
-        fieldActionNodes.length > 0 ? (
-          <FieldActionMenu focused={member.field.focused} nodes={fieldActionNodes} />
-        ) : undefined,
+      actions: fieldActions,
       name: member.name,
       index: member.index,
       level: member.field.level,
@@ -434,8 +423,9 @@ export function ArrayOfPrimitivesField(props: {
       inputProps: inputProps as ArrayOfPrimitivesInputProps,
     }
   }, [
-    fieldActionNodes,
-    member.field.focused,
+    fieldActions,
+    member.name,
+    member.index,
     member.field.level,
     member.field.value,
     member.field.schemaType,
@@ -444,8 +434,6 @@ export function ArrayOfPrimitivesField(props: {
     member.field.path,
     member.field.presence,
     member.field.validation,
-    member.name,
-    member.index,
     member.collapsible,
     member.collapsed,
     handleExpand,
@@ -464,20 +452,7 @@ export function ArrayOfPrimitivesField(props: {
       onPathBlur={onPathBlur}
       onPathFocus={onPathFocus}
     >
-      {documentId && fieldActions.length > 0 && (
-        <FieldActionsResolver
-          actions={fieldActions}
-          documentId={documentId}
-          documentType={member.field.schemaType.name}
-          onActions={setFieldActionNodes}
-          path={member.field.path}
-          schemaType={member.field.schemaType}
-        />
-      )}
-
-      <FieldActionsProvider actions={fieldActionNodes} path={member.field.path}>
-        {useMemo(() => renderField(fieldProps as FIXME), [fieldProps, renderField])}
-      </FieldActionsProvider>
+      {useMemo(() => renderField(fieldProps as FIXME), [fieldProps, renderField])}
     </FormCallbacksProvider>
   )
 }

@@ -1,12 +1,13 @@
-import {ComponentType, ReactElement, ReactNode} from 'react'
-import {ConditionalProperty} from '../../types'
-import {ObjectOptions} from './object'
+import type {ComponentType, ReactElement, ReactNode} from 'react'
+import type {ConditionalProperty} from '../../types'
+import type {ObjectOptions} from './object'
 
 /** @public */
 export type FieldsetDefinition = {
   name: string
   title?: string
   description?: string
+  group?: string
   hidden?: ConditionalProperty
   readOnly?: ConditionalProperty
   options?: ObjectOptions
@@ -17,7 +18,7 @@ export type FieldGroupDefinition = {
   name: string
   title?: string
   hidden?: ConditionalProperty
-  icon?: ComponentType | ReactNode
+  icon?: ComponentType
   default?: boolean
 }
 

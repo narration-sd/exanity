@@ -156,14 +156,14 @@ export type DiffProps<T extends Diff = Diff> = {
   schemaType: T extends ObjectDiff
     ? ObjectSchemaType
     : T extends ArrayDiff
-    ? ArraySchemaType
-    : T extends BooleanDiff
-    ? BooleanSchemaType
-    : T extends StringDiff
-    ? StringSchemaType
-    : T extends NumberDiff
-    ? NumberSchemaType
-    : SchemaType
+      ? ArraySchemaType
+      : T extends BooleanDiff
+        ? BooleanSchemaType
+        : T extends StringDiff
+          ? StringSchemaType
+          : T extends NumberDiff
+            ? NumberSchemaType
+            : SchemaType
 }
 
 /**
@@ -277,30 +277,3 @@ export interface FieldOperationsAPI {
     execute: (patches: PatchOperations[]) => void
   }
 }
-
-/**
- * From sanity-diff-patch
- *
- * @internal
- */
-export interface SetDiffPatch {
-  op: 'set'
-  path: Path
-  value: unknown
-}
-
-/** @internal */
-export interface UnsetDiffPatch {
-  op: 'unset'
-  path: Path
-}
-
-/** @internal */
-export interface InsertDiffPatch {
-  op: 'insert'
-  after: Path
-  items: unknown[]
-}
-
-/** @internal */
-export type DiffPatch = SetDiffPatch | UnsetDiffPatch | InsertDiffPatch

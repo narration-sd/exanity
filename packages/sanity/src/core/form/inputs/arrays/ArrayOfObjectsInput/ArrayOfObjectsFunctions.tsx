@@ -14,14 +14,18 @@ import {
 } from '@sanity/ui'
 import {ArrayInputFunctionsProps, ObjectItem} from '../../../types'
 
-const POPOVER_PROPS: MenuButtonProps['popover'] = {constrainSize: true, portal: true}
+const POPOVER_PROPS: MenuButtonProps['popover'] = {
+  constrainSize: true,
+  portal: true,
+  fallbackPlacements: ['top', 'bottom'],
+}
 
 /**
  * @hidden
  * @beta */
 export function ArrayOfObjectsFunctions<
   Item extends ObjectItem,
-  SchemaType extends ArraySchemaType
+  SchemaType extends ArraySchemaType,
 >(props: ArrayInputFunctionsProps<Item, SchemaType>) {
   const {schemaType, readOnly, children, onValueCreate, onItemAppend} = props
   const menuButtonId = useId()
@@ -32,7 +36,7 @@ export function ArrayOfObjectsFunctions<
 
       onItemAppend(item)
     },
-    [onValueCreate, onItemAppend]
+    [onValueCreate, onItemAppend],
   )
 
   const handleAddBtnClick = React.useCallback(() => {
@@ -45,9 +49,7 @@ export function ArrayOfObjectsFunctions<
         portal
         content={
           <Box padding={2} sizing="border">
-            <Text size={1} muted>
-              This field is read-only
-            </Text>
+            <Text size={1}>This field is read-only</Text>
           </Box>
         }
       >

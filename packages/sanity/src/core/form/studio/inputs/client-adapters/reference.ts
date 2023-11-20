@@ -1,6 +1,6 @@
 import {map, mergeMap, startWith, switchMap} from 'rxjs/operators'
 import {ReferenceFilterSearchOptions, ReferenceSchemaType} from '@sanity/types'
-import {combineLatest, EMPTY, Observable, of} from 'rxjs'
+import {combineLatest, Observable, of} from 'rxjs'
 import {SanityClient} from '@sanity/client'
 import {ReferenceInfo, ReferenceSearchHit} from '../../../inputs/ReferenceInput/types'
 import {DocumentPreviewStore, getPreviewPaths, prepareForPreview} from '../../../../preview'
@@ -28,7 +28,7 @@ const NOT_FOUND = {
 export function getReferenceInfo(
   documentPreviewStore: DocumentPreviewStore,
   id: string,
-  referenceType: ReferenceSchemaType
+  referenceType: ReferenceSchemaType,
 ): Observable<ReferenceInfo> {
   const {publishedId, draftId} = getIdPair(id)
 
@@ -64,7 +64,7 @@ export function getReferenceInfo(
         documentPreviewStore.observeDocumentTypeFromId(publishedId),
       ]).pipe(
         // assume draft + published are always same type
-        map(([draftTypeName, publishedTypeName]) => draftTypeName || publishedTypeName)
+        map(([draftTypeName, publishedTypeName]) => draftTypeName || publishedTypeName),
       )
 
       return typeName$.pipe(
@@ -74,14 +74,30 @@ export function getReferenceInfo(
             // if we get here we can't read the _type, so we're likely to be in an inconsistent state
             // waiting for an update to reach the client. Since we're in the context of a reactive stream based on
             // the _type we'll get it eventually
-            return EMPTY
+            return of({
+              id,
+              type: undefined,
+              availability: {available: true, reason: 'READABLE'},
+              preview: {
+                draft: undefined,
+                published: undefined,
+              },
+            } as const)
           }
 
           // get schema type for the referenced document
           const refSchemaType = referenceType.to.find((memberType) => memberType.name === typeName)!
 
           if (!refSchemaType) {
-            return EMPTY
+            return of({
+              id,
+              type: typeName,
+              availability: {available: true, reason: 'READABLE'},
+              preview: {
+                draft: undefined,
+                published: undefined,
+              },
+            } as const)
           }
 
           const previewPaths = [
@@ -97,9 +113,9 @@ export function getReferenceInfo(
                     _id: draftId,
                     ...prepareForPreview(result, refSchemaType),
                   }
-                : undefined
+                : undefined,
             ),
-            startWith(undefined)
+            startWith(undefined),
           )
 
           const publishedPreview$ = documentPreviewStore
@@ -111,13 +127,13 @@ export function getReferenceInfo(
                       _id: publishedId,
                       ...prepareForPreview(result, refSchemaType),
                     }
-                  : undefined
+                  : undefined,
               ),
-              startWith(undefined)
+              startWith(undefined),
             )
 
           const value$ = combineLatest([draftPreview$, publishedPreview$]).pipe(
-            map(([draft, published]) => ({draft, published}))
+            map(([draft, published]) => ({draft, published})),
           )
 
           return value$.pipe(
@@ -127,9 +143,9 @@ export function getReferenceInfo(
                 pairAvailability.draft.available || pairAvailability.published.available
                   ? READABLE
                   : pairAvailability.draft.reason === 'PERMISSION_DENIED' ||
-                    pairAvailability.published.reason === 'PERMISSION_DENIED'
-                  ? PERMISSION_DENIED
-                  : NOT_FOUND
+                      pairAvailability.published.reason === 'PERMISSION_DENIED'
+                    ? PERMISSION_DENIED
+                    : NOT_FOUND
 
               return {
                 type: typeName,
@@ -140,11 +156,11 @@ export function getReferenceInfo(
                   published: isRecord(value.published) ? value.published : undefined,
                 },
               }
-            })
+            }),
           )
-        })
+        }),
       )
-    })
+    }),
   )
 }
 
@@ -159,11 +175,11 @@ function getCounterpartIds(collatedHits: CollatedHit[]): string[] {
     .filter(
       (collatedHit) =>
         // we're interested in hits where either draft or published is missing
-        !collatedHit.draft || !collatedHit.published
+        !collatedHit.draft || !collatedHit.published,
     )
     .map((collatedHit) =>
       // if we have the draft, return the published id or vice versa
-      collatedHit.draft ? collatedHit.id : getDraftId(collatedHit.id)
+      collatedHit.draft ? collatedHit.id : getDraftId(collatedHit.id),
     )
 }
 
@@ -177,7 +193,7 @@ export function referenceSearch(
   client: SanityClient,
   textTerm: string,
   type: ReferenceSchemaType,
-  options: ReferenceFilterSearchOptions
+  options: ReferenceFilterSearchOptions,
 ): Observable<ReferenceSearchHit[]> {
   const searchWeighted = createWeightedSearch(type.to, client, options)
   return searchWeighted(textTerm, {includeDrafts: true}).pipe(
@@ -212,8 +228,8 @@ export function referenceSearch(
                   : undefined,
             }
           })
-        })
+        }),
       )
-    })
+    }),
   )
 }

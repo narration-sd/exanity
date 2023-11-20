@@ -3,12 +3,27 @@ import {RouterContext} from './RouterContext'
 import {IntentParameters, RouterContextValue, NavigateOptions, Router, RouterState} from './types'
 
 /**
+ * The props for the {@link RouterProvider} component.
+ *
  * @public
  */
 export interface RouterProviderProps {
+  /**
+   * A function that is called when the user navigates to a new path.
+   * Takes an object containing the path to navigate to and an optional `replace` flag.
+   */
   onNavigate: (opts: {path: string; replace?: boolean}) => void
+  /**
+   * The router object that is used to handle navigation. See {@link Router}
+   */
   router: Router
+  /**
+   * The current state of the router. See {@link RouterState}
+   */
   state: RouterState
+  /**
+   * The child elements to render.
+   */
   children: React.ReactNode
 }
 
@@ -49,6 +64,9 @@ export interface RouterProviderProps {
  * }
  * ```
  *
+ * @param props - The component props.
+ *  {@link RouterProviderProps}
+ *
  * @public
  */
 export function RouterProvider(props: RouterProviderProps): React.ReactElement {
@@ -59,28 +77,28 @@ export function RouterProvider(props: RouterProviderProps): React.ReactElement {
       const [params, payload] = Array.isArray(parameters) ? parameters : [parameters]
       return routerProp.encode({intent: intentName, params, payload})
     },
-    [routerProp]
+    [routerProp],
   )
 
   const resolvePathFromState = useCallback(
     (nextState: Record<string, unknown>): string => {
       return routerProp.encode(nextState)
     },
-    [routerProp]
+    [routerProp],
   )
 
   const navigate = useCallback(
     (nextState: Record<string, unknown>, options: NavigateOptions = {}) => {
       onNavigate({path: resolvePathFromState(nextState), replace: options.replace})
     },
-    [onNavigate, resolvePathFromState]
+    [onNavigate, resolvePathFromState],
   )
 
   const navigateIntent = useCallback(
     (intentName: string, params?: IntentParameters, options: NavigateOptions = {}) => {
       onNavigate({path: resolveIntentLink(intentName, params), replace: options.replace})
     },
-    [onNavigate, resolveIntentLink]
+    [onNavigate, resolveIntentLink],
   )
 
   const router: RouterContextValue = useMemo(
@@ -92,7 +110,7 @@ export function RouterProvider(props: RouterProviderProps): React.ReactElement {
       resolvePathFromState,
       state,
     }),
-    [navigate, navigateIntent, onNavigate, resolveIntentLink, resolvePathFromState, state]
+    [navigate, navigateIntent, onNavigate, resolveIntentLink, resolvePathFromState, state],
   )
 
   return <RouterContext.Provider value={router}>{props.children}</RouterContext.Provider>

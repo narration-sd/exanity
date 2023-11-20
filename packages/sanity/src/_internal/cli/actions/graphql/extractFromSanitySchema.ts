@@ -8,6 +8,7 @@ import type {
   ObjectSchemaType,
   ArraySchemaType,
   IntrinsicTypeName,
+  CrossDatasetReferenceSchemaType,
 } from '@sanity/types'
 import {generateHelpUrl} from '@sanity/generate-help-url'
 import {Schema} from '@sanity/schema'
@@ -105,25 +106,58 @@ function isType(typeDef: SchemaType | ObjectField | ObjectFieldType, typeName: s
 }
 
 function isReference(
-  typeDef: SchemaType | ObjectField | ObjectFieldType
+  typeDef: SchemaType | ObjectField | ObjectFieldType,
 ): typeDef is ReferenceSchemaType {
   return isType(typeDef, 'reference')
 }
 
-function isCrossDatasetReference(typeDef: SchemaType) {
+function isCrossDatasetReference(
+  typeDef: SchemaType | ObjectField | ObjectFieldType | CrossDatasetReferenceSchemaType,
+) {
   return isType(typeDef, 'crossDatasetReference')
+}
+
+function getCrossDatasetReferenceMetadata(
+  typeDef: SchemaType | ObjectField | ObjectFieldType | CrossDatasetReferenceSchemaType,
+) {
+  if (!isCrossDatasetReference(typeDef)) return undefined
+
+  function getTypeNames(
+    type: SchemaType | ObjectField | ObjectFieldType | CrossDatasetReferenceSchemaType | undefined,
+  ) {
+    if (!type) return undefined
+    if (!('to' in type)) return getTypeNames(type.type)
+    return type.to.map((t) => t.type).filter((t): t is string => typeof t === 'string')
+  }
+
+  function getDataset(
+    type: SchemaType | ObjectField | ObjectFieldType | CrossDatasetReferenceSchemaType | undefined,
+  ) {
+    if (!type) return undefined
+    if ('dataset' in type && typeof type.dataset === 'string') return type.dataset
+    if (type.type) return getDataset(type.type)
+    return undefined
+  }
+
+  const typeNames = getTypeNames(typeDef)
+  if (!typeNames) return undefined
+
+  const dataset = getDataset(typeDef)
+  if (typeof dataset !== 'string') return undefined
+
+  return {typeNames, dataset}
 }
 
 export function extractFromSanitySchema(
   sanitySchema: CompiledSchema,
-  extractOptions: {nonNullDocumentFields?: boolean} = {}
+  extractOptions: {nonNullDocumentFields?: boolean} = {},
 ): ApiSpecification {
   const {nonNullDocumentFields} = extractOptions
   const unionRecursionGuards: string[] = []
   const hasErrors =
     sanitySchema._validation &&
     sanitySchema._validation.some((group) =>
-      group.problems.some((problem) => problem.severity === 'error')
+      group.problems.some((problem) => problem.severity === 'error'),
     )
 
   if (hasErrors && Array.isArray(sanitySchema._validation)) {
@@ -177,14 +211,14 @@ export function extractFromSanitySchema(
   function isArrayType(type: SchemaType | ObjectField): type is ArraySchemaType {
     return Boolean(
       ('jsonType' in type && type.jsonType === 'array') ||
-        (type.type && type.type.jsonType === 'array')
+        (type.type && type.type.jsonType === 'array'),
     )
   }
 
   function _convertType(
     type: SchemaType | ObjectField,
     parent: string,
-    options: {isField?: boolean}
+    options: {isField?: boolean},
   ): ConvertedType {
     let name: string | undefined
     if (type.type) {
@@ -222,13 +256,20 @@ export function extractFromSanitySchema(
   function convertType(
     type: SchemaType | ObjectField,
     parent?: string,
-    props: {fieldName?: string} = {}
+    props: {fieldName?: string} = {},
   ): ConvertedType {
     const mapped = _convertType(type, parent || '', {isField: Boolean(props.fieldName)})
     const gqlName = props.fieldName || mapped.name
     const originalName = type.name
     const original = gqlName === originalName ? {} : {originalName: originalName}
-    return {...props, ...mapped, ...original}
+    const crossDatasetReferenceMetadata = getCrossDatasetReferenceMetadata(type)
+
+    return {
+      ...props,
+      ...mapped,
+      ...original,
+      ...(crossDatasetReferenceMetadata && {crossDatasetReferenceMetadata}),
+    }
   }
 
   function isField(def: SchemaType | ObjectField): def is ObjectField {
@@ -257,7 +298,7 @@ export function extractFromSanitySchema(
     const fields = collectFields(def)
     const firstUnprefixed = Math.max(
       0,
-      fields.findIndex((field) => field.name[0] !== '_')
+      fields.findIndex((field) => field.name[0] !== '_'),
     )
 
     const keyField = createStringField('_key')
@@ -281,7 +322,7 @@ export function extractFromSanitySchema(
       fields: objectFields.map((field) =>
         isArrayOfBlocks(field)
           ? buildRawField(field, name)
-          : (convertType(field, name, {fieldName: field.name}) as any)
+          : (convertType(field, name, {fieldName: field.name}) as any),
       ),
     }
   }
@@ -330,7 +371,7 @@ export function extractFromSanitySchema(
   function getArrayDefinition(
     def: ArraySchemaType,
     parent: string,
-    options: {isField?: boolean} = {}
+    options: {isField?: boolean} = {},
   ): any {
     const base = {description: getDescription(def), kind: 'List'}
     const name = !options.isField && def.name ? {name: getTypeName(def.name)} : {}
@@ -390,7 +431,7 @@ export function extractFromSanitySchema(
   function getUnionDefinition(
     candidates: ObjectSchemaType[],
     parent: SchemaType,
-    options: {grandParent?: string} = {}
+    options: {grandParent?: string} = {},
   ) {
     if (candidates.length < 2) {
       throw new Error('Not enough candidates for a union type')
@@ -412,7 +453,7 @@ export function extractFromSanitySchema(
             i,
             parent.name,
             def.type ? def.type.name : def.name,
-            options.grandParent
+            options.grandParent,
           )
         }
       })
@@ -424,12 +465,15 @@ export function extractFromSanitySchema(
 
       // We might end up with union types being returned - these needs to be flattened
       // so that an ImageOr(PersonOrPet) becomes ImageOrPersonOrPet
-      const flattened = converted.reduce((acc, candidate) => {
-        const union = unionTypes.find((item) => item.name === candidate.type)
-        return union
-          ? acc.concat(union.types.map((type) => ({type, isReference: candidate.isReference})))
-          : acc.concat(candidate)
-      }, [] as {name?: string; type: string | {name: string}; isReference?: boolean}[])
+      const flattened = converted.reduce(
+        (acc, candidate) => {
+          const union = unionTypes.find((item) => item.name === candidate.type)
+          return union
+            ? acc.concat(union.types.map((type) => ({type, isReference: candidate.isReference})))
+            : acc.concat(candidate)
+        },
+        [] as {name?: string; type: string | {name: string}; isReference?: boolean}[],
+      )
 
       const allCandidatesAreDocuments = flattened.every((def) => {
         const typeDef = sanityTypes.find((type) => type.name === getName(def))
@@ -542,13 +586,13 @@ export function extractFromSanitySchema(
 
   function hasValidationFlag(
     field: SchemaType | ObjectField | ObjectFieldType,
-    flag: string
+    flag: string,
   ): boolean {
     return (
       'validation' in field &&
       Array.isArray(field.validation) &&
       field.validation.some(
-        (rule) => rule && '_rules' in rule && rule._rules.some((item) => item.flag === flag)
+        (rule) => rule && '_rules' in rule && rule._rules.some((item) => item.flag === flag),
       )
     )
   }
@@ -602,7 +646,7 @@ function createLiftTypeArrayError(
   index: number,
   parent: string,
   inlineType = 'object',
-  grandParent = ''
+  grandParent = '',
 ) {
   const helpUrl = generateHelpUrl(helpUrls.SCHEMA_LIFT_ANONYMOUS_OBJECT_TYPE)
   const context = [grandParent, parent].filter(Boolean).join('/')
@@ -611,7 +655,7 @@ function createLiftTypeArrayError(
     Encountered anonymous inline ${inlineType} at index ${index} for type/field ${context}.
     To use this type with GraphQL you will need to create a top-level schema type for it.
     See ${helpUrl}`,
-    helpUrl
+    helpUrl,
   )
 }
 
@@ -622,7 +666,7 @@ function createLiftTypeError(typeName: string, parent: string, inlineType = 'obj
     Encountered anonymous inline ${inlineType} "${typeName}" for field/type "${parent}".
     To use this field with GraphQL you will need to create a top-level schema type for it.
     See ${helpUrl}`,
-    helpUrl
+    helpUrl,
   )
 }
 

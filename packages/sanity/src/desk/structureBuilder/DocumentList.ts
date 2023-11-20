@@ -1,5 +1,6 @@
 import {SchemaType, SortOrderingItem} from '@sanity/types'
 import {ComposeIcon} from '@sanity/icons'
+import {generateHelpUrl} from '@sanity/generate-help-url'
 import {resolveTypeForDocument} from './util/resolveTypeForDocument'
 import {SerializeError, HELP_URL} from './SerializeError'
 import {SerializeOptions, Child} from './StructureNodes'
@@ -12,7 +13,7 @@ import {
 } from './GenericList'
 import {DocumentBuilder} from './Document'
 import {StructureContext} from './types'
-import {InitialValueTemplateItem} from 'sanity'
+import {DEFAULT_STUDIO_CLIENT_OPTIONS, InitialValueTemplateItem} from 'sanity'
 
 const validateFilter = (spec: PartialDocumentList, options: SerializeOptions) => {
   const filter = spec.options?.filter.trim() || ''
@@ -22,7 +23,7 @@ const validateFilter = (spec: PartialDocumentList, options: SerializeOptions) =>
       `\`filter\` cannot start with \`${filter[0]}\` - looks like you are providing a query, not a filter`,
       options.path,
       spec.id,
-      spec.title
+      spec.title,
     ).withHelpUrl(HELP_URL.QUERY_PROVIDED_FOR_FILTER)
   }
 
@@ -43,95 +44,154 @@ const createDocumentChildResolverForItem =
     return Promise.resolve(type).then((schemaType) =>
       schemaType
         ? context.resolveDocumentNode({schemaType, documentId: itemId})
-        : new DocumentBuilder(context).id('editor').documentId(itemId).schemaType('')
+        : new DocumentBuilder(context).id('editor').documentId(itemId).schemaType(''),
     )
   }
 
 /**
- * @hidden
- * @beta */
+ * Partial document list
+ *
+ * @public
+ */
 export interface PartialDocumentList extends BuildableGenericList {
+  /** Document list options. See {@link DocumentListOptions} */
   options?: DocumentListOptions
+  /** Schema type name */
   schemaTypeName?: string
 }
 
 /**
- * @hidden
- * @beta */
+ * Interface for document list input
+ *
+ * @public
+ */
 export interface DocumentListInput extends GenericListInput {
+  /** Document list options. See {@link DocumentListOptions} */
   options: DocumentListOptions
 }
 
 /**
- * @hidden
- * @beta */
+ * Interface for document list
+ *
+ * @public
+ */
 export interface DocumentList extends GenericList {
   type: 'documentList'
+  /** Document list options. See {@link DocumentListOptions} */
   options: DocumentListOptions
+  /** Document list child. See {@link Child} */
   child: Child
+  /** Document schema type name */
   schemaTypeName?: string
 }
 
 /**
- * @hidden
- * @beta */
+ * Interface for document List options
+ *
+ * @public
+ */
 export interface DocumentListOptions {
+  /** Document list filter */
   filter: string
+  /** Document list parameters */
   params?: Record<string, unknown>
+  /** Document list API version */
   apiVersion?: string
+  /** Document list API default ordering array. */
   defaultOrdering?: SortOrderingItem[]
 }
 
 /**
- * @hidden
- * @beta */
+ * Class for building document list
+ *
+ * @public
+ */
 export class DocumentListBuilder extends GenericListBuilder<
   PartialDocumentList,
   DocumentListBuilder
 > {
+  /** Document list options. See {@link PartialDocumentList} */
   protected spec: PartialDocumentList
 
-  constructor(protected _context: StructureContext, spec?: DocumentListInput) {
+  constructor(
+    /**
+     * Desk structure context. See {@link StructureContext}
+     */
+    protected _context: StructureContext,
+    spec?: DocumentListInput,
+  ) {
     super()
     this.spec = spec || {}
     this.initialValueTemplatesSpecified = Boolean(spec?.initialValueTemplates)
   }
 
+  /** Set API version
+   * @param apiVersion - API version
+   * @returns document list builder based on the options and API version provided. See {@link DocumentListBuilder}
+   */
   apiVersion(apiVersion: string): DocumentListBuilder {
     return this.clone({options: {...(this.spec.options || {filter: ''}), apiVersion}})
   }
 
+  /** Get API version
+   * @returns API version
+   */
   getApiVersion(): string | undefined {
     return this.spec.options?.apiVersion
   }
 
+  /** Set Document list filter
+   * @param filter - filter
+   * @returns document list builder based on the options and filter provided. See {@link DocumentListBuilder}
+   */
   filter(filter: string): DocumentListBuilder {
     return this.clone({options: {...(this.spec.options || {}), filter}})
   }
 
+  /** Get Document list filter
+   * @returns filter
+   */
   getFilter(): string | undefined {
     return this.spec.options?.filter
   }
 
+  /** Set Document list schema type name
+   * @param type - schema type name.
+   * @returns document list builder based on the schema type name provided. See {@link DocumentListBuilder}
+   */
   schemaType(type: SchemaType | string): DocumentListBuilder {
     const schemaTypeName = typeof type === 'string' ? type : type.name
     return this.clone({schemaTypeName})
   }
 
+  /** Get Document list schema type name
+   * @returns schema type name
+   */
   getSchemaType(): string | undefined {
     return this.spec.schemaTypeName
   }
 
+  /** Set Document list options' parameters
+   * @param params - parameters
+   * @returns document list builder based on the options provided. See {@link DocumentListBuilder}
+   */
   params(params: Record<string, unknown>): DocumentListBuilder {
     return this.clone({
       options: {...(this.spec.options || {filter: ''}), params},
     })
   }
 
+  /** Get Document list options' parameters
+   * @returns options
+   */
   getParams(): Record<string, unknown> | undefined {
     return this.spec.options?.params
   }
 
+  /** Set Document list default ordering
+   * @param ordering - default sort ordering array. See {@link SortOrderingItem}
+   * @returns document list builder based on ordering provided. See {@link DocumentListBuilder}
+   */
   defaultOrdering(ordering: SortOrderingItem[]): DocumentListBuilder {
     if (!Array.isArray(ordering)) {
       throw new Error('`defaultOrdering` must be an array of order clauses')
@@ -142,17 +202,24 @@ export class DocumentListBuilder extends GenericListBuilder<
     })
   }
 
+  /** Get Document list default ordering
+   * @returns default ordering. See {@link SortOrderingItem}
+   */
   getDefaultOrdering(): SortOrderingItem[] | undefined {
     return this.spec.options?.defaultOrdering
   }
 
+  /** Serialize Document list
+   * @param options - serialization options. See {@link SerializeOptions}
+   * @returns document list object based on path provided in options. See {@link DocumentList}
+   */
   serialize(options: SerializeOptions = {path: []}): DocumentList {
     if (typeof this.spec.id !== 'string' || !this.spec.id) {
       throw new SerializeError(
         '`id` is required for document lists',
         options.path,
         options.index,
-        this.spec.title
+        this.spec.title,
       ).withHelpUrl(HELP_URL.ID_REQUIRED)
     }
 
@@ -161,10 +228,17 @@ export class DocumentListBuilder extends GenericListBuilder<
         '`filter` is required for document lists',
         options.path,
         this.spec.id,
-        this.spec.title
+        this.spec.title,
       ).withHelpUrl(HELP_URL.FILTER_REQUIRED)
     }
 
+    const hasSimpleFilter = this.spec.options?.filter === '_type == $type'
+    if (!hasSimpleFilter && this.spec.options.filter && !this.spec.options.apiVersion) {
+      console.warn(
+        `No apiVersion specified for document type list with custom filter: \`${this.spec.options.filter}\`. This will be required in the future. See %s for more info.`,
+        generateHelpUrl(HELP_URL.API_VERSION_REQUIRED_FOR_CUSTOM_FILTER),
+      )
+    }
     return {
       ...super.serialize(options),
       type: 'documentList',
@@ -172,15 +246,17 @@ export class DocumentListBuilder extends GenericListBuilder<
       child: this.spec.child || createDocumentChildResolverForItem(this._context),
       options: {
         ...this.spec.options,
-        apiVersion:
-          this.spec.options.apiVersion ||
-          // If this is a simple type filter, use modern API version - otherwise default to v1
-          (this.spec.options?.filter === '_type == $type' ? '2021-06-07' : '1'),
+        // @todo: make specifying .apiVersion required when using custom (non-simple) filters in v4
+        apiVersion: this.spec.options.apiVersion || DEFAULT_STUDIO_CLIENT_OPTIONS.apiVersion,
         filter: validateFilter(this.spec, options),
       },
     }
   }
 
+  /** Clone Document list builder (allows for options overriding)
+   * @param withSpec - override document list spec. See {@link PartialDocumentList}
+   * @returns document list builder. See {@link DocumentListBuilder}
+   */
   clone(withSpec?: PartialDocumentList): DocumentListBuilder {
     const builder = new DocumentListBuilder(this._context)
     builder.spec = {...this.spec, ...(withSpec || {})}
@@ -196,6 +272,9 @@ export class DocumentListBuilder extends GenericListBuilder<
     return builder
   }
 
+  /** Get Document list spec
+   * @returns document list spec. See {@link PartialDocumentList}
+   */
   getSpec(): PartialDocumentList {
     return this.spec
   }
@@ -203,7 +282,7 @@ export class DocumentListBuilder extends GenericListBuilder<
 
 function inferInitialValueTemplates(
   context: StructureContext,
-  spec: PartialDocumentList
+  spec: PartialDocumentList,
 ): InitialValueTemplateItem[] | undefined {
   const {document} = context
   const {schemaTypeName, options} = spec
@@ -221,7 +300,7 @@ function inferInitialValueTemplates(
       document.resolveNewDocumentOptions({
         type: 'structure',
         schemaType,
-      })
+      }),
     )
     .map((option) => ({...option, icon: ComposeIcon}))
 }
@@ -236,7 +315,7 @@ function inferTypeName(spec: PartialDocumentList): string | undefined {
 /** @internal */
 export function getTypeNamesFromFilter(
   filter: string,
-  params: Record<string, unknown> = {}
+  params: Record<string, unknown> = {},
 ): string[] {
   let typeNames = getTypeNamesFromEqualityFilter(filter, params)
 
@@ -250,7 +329,7 @@ export function getTypeNamesFromFilter(
 // From _type == "movie" || _type == $otherType
 function getTypeNamesFromEqualityFilter(
   filter: string,
-  params: Record<string, unknown> = {}
+  params: Record<string, unknown> = {},
 ): string[] {
   const pattern =
     /\b_type\s*==\s*(['"].*?['"]|\$.*?(?:\s|$))|\B(['"].*?['"]|\$.*?(?:\s|$))\s*==\s*_type/g
@@ -272,7 +351,7 @@ function getTypeNamesFromEqualityFilter(
 // From _type in ["dog", "cat", $otherSpecies]
 function getTypeNamesFromInTypesFilter(
   filter: string,
-  params: Record<string, unknown> = {}
+  params: Record<string, unknown> = {},
 ): string[] {
   const pattern = /\b_type\s+in\s+\[(.*?)\]/
   const matches = filter.match(pattern)

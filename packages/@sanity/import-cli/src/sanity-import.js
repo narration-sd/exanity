@@ -29,6 +29,7 @@ const cli = meow(
     --missing Skip documents that already exist
     --allow-failing-assets Skip assets that cannot be fetched/uploaded
     --replace-assets Skip reuse of existing assets
+    --skip-cross-dataset-references Skips references to other datasets
     --help Show this help
 
   Rarely used options (should generally not be used)
@@ -88,16 +89,27 @@ const cli = meow(
         default: false,
       },
 
+      skipCrossDatasetReferences: {
+        type: 'boolean',
+        default: false,
+      },
+
       assetConcurrency: {
         type: 'number',
         alias: 'c',
       },
     },
-  }
+  },
 )
 
 const {flags, input, showHelp} = cli
-const {dataset, allowFailingAssets, replaceAssets, allowAssetsInDifferentDataset} = flags
+const {
+  dataset,
+  allowFailingAssets,
+  replaceAssets,
+  allowAssetsInDifferentDataset,
+  skipCrossDatasetReferences,
+} = flags
 const token = flags.token || process.env.SANITY_IMPORT_TOKEN
 const projectId = flags.project
 const assetConcurrency = flags.assetConcurrency
@@ -154,10 +166,11 @@ getStream()
       onProgress,
       allowFailingAssets,
       allowAssetsInDifferentDataset,
+      skipCrossDatasetReferences,
       assetConcurrency,
       replaceAssets,
       assetsBase: getAssetsBase(),
-    })
+    }),
   )
   .then(({numDocs, warnings}) => {
     const timeSpent = prettyMs(Date.now() - stepStart, {secondsDecimalDigits: 2})
@@ -184,7 +197,7 @@ function printWarnings(warnings) {
 
   console.warn(
     yellow('⚠ Failed to import the following %s:'),
-    assetFails.length > 1 ? 'assets' : 'asset'
+    assetFails.length > 1 ? 'assets' : 'asset',
   )
 
   warnings.forEach((warning) => {
@@ -226,7 +239,7 @@ function getUriStream(uri) {
     },
     (err) => {
       throw new Error(`Error fetching source:\n${err.message}`)
-    }
+    },
   )
 }
 

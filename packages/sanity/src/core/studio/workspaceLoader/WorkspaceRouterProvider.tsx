@@ -42,7 +42,7 @@ type HandleNavigate = (opts: {path: string; replace?: boolean}) => void
 function useRouterFromWorkspaceHistory(
   history: RouterHistory,
   router: Router,
-  tools: Tool[]
+  tools: Tool[],
 ): [RouterState | null, HandleNavigate] {
   // React will only re-subscribe if store.subscribe changes identity, so by memoizing the whole store
   // we ensure that if any of the dependencies used by store.selector changes, we'll re-subscribe.
@@ -57,7 +57,7 @@ function useRouterFromWorkspaceHistory(
       routerBasePath === '/' ? true : routerBasePathRegex.test(pathname)
     return {
       subscribe: (onStoreChange: () => void) => history.listen(onStoreChange),
-      getSnapshot: () => history.location.pathname,
+      getSnapshot: () => history.location.pathname + history.location.search ?? '',
       // Always return null for the server snapshot, as we can't know how to resolve intents until after authentication is done, which is browser-only
       getServerSnapshot: () => null,
       selector: (pathname: string | null) =>
@@ -72,7 +72,7 @@ function useRouterFromWorkspaceHistory(
     store.getSnapshot,
     store.getServerSnapshot,
     store.selector,
-    isEqual
+    isEqual,
   )
   /**
    * As `prevEvent` needs to be referenced in `onNavigate`, it's important to use a React Ref when reading from it.
@@ -138,13 +138,13 @@ function maybeResolveIntent(
   event: RouterStateEvent | null,
   router: Router,
   tools: Tool[],
-  prevEvent: React.MutableRefObject<RouterStateEvent | null>
+  prevEvent: React.MutableRefObject<RouterStateEvent | null>,
 ): string | null {
   if (event?.type === 'state' && event.state?.intent) {
     const redirectState = resolveIntentState(
       tools,
       prevEvent.current?.type === 'state' ? prevEvent.current.state : {},
-      event.state
+      event.state,
     )
 
     if (redirectState?.type === 'state') {

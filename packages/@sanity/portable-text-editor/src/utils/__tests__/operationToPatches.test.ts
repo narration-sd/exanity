@@ -1,6 +1,5 @@
 import {createEditor, Descendant} from 'slate'
 import {PortableTextTextBlock} from '@sanity/types'
-import {createRef} from 'react'
 import {getPortableTextMemberSchemaTypes} from '../getPortableTextMemberSchemaTypes'
 import {schemaType} from '../../editor/__tests__/PortableTextEditorTester'
 import {createOperationToPatches} from '../operationToPatches'
@@ -11,14 +10,11 @@ import {defaultKeyGenerator} from '../../editor/hooks/usePortableTextEditorKeyGe
 const portableTextFeatures = getPortableTextMemberSchemaTypes(schemaType)
 
 const operationToPatches = createOperationToPatches(portableTextFeatures)
-const isPending: React.MutableRefObject<boolean | null> = createRef()
-isPending.current = false
 
 const {editor} = withPlugins(createEditor(), {
   portableTextEditor: new PortableTextEditor({schemaType} as PortableTextEditorProps),
   keyGenerator: defaultKeyGenerator,
   readOnly: false,
-  isPending,
 })
 
 const createDefaultValue = () =>
@@ -59,8 +55,8 @@ describe('operationToPatches', () => {
           properties: {_type: 'span', _key: 'c130395c640c', marks: []},
         },
 
-        createDefaultValue()
-      )
+        createDefaultValue(),
+      ),
     ).toMatchInlineSnapshot(`
       Array [
         Object {
@@ -116,8 +112,8 @@ describe('operationToPatches', () => {
             children: [{_key: '1', _type: 'span', text: '', marks: []}],
           },
         },
-        createDefaultValue()
-      )
+        createDefaultValue(),
+      ),
     ).toMatchInlineSnapshot(`
       Array [
         Object {
@@ -158,8 +154,8 @@ describe('operationToPatches', () => {
           },
         },
 
-        []
-      )
+        [],
+      ),
     ).toMatchInlineSnapshot(`
       Array [
         Object {
@@ -200,8 +196,8 @@ describe('operationToPatches', () => {
           },
         },
 
-        createDefaultValue()
-      )
+        createDefaultValue(),
+      ),
     ).toMatchInlineSnapshot(`
       Array [
         Object {
@@ -241,8 +237,8 @@ describe('operationToPatches', () => {
           offset: 0,
         },
 
-        createDefaultValue()
-      )
+        createDefaultValue(),
+      ),
     ).toMatchInlineSnapshot(`
       Array [
         Object {
@@ -278,8 +274,8 @@ describe('operationToPatches', () => {
           offset: 1,
         },
 
-        before
-      )
+        before,
+      ),
     ).toMatchInlineSnapshot(`
       Array [
         Object {
@@ -318,8 +314,8 @@ describe('operationToPatches', () => {
           },
         },
 
-        createDefaultValue()
-      )
+        createDefaultValue(),
+      ),
     ).toMatchInlineSnapshot(`
       Array [
         Object {
@@ -349,8 +345,8 @@ describe('operationToPatches', () => {
           node: val[0],
         },
 
-        val
-      )
+        val,
+      ),
     ).toMatchInlineSnapshot(`
       Array [
         Object {
@@ -387,8 +383,8 @@ describe('operationToPatches', () => {
           properties: {text: '1234'},
         },
 
-        val
-      )
+        val,
+      ),
     ).toMatchInlineSnapshot(`
       Array [
         Object {

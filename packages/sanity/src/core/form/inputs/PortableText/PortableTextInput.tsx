@@ -1,4 +1,4 @@
-import {Path, PortableTextBlock} from '@sanity/types'
+import {PortableTextBlock} from '@sanity/types'
 import {
   EditorChange,
   Patch as EditorPatch,
@@ -45,16 +45,20 @@ export interface PortableTextMemberItem {
 }
 
 /**
- * The root Portable Text Input component
+ * Input component for editing block content
+ * ({@link https://github.com/portabletext/portabletext | Portable Text}) in the Sanity Studio.
  *
- * @hidden
- * @beta
+ * Supports multi-user real-time block content editing on larger documents.
+ *
+ * This component can be configured and customized extensively.
+ * {@link https://www.sanity.io/docs/portable-text-features | Go to the documentation for more details}.
+ *
+ * @public
+ * @param props - {@link PortableTextInputProps} component props.
  */
 export function PortableTextInput(props: PortableTextInputProps) {
   const {
     elementProps,
-    focused,
-    focusPath,
     hotkeys,
     markers = EMPTY_ARRAY,
     members,
@@ -89,6 +93,8 @@ export function PortableTextInput(props: PortableTextInputProps) {
   const [invalidValue, setInvalidValue] = useState<InvalidValue | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isActive, setIsActive] = useState(false)
+  const [isOffline, setIsOffline] = useState(false)
+  const [hasFocusWithin, setHasFocusWithin] = useState(false)
 
   const toast = useToast()
   const portableTextMemberItemsRef: React.MutableRefObject<PortableTextMemberItem[]> = useRef([])
@@ -146,7 +152,7 @@ export function PortableTextInput(props: PortableTextInputProps) {
           }
           // Inline objects
           const childrenField = member.item.members.find(
-            (f) => f.kind === 'field' && f.name === 'children'
+            (f) => f.kind === 'field' && f.name === 'children',
           )
           if (
             childrenField &&
@@ -185,18 +191,17 @@ export function PortableTextInput(props: PortableTextInputProps) {
     const items: PortableTextMemberItem[] = result.map((item) => {
       const key = pathToString(item.node.path)
       const existingItem = portableTextMemberItemsRef.current.find((ref) => ref.key === key)
+      const isObject = item.kind !== 'textBlock'
       let input: ReactNode
 
-      if (item.kind !== 'textBlock') {
-        input = <FormInput absolutePath={item.node.path} {...(props as FIXME)} />
+      // Only render the input if the item is open or new
+      if (isObject && (item.member.open || !existingItem)) {
+        const inputProps = {...(props as FIXME), absolutePath: item.node.path}
+        input = <FormInput {...inputProps} />
       }
 
       if (existingItem) {
-        // Only update the input if the node is open or the value has changed
-        // This is a performance optimization.
-        if (item.member.open || existingItem.node.value !== item.node.value) {
-          existingItem.input = input
-        }
+        existingItem.input = input
         existingItem.member = item.member
         existingItem.node = item.node
         return existingItem
@@ -217,14 +222,12 @@ export function PortableTextInput(props: PortableTextInputProps) {
     return items
   }, [members, props])
 
-  const hasFocus = focused || isEditorFocusablePath(focusPath)
-
-  // Set active if focused
+  // Set active if focused within the editor
   useEffect(() => {
-    if (hasFocus) {
+    if (hasFocusWithin) {
       setIsActive(true)
     }
-  }, [hasFocus])
+  }, [hasFocusWithin])
 
   // Handle editor changes
   const handleEditorChange = useCallback(
@@ -232,6 +235,13 @@ export function PortableTextInput(props: PortableTextInputProps) {
       switch (change.type) {
         case 'mutation':
           onChange(toFormPatches(change.patches))
+          break
+        case 'connection':
+          if (change.value === 'offline') {
+            setIsOffline(true)
+          } else if (change.value === 'online') {
+            setIsOffline(false)
+          }
           break
         case 'selection':
           // This doesn't need to be immediate,
@@ -244,9 +254,11 @@ export function PortableTextInput(props: PortableTextInputProps) {
           break
         case 'focus':
           setIsActive(true)
+          setHasFocusWithin(true)
           break
         case 'blur':
           onBlur(change.event)
+          setHasFocusWithin(false)
           break
         case 'undo':
         case 'redo':
@@ -264,7 +276,7 @@ export function PortableTextInput(props: PortableTextInputProps) {
         default:
       }
     },
-    [onBlur, onChange, onPathFocus, toast]
+    [onBlur, onChange, onPathFocus, toast],
   )
 
   useEffect(() => {
@@ -283,13 +295,13 @@ export function PortableTextInput(props: PortableTextInputProps) {
             onChange={handleEditorChange}
             onIgnore={handleIgnoreInvalidValue}
             resolution={invalidValue.resolution}
-            readOnly={readOnly}
+            readOnly={isOffline || readOnly}
           />
         </Box>
       )
     }
     return null
-  }, [handleEditorChange, handleIgnoreInvalidValue, invalidValue, readOnly])
+  }, [handleEditorChange, handleIgnoreInvalidValue, invalidValue, isOffline, readOnly])
 
   const handleActivate = useCallback((): void => {
     if (!isActive) {
@@ -311,13 +323,13 @@ export function PortableTextInput(props: PortableTextInputProps) {
               patches$={patches$}
               onChange={handleEditorChange}
               maxBlocks={undefined} // TODO: from schema?
-              readOnly={readOnly}
+              readOnly={isOffline || readOnly}
               schemaType={schemaType}
               value={value}
             >
               <Compositor
                 {...props}
-                hasFocus={hasFocus}
+                hasFocusWithin={hasFocusWithin}
                 hotkeys={hotkeys}
                 isActive={isActive}
                 isFullscreen={isFullscreen}
@@ -340,9 +352,4 @@ export function PortableTextInput(props: PortableTextInputProps) {
 
 function toFormPatches(patches: any) {
   return patches.map((p: Patch) => ({...p, patchType: SANITY_PATCH_TYPE}))
-}
-
-// Return true if the path directly points to something focusable in the editor
-function isEditorFocusablePath(path: Path) {
-  return path.length === 1 || (path.length === 3 && path[1] === 'children')
 }

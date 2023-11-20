@@ -129,6 +129,11 @@ export interface PaneRouterContextValue {
   closeCurrent: () => void
 
   /**
+   * Removes all panes to the right including current pane
+   */
+  closeCurrentAndAfter: (expandLast?: boolean) => void
+
+  /**
    * Duplicate the current pane, with optional overrides for item ID and parameters
    */
   duplicateCurrent: (pane?: {payload?: unknown; params?: Record<string, string>}) => void
@@ -149,11 +154,17 @@ export interface PaneRouterContextValue {
   setPayload: (payload: unknown) => void
 
   /**
+   * A function that creates a path with the given parameters without navigating to it.
+   * Useful for creating links that can be e.g. copied to clipboard and shared.
+   */
+  createPathWithParams: (params: Record<string, string | undefined>) => string
+
+  /**
    * Proxied navigation to a given intent. Consider just exposing `router` instead?
    */
   navigateIntent: (
     intentName: string,
     params: Record<string, string>,
-    options?: {replace?: boolean}
+    options?: {replace?: boolean},
   ) => void
 }

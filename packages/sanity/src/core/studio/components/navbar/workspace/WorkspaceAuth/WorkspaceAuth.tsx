@@ -15,7 +15,7 @@ export function WorkspaceAuth() {
   const {activeWorkspace, setActiveWorkspace} = useActiveWorkspace()
   const [authStates] = useWorkspaceAuthStates(workspaces)
   const [selectedWorkspaceName, setSelectedWorkspaceName] = useState<string | null>(
-    activeWorkspace?.name || null
+    activeWorkspace?.name || null,
   )
   const selectedWorkspace =
     workspaces.length === 1
@@ -90,8 +90,8 @@ export function WorkspaceAuth() {
           const state = authState.authenticated
             ? 'logged-in'
             : workspace.auth.LoginComponent
-            ? 'logged-out'
-            : 'no-access'
+              ? 'logged-out'
+              : 'no-access'
 
           const handleSelectWorkspace = () => {
             if (state === 'logged-in' && workspace.name !== activeWorkspace.name) {

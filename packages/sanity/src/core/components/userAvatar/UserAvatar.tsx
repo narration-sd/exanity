@@ -78,9 +78,9 @@ function TooltipUserAvatar(props: Omit<UserAvatarProps, 'user'> & {user: User}) 
 
 const StaticUserAvatar = forwardRef(function StaticUserAvatar(
   props: Omit<UserAvatarProps, 'user'> & {user: User},
-  ref: React.ForwardedRef<HTMLDivElement>
+  ref: React.ForwardedRef<HTMLDivElement>,
 ) {
-  const {user, animateArrowFrom, position, size, status, tone} = props
+  const {user, animateArrowFrom, position, size, status, tone, ...restProps} = props
   const [imageLoadError, setImageLoadError] = useState<null | Error>(null)
   const userColor = useUserColor(user.id)
   const imageUrl = imageLoadError ? undefined : user?.imageUrl
@@ -97,6 +97,8 @@ const StaticUserAvatar = forwardRef(function StaticUserAvatar(
       ref={ref}
       size={typeof size === 'string' ? LEGACY_TO_UI_AVATAR_SIZES[size] : size}
       status={status}
+      title={user?.displayName}
+      {...restProps}
     />
   )
 })

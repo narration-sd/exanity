@@ -32,18 +32,16 @@ const fallbackEditorChild: PaneNodeResolver = (nodeId, context): DocumentPaneNod
 
   if (!type) {
     throw new Error(
-      `Document type for document with ID ${id} was not provided in the router params.`
+      `Document type for document with ID ${id} was not provided in the router params.`,
     )
   }
 
-  let defaultDocumentBuilder = resolveDocumentNode({schemaType: type, documentId: id})
-
-  defaultDocumentBuilder = defaultDocumentBuilder.id('editor').title('Editor')
+  let defaultDocumentBuilder = resolveDocumentNode({schemaType: type, documentId: id}).id('editor')
 
   if (template) {
     defaultDocumentBuilder = defaultDocumentBuilder.initialValueTemplate(
       template,
-      payload as {[key: string]: unknown}
+      payload as {[key: string]: unknown},
     )
   }
 
@@ -266,9 +264,9 @@ function resolvePaneTree({
           // we emit the loading panes first in a concat (this emits immediately)
           observableOf([resolvedPaneMeta, ...loadingPanes]),
           // then whenever the next stream is done, the results will be combined.
-          nextStream.pipe(map((nextResolvedPanes) => [resolvedPaneMeta, ...nextResolvedPanes]))
+          nextStream.pipe(map((nextResolvedPanes) => [resolvedPaneMeta, ...nextResolvedPanes])),
         )
-      })
+      }),
     )
   } catch (e) {
     if (e instanceof PaneResolutionError) {
@@ -277,7 +275,7 @@ function resolvePaneTree({
           `Pane resolution error at index ${e.context.index}${
             e.context.splitIndex > 0 ? ` for split pane index ${e.context.splitIndex}` : ''
           }: ${e.message}${e.helpId ? ` - see ${generateHelpUrl(e.helpId)}` : ''}`,
-          e
+          e,
         )
       }
 
@@ -318,7 +316,7 @@ export function createResolvedPaneNodeStream({
             routerPaneSibling,
             groupIndex,
             siblingIndex,
-          }))
+          })),
         )
         // add in the flat index
         .map((i, index) => ({...i, flatIndex: index}))
@@ -398,8 +396,8 @@ export function createResolvedPaneNodeStream({
         path: [],
         resolvePane,
         structureContext,
-      })
-    )
+      }),
+    ),
   )
 
   // after we've created a stream of `ResolvedPaneMeta[]`, we need to clean up
@@ -422,7 +420,7 @@ export function createResolvedPaneNodeStream({
           }
           return nextPane
         }),
-      [] as ResolvedPaneMeta[]
+      [] as ResolvedPaneMeta[],
     ),
     // this prevents duplicate emissions
     distinctUntilChanged((prev, next) => {
@@ -437,6 +435,6 @@ export function createResolvedPaneNodeStream({
       }
 
       return true
-    })
+    }),
   )
 }

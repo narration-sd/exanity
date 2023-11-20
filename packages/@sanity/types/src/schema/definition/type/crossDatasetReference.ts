@@ -1,7 +1,7 @@
-import {ComponentType} from 'react'
-import {PreviewConfig} from '../../preview'
-import {BaseSchemaDefinition} from './common'
-import {ReferenceOptions} from './reference'
+import type {ComponentType} from 'react'
+import type {PreviewConfig} from '../../preview'
+import type {BaseSchemaDefinition} from './common'
+import type {ReferenceOptions} from './reference'
 
 /** @public */
 export interface CrossDatasetReferenceDefinition extends BaseSchemaDefinition {
@@ -12,13 +12,20 @@ export interface CrossDatasetReferenceDefinition extends BaseSchemaDefinition {
     title?: string
     icon?: ComponentType
     preview?: PreviewConfig
-    // eslint-disable-next-line camelcase
+
+    /**
+     * @deprecated Configuring search is no longer supported
+     */
     __experimental_search?: {path: string | string[]; weight?: number; mapWith?: string}[]
   }[]
 
   dataset: string
-  projectId: string
   studioUrl?: (document: {id: string; type?: string}) => string | null
   tokenId?: string
   options?: ReferenceOptions
+
+  /**
+   * @deprecated Cross-project references are no longer supported, only cross-dataset
+   */
+  projectId?: string
 }

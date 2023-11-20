@@ -3,6 +3,7 @@ const flatten = require('lodash/flatten')
 const ensureUniqueIds = require('./util/ensureUniqueIds')
 const {getAssetRefs, unsetAssetRefs, absolutifyPaths} = require('./assetRefs')
 const validateAssetDocuments = require('./validateAssetDocuments')
+const validateCdrDatasets = require('./validateCdrDatasets')
 const assignArrayKeys = require('./assignArrayKeys')
 const assignDocumentId = require('./assignDocumentId')
 const uploadAssets = require('./uploadAssets')
@@ -13,7 +14,7 @@ const importBatches = require('./importBatches')
 const {
   getStrongRefs,
   weakenStrongRefs,
-  setTypeOnReferences,
+  cleanupReferences,
   strengthenReferences,
 } = require('./references')
 
@@ -23,6 +24,11 @@ async function importDocuments(documents, options) {
 
   // Validate that there are no duplicate IDs in the documents
   ensureUniqueIds(documents)
+
+  // Ensure that any cross-dataset references has datasets to point to
+  if (!options.skipCrossDatasetReferences) {
+    validateCdrDatasets(documents, options)
+  }
 
   // Replace relative asset paths if one is defined
   // (file://./images/foo-bar.png -> file:///abs/olute/images/foo-bar.png)
@@ -37,8 +43,8 @@ async function importDocuments(documents, options) {
   const keyed = ided.map((doc) => assignArrayKeys(doc))
 
   // Sanity prefers to have a `_type` on every object. Make sure references
-  // has `_type` set to `reference`.
-  const docs = keyed.map((doc) => setTypeOnReferences(doc))
+  // has `_type` set to `reference`, and that there are no `_projectId` keys
+  const docs = keyed.map((doc) => cleanupReferences(doc, options))
 
   // Find references that will need strengthening when import is done
   const strongRefs = docs.map(getStrongRefs).filter(Boolean)

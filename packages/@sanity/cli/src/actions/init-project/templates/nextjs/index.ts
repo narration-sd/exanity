@@ -167,7 +167,7 @@ type FolderStructure = Record<string, string | Record<string, string>>
 
 export const sanityFolder = (
   useTypeScript: boolean,
-  template?: 'clean' | 'blog'
+  template?: 'clean' | 'blog',
 ): FolderStructure => {
   const isBlogTemplate = template === 'blog'
 
@@ -178,8 +178,8 @@ export const sanityFolder = (
         ? blogSchemaTS
         : schemaTS
       : isBlogTemplate
-      ? blogSchemaJS
-      : schemaJS,
+        ? blogSchemaJS
+        : schemaJS,
     'env.': useTypeScript ? envTS : envJS,
     lib: {
       'client.': client,

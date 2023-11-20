@@ -1,8 +1,18 @@
 import {CloseIcon} from '@sanity/icons'
-import {Box, Button, Card, Flex, isHTMLElement, rem, Text, Theme, useForwardedRef} from '@sanity/ui'
+import {
+  Box,
+  Button,
+  Card,
+  CSSObject,
+  Flex,
+  isHTMLElement,
+  rem,
+  Text,
+  Theme,
+  useForwardedRef,
+} from '@sanity/ui'
 import React, {forwardRef, useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import styled, {css} from 'styled-components'
-import type {CSSObject} from 'styled-components'
 import {focusRingBorderStyle, focusRingStyle} from './styles'
 
 const Root = styled(Card)((props: {theme: Theme}): CSSObject => {
@@ -38,10 +48,8 @@ const Root = styled(Card)((props: {theme: Theme}): CSSObject => {
     },
 
     // hovered
-    '@media(hover:hover)': {
-      '&:not([data-disabled]):not([data-read-only]):hover': {
-        borderColor: color.default.hovered.border,
-      },
+    '@media(hover:hover):not([data-disabled]):not([data-read-only]):hover': {
+      borderColor: color.default.hovered.border,
     },
 
     // focused
@@ -134,7 +142,7 @@ export const TagInput = forwardRef(
       placeholder?: string
       value?: {value: string}[]
     } & Omit<React.HTMLProps<HTMLInputElement>, 'as' | 'onChange' | 'onFocus' | 'ref' | 'value'>,
-    ref: React.Ref<HTMLInputElement>
+    ref: React.Ref<HTMLInputElement>,
   ) => {
     const {
       disabled,
@@ -170,7 +178,7 @@ export const TagInput = forwardRef(
           setTimeout(() => inputElement.focus(), 0)
         }
       },
-      [forwardedRef]
+      [forwardedRef],
     )
 
     const handleInputBlur = useCallback(() => {
@@ -186,7 +194,7 @@ export const TagInput = forwardRef(
         setFocused(true)
         if (onFocus) onFocus(event)
       },
-      [onFocus]
+      [onFocus],
     )
 
     const handleInputKeyDown = useCallback(
@@ -204,7 +212,7 @@ export const TagInput = forwardRef(
           }
         }
       },
-      [inputValue, onChange, value]
+      [inputValue, onChange, value],
     )
 
     const handleTagRemove = useCallback(
@@ -217,7 +225,7 @@ export const TagInput = forwardRef(
 
         onChange(newValue)
       },
-      [onChange, value]
+      [onChange, value],
     )
 
     useEffect(() => {
@@ -276,7 +284,7 @@ export const TagInput = forwardRef(
         </div>
       </Root>
     )
-  }
+  },
 )
 
 TagInput.displayName = 'TagInput'

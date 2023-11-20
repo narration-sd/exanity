@@ -3,7 +3,7 @@
  * Some of these tests have no expect statement;
  * use of ts-expect-error serves the same purpose - TypeScript is the testrunner here
  */
-import {DocumentDefinition, StringDefinition} from '../definition'
+import type {DocumentDefinition, StringDefinition} from '../definition'
 import {defineArrayMember, defineField, defineType} from '../types'
 
 describe('document types', () => {
@@ -183,13 +183,11 @@ describe('document types', () => {
         type: 'document',
         name: 'custom-document',
         fields: [
+          //@ts-expect-error not assignable to FieldDefinition
           {
             type: 'object',
             name: 'error-fields-type',
-            fields: [
-              //@ts-expect-error not assignable to FieldDefinition
-              {},
-            ],
+            fields: [{}],
           },
         ],
       })
@@ -224,7 +222,7 @@ describe('document types', () => {
             initialValue: {something: 'false'},
             validation: (Rule) =>
               Rule.custom((value?: Record<string, string>) =>
-                value?.something === 'false' ? true : 'Error'
+                value?.something === 'false' ? true : 'Error',
               ),
           },
           {
@@ -284,7 +282,7 @@ describe('document types', () => {
                     unknownProp: 'strict: false so it is allowed',
                   },
                 },
-                {strict: false}
+                {strict: false},
               ),
             ],
           }),

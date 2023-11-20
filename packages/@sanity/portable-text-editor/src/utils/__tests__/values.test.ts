@@ -1,4 +1,4 @@
-import {fromSlateValue, toSlateValue} from '../values'
+import {VOID_CHILD_KEY, fromSlateValue, toSlateValue} from '../values'
 import {schemaType} from '../../editor/__tests__/PortableTextEditorTester'
 import {getPortableTextMemberSchemaTypes} from '../getPortableTextMemberSchemaTypes'
 
@@ -23,7 +23,7 @@ describe('toSlateValue', () => {
           _key: '123',
         },
       ],
-      {schemaTypes}
+      {schemaTypes},
     )
 
     expect(result).toMatchObject([
@@ -55,7 +55,7 @@ describe('toSlateValue', () => {
           ],
         },
       ],
-      {schemaTypes}
+      {schemaTypes},
     )
     expect(result).toMatchInlineSnapshot(`
       Array [
@@ -98,7 +98,7 @@ describe('toSlateValue', () => {
           ],
         },
       ],
-      {schemaTypes}
+      {schemaTypes},
     )
     expect(result).toMatchInlineSnapshot(`
       Array [
@@ -117,7 +117,7 @@ describe('toSlateValue', () => {
               "_type": "image",
               "children": Array [
                 Object {
-                  "_key": "123-void-child",
+                  "_key": "${VOID_CHILD_KEY}",
                   "_type": "span",
                   "marks": Array [],
                   "text": "",
@@ -183,7 +183,7 @@ describe('fromSlateValue', () => {
           },
         },
       ],
-      'block'
+      'block',
     )
     expect(ptValue).toEqual([
       {

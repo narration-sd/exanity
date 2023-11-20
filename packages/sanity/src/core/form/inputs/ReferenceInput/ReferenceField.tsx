@@ -1,4 +1,12 @@
-import React, {ComponentProps, ForwardedRef, forwardRef, useCallback, useMemo, useRef} from 'react'
+import React, {
+  ComponentProps,
+  ForwardedRef,
+  forwardRef,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import {Reference, ReferenceSchemaType} from '@sanity/types'
 import {
   Box,
@@ -25,6 +33,9 @@ import {useScrollIntoViewOnFocusWithin} from '../../hooks/useScrollIntoViewOnFoc
 import {useDidUpdate} from '../../hooks/useDidUpdate'
 import {set, unset} from '../../patch'
 import {AlertStrip} from '../../components/AlertStrip'
+import {FieldActionsProvider, FieldActionsResolver} from '../../field'
+import {DocumentFieldActionNode} from '../../../config'
+import {useFormPublishedId} from '../../useFormPublishedId'
 import {useReferenceInput} from './useReferenceInput'
 import {useReferenceInfo} from './useReferenceInfo'
 import {PreviewReferenceValue} from './PreviewReferenceValue'
@@ -59,6 +70,9 @@ export function ReferenceField(props: ReferenceFieldProps) {
   const elementRef = useRef<HTMLDivElement | null>(null)
   const {schemaType, path, open, inputId, children, inputProps} = props
   const {readOnly, focused, renderPreview, onChange} = props.inputProps
+
+  const [fieldActionsNodes, setFieldActionNodes] = useState<DocumentFieldActionNode[]>([])
+  const documentId = useFormPublishedId()
 
   const handleClear = useCallback(() => inputProps.onChange(unset()), [inputProps])
   const value: Reference | undefined = props.value as any
@@ -121,7 +135,11 @@ export function ReferenceField(props: ReferenceFieldProps) {
     hasRef && !loadableReferenceInfo.isLoading && value?._strengthenOnPublish
 
   const showWeakRefMismatch =
-    !loadableReferenceInfo.isLoading && hasRef && weakIs !== weakShouldBe && !weakWarningOverride
+    !loadableReferenceInfo.isLoading &&
+    loadableReferenceInfo.result?.availability.available &&
+    hasRef &&
+    weakIs !== weakShouldBe &&
+    !weakWarningOverride
 
   const tone = getTone({readOnly, hasErrors, hasWarnings})
   const isEditing = !value?._ref || inputProps.focusPath[0] === '_ref'
@@ -167,13 +185,16 @@ export function ReferenceField(props: ReferenceFieldProps) {
             <Text as="p" muted size={1}>
               {schemaType.weak ? (
                 <>
-                  It will not be possible to delete the "{preview?.title}"-document without first
-                  removing this reference.
+                  It will not be possible to delete the{' '}
+                  {preview?.title ? <>"{preview?.title}"-document</> : <>referenced document</>}{' '}
+                  without first removing this reference.
                 </>
               ) : (
                 <>
-                  This makes it possible to delete the "{preview?.title}"-document without first
-                  deleting this reference, leaving this field referencing a nonexisting document.
+                  This makes it possible to delete the{' '}
+                  {preview?.title ? <>"{preview?.title}"-document</> : <>referenced document</>}{' '}
+                  without first deleting this reference, leaving this field referencing a
+                  nonexisting document.
                 </>
               )}
             </Text>
@@ -208,7 +229,7 @@ export function ReferenceField(props: ReferenceFieldProps) {
       // eslint-disable-next-line @typescript-eslint/no-shadow
       forwardRef(function OpenLink(
         restProps: ComponentProps<typeof IntentLink>,
-        _ref: ForwardedRef<HTMLAnchorElement>
+        _ref: ForwardedRef<HTMLAnchorElement>,
       ) {
         return (
           <IntentLink
@@ -221,7 +242,7 @@ export function ReferenceField(props: ReferenceFieldProps) {
           />
         )
       }),
-    [refType?.name, value?._ref]
+    [refType?.name, value?._ref],
   )
 
   const menu = useMemo(
@@ -255,54 +276,74 @@ export function ReferenceField(props: ReferenceFieldProps) {
           />
         </Box>
       ),
-    [handleClear, handleReplace, inputId, OpenLink, readOnly, value?._ref]
+    [handleClear, handleReplace, inputId, OpenLink, readOnly, value?._ref],
   )
 
   return (
-    <FormField
-      __unstable_headerActions={props.actions}
-      level={props.level}
-      title={props.title}
-      description={props.description}
-      validation={props.validation}
-      __unstable_presence={props.presence}
-    >
-      {isEditing ? (
-        <Box paddingY={2}>{children}</Box>
-      ) : (
-        <Card shadow={1} radius={1} padding={1} tone={tone}>
-          <Stack space={1}>
-            <Flex gap={1} align="center">
-              <ReferenceLinkCard
-                flex={1}
-                as={EditReferenceLink}
-                tone="inherit"
-                radius={2}
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                documentId={value?._ref}
-                documentType={refType?.name}
-                paddingX={2}
-                paddingY={1}
-                __unstable_focusRing
-                selected={selected}
-                pressed={pressed}
-                ref={elementRef}
-                data-selected={selected ? true : undefined}
-                data-pressed={pressed ? true : undefined}
-              >
-                <PreviewReferenceValue
-                  value={value}
-                  referenceInfo={loadableReferenceInfo}
-                  renderPreview={renderPreview}
-                  type={schemaType}
-                />
-              </ReferenceLinkCard>
-              <Box>{menu}</Box>
-            </Flex>
-            {footer}
-          </Stack>
-        </Card>
+    <>
+      {documentId && props.actions && props.actions.length > 0 && (
+        <FieldActionsResolver
+          actions={props.actions}
+          documentId={documentId}
+          documentType={schemaType.name}
+          onActions={setFieldActionNodes}
+          path={path}
+          schemaType={schemaType}
+        />
       )}
-    </FormField>
+
+      <FieldActionsProvider
+        actions={fieldActionsNodes}
+        focused={Boolean(props.inputProps.focused)}
+        path={path}
+      >
+        <FormField
+          __internal_comments={props.__internal_comments}
+          __internal_slot={props.__internal_slot}
+          __unstable_headerActions={fieldActionsNodes}
+          __unstable_presence={props.presence}
+          description={props.description}
+          level={props.level}
+          title={props.title}
+          validation={props.validation}
+        >
+          {isEditing ? (
+            <Box>{children}</Box>
+          ) : (
+            <Card shadow={1} radius={1} padding={1} tone={tone}>
+              <Stack space={1}>
+                <Flex gap={1} align="center">
+                  <ReferenceLinkCard
+                    __unstable_focusRing
+                    as={EditReferenceLink}
+                    data-pressed={pressed ? true : undefined}
+                    data-selected={selected ? true : undefined}
+                    documentId={value?._ref}
+                    documentType={refType?.name}
+                    flex={1}
+                    paddingX={2}
+                    paddingY={1}
+                    pressed={pressed}
+                    radius={2}
+                    ref={elementRef}
+                    selected={selected}
+                    tone="inherit"
+                  >
+                    <PreviewReferenceValue
+                      value={value}
+                      referenceInfo={loadableReferenceInfo}
+                      renderPreview={renderPreview}
+                      type={schemaType}
+                    />
+                  </ReferenceLinkCard>
+                  <Box>{menu}</Box>
+                </Flex>
+                {footer}
+              </Stack>
+            </Card>
+          )}
+        </FormField>
+      </FieldActionsProvider>
+    </>
   )
 }

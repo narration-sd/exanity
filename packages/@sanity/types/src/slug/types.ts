@@ -1,11 +1,16 @@
-import {SanityClient} from '@sanity/client'
-import type {SlugSchemaType} from '../schema'
-import {Schema} from '../schema'
+import type {SanityClient} from '@sanity/client'
+import type {SlugSchemaType, Schema} from '../schema'
 import type {SanityDocument} from '../documents'
 import type {Path} from '../paths'
-import {CurrentUser} from '../user'
+import type {CurrentUser} from '../user'
 
-/** @internal */
+/**
+ * A slug object, currently holding a `current` property
+ *
+ * In the future, this may be extended with a `history` property
+ *
+ * @public
+ */
 export interface Slug {
   _type: 'slug'
   current: string
@@ -28,12 +33,12 @@ export interface SlugSourceContext {
 /** @public */
 export type SlugSourceFn = (
   document: SanityDocument,
-  context: SlugSourceContext
+  context: SlugSourceContext,
 ) => string | Promise<string>
 
 /** @public */
 export type SlugifierFn = (
   source: string,
   schemaType: SlugSchemaType,
-  context: SlugSourceContext
+  context: SlugSourceContext,
 ) => string | Promise<string>

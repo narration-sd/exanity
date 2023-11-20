@@ -40,8 +40,8 @@ import {useReferenceInfo} from './useReferenceInfo'
 import {PreviewReferenceValue} from './PreviewReferenceValue'
 import {useReferenceInput} from './useReferenceInput'
 import {ReferenceLinkCard} from './ReferenceLinkCard'
-import {IntentLink} from 'sanity/router'
 import {ReferenceItemRefProvider} from './ReferenceItemRefProvider'
+import {IntentLink} from 'sanity/router'
 
 export interface ReferenceItemValue extends Omit<ObjectItem, '_type'>, Omit<Reference, '_key'> {}
 
@@ -79,7 +79,7 @@ const INITIAL_VALUE_CARD_STYLE = {
 } as const
 
 export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemValue>(
-  props: ReferenceItemProps<Item>
+  props: ReferenceItemProps<Item>,
 ) {
   const {
     schemaType,
@@ -141,7 +141,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
         position: pos,
       })
     },
-    [onInsert]
+    [onInsert],
   )
   const loadableReferenceInfo = useReferenceInfo(value?._ref, getReferenceInfo)
 
@@ -170,7 +170,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
       // eslint-disable-next-line @typescript-eslint/no-shadow
       forwardRef(function OpenLink(
         restProps: ComponentProps<typeof IntentLink>,
-        _ref: ForwardedRef<HTMLAnchorElement>
+        _ref: ForwardedRef<HTMLAnchorElement>,
       ) {
         return (
           <IntentLink
@@ -183,7 +183,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
           />
         )
       }),
-    [refType?.name, value?._ref]
+    [refType?.name, value?._ref],
   )
 
   const handleReplace = useCallback(() => {
@@ -242,7 +242,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
       handleInsert,
       insertableTypes,
       OpenLink,
-    ]
+    ],
   )
 
   const handleFixStrengthMismatch = useCallback(() => {
@@ -259,7 +259,11 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
     hasRef && !loadableReferenceInfo.isLoading && value?._strengthenOnPublish
 
   const showWeakRefMismatch =
-    !loadableReferenceInfo.isLoading && hasRef && weakIs !== weakShouldBe && !weakWarningOverride
+    !loadableReferenceInfo.isLoading &&
+    loadableReferenceInfo.result?.availability.available &&
+    hasRef &&
+    weakIs !== weakShouldBe &&
+    !weakWarningOverride
 
   const preview =
     loadableReferenceInfo.result?.preview.draft || loadableReferenceInfo.result?.preview.published
@@ -303,13 +307,16 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
             <Text as="p" muted size={1}>
               {schemaType.weak ? (
                 <>
-                  It will not be possible to delete the "{preview?.title}"-document without first
-                  removing this reference.
+                  It will not be possible to delete the{' '}
+                  {preview?.title ? <>"{preview?.title}"-document</> : <>referenced document</>}{' '}
+                  without first removing this reference.
                 </>
               ) : (
                 <>
-                  This makes it possible to delete the "{preview?.title}"-document without first
-                  deleting this reference, leaving this field referencing a nonexisting document.
+                  This makes it possible to delete the{' '}
+                  {preview?.title ? <>"{preview?.title}"-document</> : <>referenced document</>}{' '}
+                  without first deleting this reference, leaving this field referencing a
+                  nonexisting document.
                 </>
               )}
             </Text>
@@ -362,6 +369,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
               description={schemaType.description}
               __unstable_presence={presence}
               validation={validation}
+              inputId={inputId}
             >
               {children}
             </FormFieldSet>

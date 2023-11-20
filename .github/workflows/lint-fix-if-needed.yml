@@ -20,8 +20,8 @@ jobs:
     # workflow_dispatch always lets you select the branch ref, even though in this case we only ever want to run the action on `main` thus we need an if check
     if: ${{ github.ref_name == 'next' }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: lts/*
       - name: Cache node modules
@@ -44,22 +44,22 @@ jobs:
         with:
           path: .eslintcache
           key: eslint-v1-${{ hashFiles('.eslintrc.cjs') }}
-      - run: yarn lint:fix
-      - uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1
+      - run: "yarn lint:fix --rule 'prettier/prettier: [off]'"
+      - uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         # Run even if `yarn lint:fix` fails
         if: always()
         id: generate-token
         with:
           app_id: ${{ secrets.ECOSPARK_APP_ID }}
           private_key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
-      - uses: peter-evans/create-pull-request@284f54f989303d2699d373481a0cfa13ad5a6666 # v5
+      - uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5
         # Run even if `yarn lint:fix` fails
         if: always()
         with:
           author: github-actions <41898282+github-actions[bot]@users.noreply.github.com>
-          body: I ran `yarn lint:fix` 🧑‍💻
+          body: "I ran `yarn lint:fix --rule 'prettier/prettier: [off]'` 🧑‍💻"
           branch: actions/lint-fix-if-needed
           commit-message: 'chore(lint): fix linter issues 🤖 ✨'
           labels: 🤖 bot
-          title: 'chore(prettier): fix linter issues 🤖 ✨'
+          title: 'chore(lint): fix linter issues 🤖 ✨'
           token: ${{ steps.generate-token.outputs.token }}

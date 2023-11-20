@@ -46,7 +46,8 @@ import {
 type DocumentPaneOptions = DocumentPaneNode['options']
 
 const DIALOG_PROVIDER_POSITION: DialogProviderProps['position'] = [
-  // We use the `position: fixed` for dialogs on narrow screens (< 512px).
+  // We use the `position: fixed` for dialogs on narrower screens (first two media breakpoints).
+  'fixed',
   'fixed',
   // And we use the `position: absolute` strategy (within panes) on wide screens.
   'absolute',
@@ -59,7 +60,9 @@ const StyledChangeConnectorRoot = styled(ChangeConnectorRoot)`
   min-height: 0;
   min-width: 0;
 `
-
+/**
+ * @internal
+ */
 export const DocumentPane = memo(function DocumentPane(props: DocumentPaneProviderProps) {
   const {name: parentSourceName} = useSource()
 
@@ -77,11 +80,15 @@ function DocumentPaneInner(props: DocumentPaneProviderProps) {
   const options = usePaneOptions(pane.options, paneRouter.params)
   const {documentType, isLoaded: isDocumentLoaded} = useDocumentType(options.id, options.type)
 
+  // The templates that should be creatable from inside this document pane.
+  // For example, from the "Create new" menu in reference inputs.
   const templateItems = useMemo(() => {
     return resolveNewDocumentOptions({
-      type: 'global',
+      type: 'document',
+      documentId: options.id,
+      schemaType: options.type,
     })
-  }, [resolveNewDocumentOptions])
+  }, [options.id, options.type, resolveNewDocumentOptions])
 
   const [templatePermissions, isTemplatePermissionsLoading] = useTemplatePermissions({
     templateItems,
@@ -108,8 +115,8 @@ function DocumentPaneInner(props: DocumentPaneProviderProps) {
             groupIndex >= routerPanesStateLength - 1
               ? 'none'
               : groupIndex >= routerPanesStateLength - 2
-              ? 'selected'
-              : 'pressed',
+                ? 'selected'
+                : 'pressed',
         }
       : {path: [], state: 'none'}
   }, [parentRefPath, groupIndex, routerPanesStateLength])
@@ -160,7 +167,7 @@ function DocumentPaneInner(props: DocumentPaneProviderProps) {
 
 function usePaneOptions(
   options: DocumentPaneOptions,
-  params: Record<string, string | undefined> = {}
+  params: Record<string, string | undefined> = {},
 ): DocumentPaneOptions {
   const templates = useTemplates()
 
@@ -188,7 +195,7 @@ function usePaneOptions(
 function mergeDocumentType(
   props: DocumentPaneProviderProps,
   options: DocumentPaneOptions,
-  documentType: string
+  documentType: string,
 ): DocumentPaneProviderProps {
   return {
     ...props,
@@ -219,7 +226,7 @@ function InnerDocumentPane() {
   const [footerElement, setFooterElement] = useState<HTMLDivElement | null>(null)
   const [actionsBoxElement, setActionsBoxElement] = useState<HTMLDivElement | null>(null)
   const [documentPanelPortalElement, setDocumentPanelPortalElement] = useState<HTMLElement | null>(
-    null
+    null,
   )
   const footerRect = useElementRect(footerElement)
   const footerH = footerRect?.height
@@ -229,7 +236,7 @@ function InnerDocumentPane() {
       onPathOpen(path)
       onFocus(path)
     },
-    [onPathOpen, onFocus]
+    [onPathOpen, onFocus],
   )
 
   const currentMinWidth =

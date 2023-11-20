@@ -1,5 +1,5 @@
 import React, {forwardRef, useCallback} from 'react'
-import {Autocomplete, Box, Flex, Popover, Text} from '@sanity/ui'
+import {Autocomplete, Box, Flex, Placement, Popover, Text} from '@sanity/ui'
 import styled from 'styled-components'
 
 const StyledPopover = styled(Popover)`
@@ -13,13 +13,15 @@ const StyledText = styled(Text)`
   word-break: break-word;
 `
 
+const FALLBACK_PLACEMENTS: Placement[] = ['top-start', 'bottom-start']
+
 export const ReferenceAutocomplete = forwardRef(function ReferenceAutocomplete(
   props: React.ComponentProps<typeof Autocomplete> & {
     referenceElement: HTMLDivElement | null
     searchString?: string
     portalRef?: React.RefObject<HTMLDivElement>
   },
-  ref: React.ForwardedRef<HTMLInputElement>
+  ref: React.ForwardedRef<HTMLInputElement>,
 ) {
   const hasResults = props.options && props.options.length > 0
   const renderPopover = useCallback(
@@ -37,11 +39,12 @@ export const ReferenceAutocomplete = forwardRef(function ReferenceAutocomplete(
         onMouseEnter: () => void
         onMouseLeave: () => void
       },
-      contentRef: React.Ref<HTMLDivElement>
+      contentRef: React.Ref<HTMLDivElement>,
     ) => (
       <StyledPopover
         data-testid="autocomplete-popover"
         placement="bottom-start"
+        fallbackPlacements={FALLBACK_PLACEMENTS}
         arrow={false}
         constrainSize
         onMouseEnter={onMouseEnter}
@@ -68,7 +71,7 @@ export const ReferenceAutocomplete = forwardRef(function ReferenceAutocomplete(
         matchReferenceWidth
       />
     ),
-    [hasResults, props.searchString, props.loading, props.portalRef, props.referenceElement]
+    [hasResults, props.searchString, props.loading, props.portalRef, props.referenceElement],
   )
   return <Autocomplete {...props} ref={ref} renderPopover={renderPopover} />
 })

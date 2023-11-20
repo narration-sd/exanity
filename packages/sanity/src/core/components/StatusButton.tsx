@@ -4,7 +4,6 @@ import {
   ButtonMode,
   ButtonProps,
   Flex,
-  Hotkeys,
   Text,
   Tooltip,
   TooltipProps,
@@ -21,6 +20,7 @@ import React, {
 } from 'react'
 import {isValidElementType} from 'react-is'
 import styled from 'styled-components'
+import {Hotkeys} from './Hotkeys'
 
 /** @hidden @beta */
 export interface StatusButtonProps extends Omit<ButtonProps, 'iconRight'> {
@@ -48,7 +48,7 @@ const Dot = styled.div({
 /** @hidden @beta */
 export const StatusButton = forwardRef(function StatusButton(
   props: StatusButtonProps & Omit<HTMLProps<HTMLButtonElement>, 'disabled' | 'ref'>,
-  ref: ForwardedRef<HTMLButtonElement>
+  ref: ForwardedRef<HTMLButtonElement>,
 ) {
   const {
     disabled: disabledProp,

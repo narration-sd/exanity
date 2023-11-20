@@ -1,6 +1,6 @@
 {
   "name": "@sanity/util",
-  "version": "3.14.1",
+  "version": "3.20.0",
   "description": "Utilities shared across projects of Sanity",
   "keywords": [
     "sanity",
@@ -27,8 +27,7 @@
       "source": "./exports/index.ts",
       "require": "./lib/index.js",
       "node": {
-        "import": "./lib/index.cjs.mjs",
-        "require": "./lib/index.js"
+        "import": "./lib/index.cjs.mjs"
       },
       "import": "./lib/index.esm.js",
       "default": "./lib/index.esm.js"
@@ -38,8 +37,7 @@
       "source": "./exports/fs.ts",
       "require": "./lib/fs.js",
       "node": {
-        "import": "./lib/fs.cjs.mjs",
-        "require": "./lib/fs.js"
+        "import": "./lib/fs.cjs.mjs"
       },
       "import": "./lib/fs.esm.js",
       "default": "./lib/fs.esm.js"
@@ -49,8 +47,7 @@
       "source": "./exports/content.ts",
       "require": "./lib/content.js",
       "node": {
-        "import": "./lib/content.cjs.mjs",
-        "require": "./lib/content.js"
+        "import": "./lib/content.cjs.mjs"
       },
       "import": "./lib/content.esm.js",
       "default": "./lib/content.esm.js"
@@ -60,8 +57,7 @@
       "source": "./exports/legacyDateFormat.ts",
       "require": "./lib/legacyDateFormat.js",
       "node": {
-        "import": "./lib/legacyDateFormat.cjs.mjs",
-        "require": "./lib/legacyDateFormat.js"
+        "import": "./lib/legacyDateFormat.cjs.mjs"
       },
       "import": "./lib/legacyDateFormat.esm.js",
       "default": "./lib/legacyDateFormat.esm.js"
@@ -71,8 +67,7 @@
       "source": "./exports/paths.ts",
       "require": "./lib/paths.js",
       "node": {
-        "import": "./lib/paths.cjs.mjs",
-        "require": "./lib/paths.js"
+        "import": "./lib/paths.cjs.mjs"
       },
       "import": "./lib/paths.esm.js",
       "default": "./lib/paths.esm.js"
@@ -117,7 +112,7 @@
     "watch": "pkg-utils watch --tsconfig tsconfig.lib.json"
   },
   "dependencies": {
-    "@sanity/types": "3.14.1",
+    "@sanity/types": "3.20.0",
     "get-random-values-esm": "^1.0.0",
     "moment": "^2.29.4"
   },
@@ -126,7 +121,6 @@
     "rimraf": "^3.0.2"
   },
   "engines": {
-    "node": ">=14.18.0"
-  },
-  "gitHead": "a7b7dad6bdfde05883a61f78e998b2571dfbe0e2"
+    "node": ">=18"
+  }
 }

@@ -1,12 +1,12 @@
 import type {ComponentType} from 'react'
-import {SanityClient} from '@sanity/client'
+import type {SanityClient} from '@sanity/client'
 import type {Rule} from '../validation'
 import type {SanityDocument} from '../documents'
 import type {CurrentUser} from '../user'
 import type {PreviewConfig} from './preview'
-import {SchemaTypeDefinition} from './definition/schemaDefinition'
-import {ArrayOptions} from './definition/type/array'
-import {
+import type {SchemaTypeDefinition} from './definition/schemaDefinition'
+import type {ArrayOptions} from './definition/type/array'
+import type {
   BlockDecoratorDefinition,
   BlockOptions,
   BooleanOptions,
@@ -126,7 +126,7 @@ export interface InitialValueResolverContext {
 /** @public */
 export type InitialValueResolver<Params, Value> = (
   params: Params | undefined,
-  context: InitialValueResolverContext
+  context: InitialValueResolverContext,
 ) => Promise<Value> | Value
 
 /** @public */
@@ -139,7 +139,7 @@ export type InitialValueProperty<Params, Value> =
  * Represents the possible values of a schema type's `validation` field.
  *
  * If the schema has not been run through `inferFromSchema` from
- * `@sanity/validation` then value could be a function.
+ * `sanity/validation` then value could be a function.
  *
  * `inferFromSchema` mutates the schema converts this value to an array of
  * `Rule` instances.
@@ -321,7 +321,7 @@ export interface BlockSchemaType extends ObjectSchemaType {
     BlockStyleObjectField,
     BlockListObjectField,
     // then it could be any additional fields the user could add
-    ...ObjectField[]
+    ...ObjectField[],
   ]
   options?: BlockOptions
 }

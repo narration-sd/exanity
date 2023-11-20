@@ -2,45 +2,96 @@ import {PartialDocumentList, getTypeNamesFromFilter} from './DocumentList'
 import {StructureNode} from './StructureNodes'
 
 /**
- * @hidden
- * @beta */
+ * Intent parameters (json)
+ *
+ * @public
+ */
 export type IntentJsonParams = {[key: string]: any}
 
 /**
- * @hidden
- * @beta */
-export type BaseIntentParams = {
+ * Base intent parameters
+ *
+ * @public
+ * @todo dedupe with core
+ */
+export interface BaseIntentParams {
+  /**
+   * Document schema type name to create/edit.
+   * Required for `create` intents, optional for `edit` (but encouraged, safer and faster)
+   */
   type?: string
+
+  /**
+   * ID of the document to create/edit.
+   * Required for `edit` intents, optional for `create`.
+   */
   id?: string
+
+  /**
+   * Name (ID) of initial value template to use for `create` intent. Optional.
+   */
   template?: string
+
+  /**
+   * Experimental field path
+   *
+   * @beta
+   * @experimental
+   * @hidden
+   */
+  path?: string
+
+  /**
+   * Optional "mode" to use for edit intent.
+   * Known modes are `structure` and `presentation`.
+   */
+  mode?: string
+
+  /**
+   * Arbitrary/custom parameters are generally discouraged - try to keep them to a minimum,
+   * or use `payload` (arbitrary JSON-serializable object) instead.
+   */
+  [key: string]: string | undefined
 }
 
 /** @internal */
 export const DEFAULT_INTENT_HANDLER = Symbol('Document type list canHandleIntent')
 
 /**
- * @hidden
- * @beta */
+ * Intent parameters
+ * See {@link router.BaseIntentParams} and {@link router.IntentJsonParams}
+ *
+ * @public
+ */
 export type IntentParams = BaseIntentParams | [BaseIntentParams, IntentJsonParams]
 
 /**
- * @hidden
- * @beta */
+ * Interface for intents
+ * @public */
 // TODO: intents should be unified somewhere
 export interface Intent {
+  /** Intent type */
   type: string
+  /** Intent parameters. See {@link IntentParams}
+   */
   params?: IntentParams
 }
 
 /**
- * @hidden
- * @beta */
+ * Interface for intent checker
+ *
+ * @public
+ */
 export interface IntentChecker {
   (
+    /** Intent name */
     intentName: string,
+    /** Intent checker parameter */
     params: {[key: string]: any},
-    context: {pane: StructureNode; index: number}
+    /** Structure context. See {@link StructureNode} */
+    context: {pane: StructureNode; index: number},
   ): boolean
+  /** intent checker identify */
   identity?: symbol
 }
 

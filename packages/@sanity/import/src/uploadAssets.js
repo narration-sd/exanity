@@ -10,7 +10,7 @@ const urlExists = require('./util/urlExists')
 const suffixTag = require('./util/suffixTag')
 
 const ASSET_UPLOAD_CONCURRENCY = 8
-const ASSET_PATCH_CONCURRENCY = 1
+const ASSET_PATCH_CONCURRENCY = 30
 const ASSET_PATCH_BATCH_SIZE = 50
 
 async function uploadAssets(assets, options) {
@@ -128,7 +128,7 @@ async function ensureAsset(asset, options, i) {
       type,
       sha1hash,
       0,
-      suffixTag(tag, 'asset.get-id')
+      suffixTag(tag, 'asset.get-id'),
     )
 
     if (assetDocId) {
@@ -225,7 +225,7 @@ function setAssetReferences(assetRefMap, assetIds, options) {
         documentId,
         path,
         assetId,
-      }))
+      })),
     )
   }, [])
 
@@ -260,7 +260,7 @@ function setAssetReferenceBatch(client, progress, tag, batch) {
       .reduce(reducePatch, client.transaction())
       .commit({visibility: 'async', tag: suffixTag(tag, 'asset.set-refs')})
       .then(progress)
-      .then((res) => res.results.length)
+      .then((res) => res.results.length),
   )
 }
 
@@ -279,7 +279,7 @@ function reducePatch(trx, task) {
           _type: 'reference',
           _ref: task.assetId,
         },
-      })
+      }),
   )
 }
 

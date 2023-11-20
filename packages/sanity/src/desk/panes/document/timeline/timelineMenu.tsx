@@ -22,7 +22,8 @@ const Root = styled(Popover)`
 `
 
 export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
-  const {setTimelineRange, setTimelineMode, timelineError, ready, timelineStore} = useDocumentPane()
+  const {setTimelineRange, setTimelineMode, timelineError, ready, timelineStore, isDeleted} =
+    useDocumentPane()
   const [open, setOpen] = useState(false)
   const [button, setButton] = useState<HTMLButtonElement | null>(null)
   const [popover, setPopover] = useState<HTMLElement | null>(null)
@@ -57,7 +58,7 @@ export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
         button?.focus()
       }
     },
-    [button, handleClose, open]
+    [button, handleClose, open],
   )
 
   useClickOutside(handleClickOutside, [button, popover])
@@ -78,7 +79,7 @@ export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
         })
       }
     },
-    [setTimelineMode, setTimelineRange, timelineStore, toast]
+    [setTimelineMode, setTimelineRange, timelineStore, toast],
   )
 
   const selectSince = useCallback(
@@ -96,7 +97,7 @@ export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
         })
       }
     },
-    [setTimelineMode, setTimelineRange, timelineStore, toast]
+    [setTimelineMode, setTimelineRange, timelineStore, toast],
   )
 
   const handleLoadMore = useCallback(() => {

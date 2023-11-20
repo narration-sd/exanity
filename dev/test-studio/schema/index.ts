@@ -84,6 +84,8 @@ import fieldGroupsDefault from './debug/fieldGroupsDefault'
 import fieldGroupsMany from './debug/fieldGroupsMany'
 import fieldGroupsWithValidation from './debug/fieldGroupsWithValidation'
 import fieldGroupsWithFieldsetsAndValidation from './debug/fieldGroupsWithFieldsetsAndValidation'
+import {virtualizationInObject} from './debug/virtualizationInObject'
+import {virtualizationDebug} from './debug/virtualizationDebug'
 
 // Test documents with official plugin inputs
 import code from './plugins/code'
@@ -111,6 +113,7 @@ import {circularCrossDatasetReferenceTest} from './debug/circularCrossDatasetRef
 import {allNativeInputComponents} from './debug/allNativeInputComponents'
 import fieldGroupsWithFieldsets from './debug/fieldGroupsWithFieldsets'
 import ptReference from './debug/ptReference'
+import {commentsDebug} from './debug/comments'
 
 // @todo temporary, until code input is v3 compatible
 const codeInputType = {
@@ -157,6 +160,7 @@ export const schemaTypes = [
   code,
   codeInputType, // @todo temporary, until code input is v3 compatible
   color,
+  commentsDebug,
   conditionalFields,
   conditionalFieldset,
   customBlock,
@@ -249,6 +253,8 @@ export const schemaTypes = [
   validation,
   validationArraySuperType,
   validationTest,
+  virtualizationDebug,
+  virtualizationInObject,
   fieldGroups,
   fieldGroupsDefault,
   fieldGroupsMany,

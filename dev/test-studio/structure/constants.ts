@@ -34,27 +34,26 @@ export const PLUGIN_INPUT_TYPES = [
 ]
 
 export const DEBUG_INPUT_TYPES = [
-  'languageFilterDebug',
   'actionsTest',
-  'simpleArrayOfObjects',
-  'simpleReferences',
-  'formInputDebug',
+  'allNativeInputComponents',
+  'collapsibleObjects',
+  'commentsDebug',
   'conditionalFieldsTest',
   'customInputsTest',
   'customInputsWithPatches',
   'documentActionsTest',
-  'collapsibleObjects',
+  'documentWithHoistedPt',
   'empty',
   'fieldActionsTest',
   'fieldComponentsTest',
   'fieldsetsTest',
   'fieldValidationInferReproDoc',
   'focusTest',
-  'documentWithHoistedPt',
+  'formInputDebug',
   'initialValuesTest',
   'inspectorsTest',
   'invalidPreviews',
-  'thesis',
+  'languageFilterDebug',
   'manyFieldsTest',
   'noTitleField',
   'poppers',
@@ -62,23 +61,27 @@ export const DEBUG_INPUT_TYPES = [
   'previewImageUrlTest',
   'previewMediaTest',
   'previewSelectBugRepro',
+  'ptReference',
   'radio',
   'readOnlyTest',
-  'recursiveDocument',
   'recursiveArraysTest',
+  'recursiveDocument',
   'recursiveObjectTest',
   'recursivePopoverTest',
   'reservedKeywordsTest',
+  'scrollBug',
   'select',
+  'simpleArrayOfObjects',
+  'simpleReferences',
+  'thesis',
   'typeWithNoToplevelStrings',
   'uploadsTest',
   'validationTest',
-  'allNativeInputComponents',
-  'scrollBug',
-  'ptReference',
+  'virtualizationDebug',
+  'virtualizationInObject',
 ]
 
-export const CI_INPUT_TYPES = ['conditionalFieldset', 'validationCI']
+export const CI_INPUT_TYPES = ['conditionalFieldset', 'validationCI', 'textsTest']
 export const DEBUG_FIELD_GROUP_TYPES = [
   'fieldGroups',
   'fieldGroupsDefault',
@@ -89,3 +92,17 @@ export const DEBUG_FIELD_GROUP_TYPES = [
 ]
 
 export const EXTERNAL_PLUGIN_INPUT_TYPES = ['markdownTest', 'muxVideoPost']
+
+export const TS_DOC_TYPES = [
+  'api.class',
+  'api.enum',
+  'api.export',
+  'api.function',
+  'api.interface',
+  'api.namespace',
+  'api.package',
+  'api.release',
+  'api.symbol',
+  'api.typeAlias',
+  'api.variable',
+]

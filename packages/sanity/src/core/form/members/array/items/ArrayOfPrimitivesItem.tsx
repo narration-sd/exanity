@@ -13,6 +13,7 @@ import {
 import {insert, PatchArg, PatchEvent, set, unset} from '../../../patch'
 import {useFormCallbacks} from '../../../studio/contexts/FormCallbacks'
 import {resolveNativeNumberInputValue} from '../../common/resolveNativeNumberInputValue'
+import {createDescriptionId} from '../../common/createDescriptionId'
 
 /**
  *
@@ -48,21 +49,21 @@ export function ArrayOfPrimitivesItem(props: PrimitiveMemberItemProps) {
     (event: React.FocusEvent) => {
       onPathBlur(member.item.path)
     },
-    [member.item.path, onPathBlur]
+    [member.item.path, onPathBlur],
   )
 
   const handleFocus = useCallback(
     (event: React.FocusEvent) => {
       onPathFocus(member.item.path)
     },
-    [member.item.path, onPathFocus]
+    [member.item.path, onPathFocus],
   )
 
   const handleChange = useCallback(
     (event: PatchEvent | PatchArg) => {
       onChange(PatchEvent.from(event).prefixAll(member.index))
     },
-    [onChange, member.index]
+    [onChange, member.index],
   )
   const handleNativeChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,11 +95,11 @@ export function ArrayOfPrimitivesItem(props: PrimitiveMemberItemProps) {
             ? // Map direct unset patches to empty value instead in order to not *remove* elements as the user clears out the value
               // note: this creates the rather curious case where the input renders ´0´ when you try to clear it.
               getEmptyValue(member.item.schemaType)
-            : inputValue
-        )
+            : inputValue,
+        ),
       )
     },
-    [handleChange, member.item.schemaType]
+    [handleChange, member.item.schemaType],
   )
 
   const elementProps = useMemo(
@@ -111,6 +112,7 @@ export function ArrayOfPrimitivesItem(props: PrimitiveMemberItemProps) {
       value: resolveNativeInputValue(member.item.schemaType, member.item.value, localValue),
       readOnly: Boolean(member.item.readOnly),
       placeholder: member.item.schemaType.placeholder,
+      'aria-describedby': createDescriptionId(member.item.id, member.item.schemaType.description),
     }),
     [
       handleBlur,
@@ -121,7 +123,7 @@ export function ArrayOfPrimitivesItem(props: PrimitiveMemberItemProps) {
       member.item.schemaType,
       member.item.value,
       localValue,
-    ]
+    ],
   )
   const inputProps = useMemo((): Omit<PrimitiveInputProps, 'renderDefault'> => {
     return {
@@ -163,7 +165,7 @@ export function ArrayOfPrimitivesItem(props: PrimitiveMemberItemProps) {
     (event: {items: unknown[]; position: 'before' | 'after'}) => {
       onChange(PatchEvent.from([insert(event.items, event.position, [member.index])]))
     },
-    [member.index, onChange]
+    [member.index, onChange],
   )
 
   const itemProps = useMemo((): Omit<PrimitiveItemProps, 'renderDefault'> => {
@@ -214,7 +216,7 @@ export function ArrayOfPrimitivesItem(props: PrimitiveMemberItemProps) {
 function resolveNativeInputValue(
   schemaType: SchemaType,
   value: unknown,
-  localValue: string | undefined
+  localValue: string | undefined,
 ): string {
   // this is a trick to retain type information while displaying an "empty" input
   // if this input is used to edit items in an array of numbers, the value can't really be set to empty without

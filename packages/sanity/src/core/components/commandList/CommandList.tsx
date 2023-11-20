@@ -1,4 +1,4 @@
-import {Box, rem, Theme} from '@sanity/ui'
+import {Box, rem, Stack} from '@sanity/ui'
 import {ScrollToOptions, useVirtualizer, Virtualizer} from '@tanstack/react-virtual'
 import throttle from 'lodash/throttle'
 import React, {
@@ -25,7 +25,7 @@ const LIST_ITEM_INTERACTIVE_SELECTOR = 'a,button'
 /**
  * Conditionally render a focus ring overlay over the command list, with adjustable offset
  */
-const FocusOverlayDiv = styled.div(({theme, offset}: {theme: Theme; offset: number}) => {
+const FocusOverlayDiv = styled.div<{offset: number}>(({theme, offset}) => {
   return css`
     bottom: ${-offset}px;
     border-radius: ${rem(theme.sanity.radius[1])};
@@ -120,19 +120,19 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
     wrapAround = true,
     ...responsivePaddingProps
   },
-  ref
+  ref,
 ) {
   const isMountedRef = useRef(false)
   const commandListId = useRef(useId())
   const activeIndexRef = useRef(initialIndex ?? 0)
 
-  const [childContainerElement, setChildContainerElement] = useState<HTMLDivElement | null>(null)
+  const [childContainerElement, setChildContainerElement] = useState<HTMLElement | null>(null)
   const [hovered, setHovered] = useState(false)
   const [pointerOverlayElement, setPointerOverlayElement] = useState<HTMLDivElement | null>(null)
-  const [virtualListElement, setVirtualListElement] = useState<HTMLDivElement | null>(null)
+  const [virtualListElement, setVirtualListElement] = useState<HTMLElement | null>(null)
 
   const handleChange = useCallback(
-    (v: Virtualizer<HTMLDivElement, Element>) => {
+    (v: Virtualizer<HTMLElement, Element>) => {
       if (!onEndReached) return
 
       const [lastItem] = [...v.getVirtualItems()].reverse()
@@ -146,7 +146,7 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
         onEndReached()
       }
     },
-    [onEndReached, items.length, onEndReachedIndexOffset]
+    [onEndReached, items.length, onEndReachedIndexOffset],
   )
 
   // This will trigger a re-render whenever its internal state changes
@@ -198,7 +198,7 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
 
   const activeItemCount = useMemo(
     () => itemIndices.filter((v) => !v.disabled).length,
-    [itemIndices]
+    [itemIndices],
   )
 
   /**
@@ -207,12 +207,12 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
   const enableChildContainerPointerEvents = useCallback(
     (enabled: boolean) =>
       pointerOverlayElement?.setAttribute('data-enabled', (!enabled).toString()),
-    [pointerOverlayElement]
+    [pointerOverlayElement],
   )
 
   const getChildDescendantId = useCallback(
     (index: number) => `${commandListId.current}-item-${index}`,
-    []
+    [],
   )
 
   const getCommandListChildrenId = useCallback(() => `${commandListId.current}-children`, [])
@@ -316,7 +316,7 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
         }
       }
     },
-    [handleUpdateActiveDescendant, itemIndices, showChildrenActiveState, virtualizer]
+    [handleUpdateActiveDescendant, itemIndices, showChildrenActiveState, virtualizer],
   )
 
   /**
@@ -341,7 +341,7 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
       setActiveIndex({index: nextIndex, scrollIntoView: true})
       enableChildContainerPointerEvents(false)
     },
-    [activeItemCount, enableChildContainerPointerEvents, setActiveIndex, wrapAround]
+    [activeItemCount, enableChildContainerPointerEvents, setActiveIndex, wrapAround],
   )
 
   const focusElement = useCallback(
@@ -357,7 +357,7 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
           break
       }
     },
-    [inputElement, virtualListElement]
+    [inputElement, virtualListElement],
   )
 
   const focusInputElement = useCallback(() => {
@@ -375,7 +375,7 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
     (index: number) => () => {
       setActiveIndex({index, scrollIntoView: false})
     },
-    [setActiveIndex]
+    [setActiveIndex],
   )
 
   const handleFocus = useCallback(() => {
@@ -411,26 +411,26 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
         const currentElement = childElements.find(
           (el) =>
             Number(el.dataset.index) ===
-            itemIndices.findIndex((i) => i.activeIndex === activeIndexRef.current)
+            itemIndices.findIndex((i) => i.activeIndex === activeIndexRef.current),
         )
 
         if (currentElement) {
           const clickableElement = currentElement?.querySelector<HTMLElement>(
-            LIST_ITEM_INTERACTIVE_SELECTOR
+            LIST_ITEM_INTERACTIVE_SELECTOR,
           )
           clickableElement?.click()
         }
       }
     },
-    [childContainerElement?.children, focusElement, itemIndices, selectAdjacentItemIndex]
+    [childContainerElement?.children, focusElement, itemIndices, selectAdjacentItemIndex],
   )
   const handleKeyDownInput = useCallback(
     (event: KeyboardEvent) => handleKeyDown('input')(event),
-    [handleKeyDown]
+    [handleKeyDown],
   )
   const handleKeyDownList = useCallback(
     (event: KeyboardEvent) => handleKeyDown('list')(event),
-    [handleKeyDown]
+    [handleKeyDown],
   )
 
   const handleVirtualListMouseEnter = useCallback(() => {
@@ -471,7 +471,7 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
       focusListElement,
       handleGetTopIndex,
       setActiveIndex,
-    ]
+    ],
   )
 
   /**
@@ -496,7 +496,7 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
       enableChildContainerPointerEvents(true)
     }
     virtualListElement?.addEventListener('mousemove', handleMouseEvent)
-    virtualListElement?.addEventListener('wheel', handleMouseEvent)
+    virtualListElement?.addEventListener('wheel', handleMouseEvent, {passive: true})
     return () => {
       virtualListElement?.removeEventListener('mousemove', handleMouseEvent)
       virtualListElement?.removeEventListener('wheel', handleMouseEvent)
@@ -596,6 +596,7 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
       <PointerOverlayDiv aria-hidden="true" data-enabled ref={setPointerOverlayElement} />
       {virtualizer && (
         <VirtualListChildBox
+          forwardedAs="ul"
           $height={virtualizer.getTotalSize()}
           aria-label={ariaLabel}
           aria-multiselectable={ariaMultiselectable}
@@ -631,7 +632,8 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
                 : {}
 
             return (
-              <div
+              <Stack
+                as="li"
                 data-index={virtualIndex}
                 key={virtualRow.key}
                 ref={fixedHeight ? undefined : virtualizer.measureElement}
@@ -648,7 +650,7 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
                 {...activeAriaAttributes}
               >
                 {clonedItem}
-              </div>
+              </Stack>
             )
           })}
         </VirtualListChildBox>

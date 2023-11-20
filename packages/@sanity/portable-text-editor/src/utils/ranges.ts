@@ -11,7 +11,7 @@ export interface ObjectWithKeyAndType {
 export function toPortableTextRange(
   value: ObjectWithKeyAndType[] | undefined,
   range: BaseRange | Partial<BaseRange> | null,
-  types: PortableTextMemberSchemaTypes
+  types: PortableTextMemberSchemaTypes,
 ): EditorSelection {
   if (!range) {
     return null
@@ -49,4 +49,19 @@ export function toSlateRange(selection: EditorSelection, editor: Editor): Range 
   }
   const range = anchor && focus ? {anchor, focus} : null
   return range
+}
+
+/**
+ * Remove the document selection range before applying the remote patches.
+ * ReactEditor (slate-react) will auto-track it's selection based on the
+ * DOM-selection, and we don't want this to trigger at this point.
+ * TODO (2023/06/23): refactor this when SlateReact have proper error handling.
+ * See: https://github.com/ianstormtaylor/slate/pull/5407
+ * @internal
+ */
+export function removeAllDocumentSelectionRanges(hasEditorSelection: boolean): void {
+  if (hasEditorSelection) {
+    const domSelection = hasEditorSelection && window.getSelection()
+    domSelection?.removeAllRanges()
+  }
 }

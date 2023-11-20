@@ -9,7 +9,7 @@ import {
 import {PortableTextMemberSchemaTypes} from '../types/editor'
 
 export function getPortableTextMemberSchemaTypes(
-  portableTextType: ArraySchemaType<PortableTextBlock>
+  portableTextType: ArraySchemaType<PortableTextBlock>,
 ): PortableTextMemberSchemaTypes {
   if (!portableTextType) {
     throw new Error("Parameter 'portabletextType' missing (required)")
@@ -62,7 +62,7 @@ function resolveEnabledStyles(blockType: ObjectSchemaType) {
   if (!textStyles || textStyles.length === 0) {
     throw new Error(
       'The style fields need at least one style ' +
-        "defined. I.e: {title: 'Normal', value: 'normal'}."
+        "defined. I.e: {title: 'Normal', value: 'normal'}.",
     )
   }
   return textStyles
@@ -73,9 +73,9 @@ function resolveEnabledDecorators(spanType: ObjectSchemaType) {
 }
 
 function resolveEnabledListItems(blockType: ObjectSchemaType) {
-  const listField = blockType.fields?.find((btField) => btField.name === 'list')
+  const listField = blockType.fields?.find((btField) => btField.name === 'listItem')
   if (!listField) {
-    throw new Error("A field with name 'list' is not defined in the block type (required).")
+    throw new Error("A field with name 'listItem' is not defined in the block type (required).")
   }
   const listItems =
     listField.type.options?.list &&

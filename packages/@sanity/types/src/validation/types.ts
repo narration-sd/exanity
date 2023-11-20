@@ -1,10 +1,9 @@
 import type {SanityClient} from '@sanity/client'
 import type {Path} from '../paths'
-import type {Schema, SchemaType, SchemaValidationValue} from '../schema'
+import type {Schema, SchemaType, SchemaValidationValue, SlugSchemaType} from '../schema'
 import type {SanityDocument} from '../documents'
 import type {ValidationMarker} from '../markers'
-import {SlugSchemaType} from '../schema'
-import {SlugParent} from '../slug'
+import type {SlugParent} from '../slug'
 
 /** @public */
 export type RuleTypeConstraint = 'Array' | 'Boolean' | 'Date' | 'Number' | 'Object' | 'String'
@@ -246,7 +245,7 @@ export type ValidationContext = {
  * `RuleSpec`'s constraint, the value to check, an optional override message,
  * and the validation context.
  *
- * @see Rule.validate from `@sanity/validation/src/Rule`
+ * @see Rule.validate from `sanity/validation/src/Rule`
  *
  * @internal
  */
@@ -255,7 +254,7 @@ export type Validator<T = any, Value = any> = (
   constraint: T,
   value: Value,
   message: string | undefined,
-  context: ValidationContext
+  context: ValidationContext,
 ) =>
   | ValidationError[]
   | ValidationError
@@ -330,7 +329,7 @@ export type CustomValidatorResult = true | string | ValidationError
 /** @public */
 export type CustomValidator<T = unknown> = (
   value: T,
-  context: ValidationContext
+  context: ValidationContext,
 ) => CustomValidatorResult | Promise<CustomValidatorResult>
 
 /** @public */
@@ -343,7 +342,7 @@ export interface SlugValidationContext extends ValidationContext {
 /** @public */
 export type SlugIsUniqueValidator = (
   slug: string,
-  context: SlugValidationContext
+  context: SlugValidationContext,
 ) => boolean | Promise<boolean>
 
 /** @public */

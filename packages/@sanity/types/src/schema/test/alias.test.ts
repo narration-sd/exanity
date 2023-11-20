@@ -3,7 +3,7 @@
  * Some of these tests have no expect statement;
  * use of ts-expect-error serves the same purpose - TypeScript is the testrunner here
  */
-import {ArrayOptions, ObjectOptions, StringOptions, TypeAliasDefinition} from '../definition'
+import type {ArrayOptions, ObjectOptions, StringOptions, TypeAliasDefinition} from '../definition'
 import {defineArrayMember, defineField, defineType} from '../types'
 
 describe('alias type test', () => {
@@ -42,7 +42,7 @@ describe('alias type test', () => {
           slugify: () => null,
         },
       },
-      {aliasFor: 'string'}
+      {aliasFor: 'string'},
     )
 
     const assignableToStringOptions: StringOptions | undefined = narrowedAlias.options
@@ -58,7 +58,7 @@ describe('alias type test', () => {
           list: [{title: 'title', value: {_type: 'unknown-so-not-perfect'}}],
         },
       },
-      {aliasFor: 'array'}
+      {aliasFor: 'array'},
     )
     const assignableToArrayOptions: ArrayOptions | undefined = narrowedAlias.options
   })
@@ -72,7 +72,7 @@ describe('alias type test', () => {
           columns: 2,
         },
       },
-      {aliasFor: 'object'}
+      {aliasFor: 'object'},
     )
     const assignableToObjectOptions: ObjectOptions | undefined = narrowedAlias.options
 
@@ -83,11 +83,12 @@ describe('alias type test', () => {
         //@ts-expect-error redefining fields on object is not allowed
         fields: [],
       },
-      {aliasFor: 'object'}
+      {aliasFor: 'object'},
     )
   })
 
   it('should support alias with preview', () => {
+    //@ts-expect-error {error: any} has no properties in common with PreviewValue
     defineType({
       type: 'custom-object',
       name: 'redefined',
@@ -98,6 +99,7 @@ describe('alias type test', () => {
       },
     })
 
+    //@ts-expect-error {error: any} has no properties in common with PreviewValue
     defineField({
       type: 'custom-object',
       name: 'redefined',
@@ -108,6 +110,7 @@ describe('alias type test', () => {
       },
     })
 
+    //@ts-expect-error {error: any} has no properties in common with PreviewValue
     defineArrayMember({
       type: 'custom-object',
       name: 'redefined',

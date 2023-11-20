@@ -237,7 +237,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
     // the array logic will check for an "empty" value and remove it for us
     const allKeys = Object.keys(value || {})
     const remainingKeys = allKeys.filter(
-      (key) => !['_type', '_key', '_upload', 'asset', 'crop', 'hotspot'].includes(key)
+      (key) => !['_type', '_key', '_upload', 'asset', 'crop', 'hotspot'].includes(key),
     )
 
     const isEmpty = remainingKeys.length === 0
@@ -272,8 +272,8 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
       event.prepend(
         setIfMissing({
           _type: schemaType.name,
-        })
-      ).patches
+        }),
+      ).patches,
     )
   }
 
@@ -285,7 +285,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
 
     const allKeys = Object.keys(this.props.value || {})
     const remainingKeys = allKeys.filter(
-      (key) => !['_type', '_key', 'crop', 'hotspot'].includes(key)
+      (key) => !['_type', '_key', 'crop', 'hotspot'].includes(key),
     )
 
     const isEmpty =
@@ -306,13 +306,11 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
   }
 
   handleOpenDialog = () => {
-    const {onFieldOpen} = this.props
-    onFieldOpen('hotspot')
+    this.props.onPathFocus(['hotspot'])
   }
 
   handleCloseDialog = () => {
-    const {onFieldClose} = this.props
-    onFieldClose('hotspot')
+    this.props.onPathFocus([])
 
     // Set focus on hotspot button in `ImageActionsMenu` when closing the dialog
     this.state.hotspotButtonElement?.focus()
@@ -787,6 +785,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
 
   render() {
     const {
+      focusPath,
       members,
       renderAnnotation,
       renderBlock,
@@ -801,7 +800,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
 
     // we use the hotspot field as the "owner" of both hotspot and crop
     const hotspotField = members.find(
-      (member): member is FieldMember => member.kind === 'field' && member.name === 'hotspot'
+      (member): member is FieldMember => member.kind === 'field' && member.name === 'hotspot',
     )
 
     return (
@@ -851,7 +850,8 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
           //@ts-expect-error all possible cases should be covered
           return <>Unknown member kind: ${member.kind}</>
         })}
-        {hotspotField?.open && (
+
+        {hotspotField && focusPath[0] === 'hotspot' && (
           <FormInput
             {...this.props}
             absolutePath={hotspotField.field.path}
