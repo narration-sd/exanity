@@ -18,6 +18,7 @@ import {useGlobalPresence} from '../../../../store'
 import {useColorScheme} from '../../../colorScheme'
 import {useWorkspace} from '../../../workspace'
 import {PresenceMenuItem} from './PresenceMenuItem'
+import {useTranslation} from '../../../../i18n'
 
 const MAX_AVATARS = 4
 
@@ -44,6 +45,7 @@ export function PresenceMenu(props: PresenceMenuProps) {
   const presence = useGlobalPresence()
   const {projectId} = useWorkspace()
   const {scheme} = useColorScheme()
+  const {t} = useTranslation()
   const hasPresence = presence.length > 0
 
   /**
@@ -70,7 +72,7 @@ export function PresenceMenu(props: PresenceMenuProps) {
     return (
       <Button mode="bleed" padding={1}>
         <AvatarStackCard>
-          <AvatarStack maxLength={MAX_AVATARS} aria-label="Who is here">
+          <AvatarStack maxLength={MAX_AVATARS} aria-label={t('presence.aria-label')}>
             {presence.map((item) => (
               <UserAvatar key={item.user.id} user={item.user} />
             ))}
@@ -78,7 +80,7 @@ export function PresenceMenu(props: PresenceMenuProps) {
         </AvatarStackCard>
       </Button>
     )
-  }, [collapse, hasPresence, presence])
+  }, [collapse, hasPresence, presence, t])
 
   const popoverProps = useMemo(
     () => ({
@@ -113,11 +115,11 @@ export function PresenceMenu(props: PresenceMenuProps) {
             <Box paddingX={3} paddingY={4}>
               <Stack space={3}>
                 <Text weight="semibold" size={2}>
-                  No one else is here
+                  {t('presence.no-one-else-title')}
                 </Text>
 
                 <Text size={1} muted>
-                  Invite people to the project to see their online status.
+                  {t('presence.no-one-else-description')}
                 </Text>
               </Stack>
             </Box>
@@ -134,7 +136,7 @@ export function PresenceMenu(props: PresenceMenuProps) {
               paddingY={4}
               rel="noopener noreferrer"
               target="_blank"
-              text="Manage members"
+              text={t('presence.action.manage-members')}
             />
           </FooterStack>
         </StyledMenu>

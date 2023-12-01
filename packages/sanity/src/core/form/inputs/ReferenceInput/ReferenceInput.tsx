@@ -1,7 +1,11 @@
-/* eslint-disable complexity */
-/* eslint-disable max-nested-callbacks,no-nested-ternary */
-
-import React, {KeyboardEvent, FocusEvent, useCallback, useRef, useState, useMemo} from 'react'
+import React, {
+  type KeyboardEvent,
+  type FocusEvent,
+  useCallback,
+  useRef,
+  useState,
+  useMemo,
+} from 'react'
 import {concat, Observable, of} from 'rxjs'
 import {catchError, filter, map, scan, switchMap, tap} from 'rxjs/operators'
 import {Box, Button, Stack, Text, useToast} from '@sanity/ui'
@@ -14,8 +18,9 @@ import {PreviewCard} from '../../../components'
 import {getPublishedId, isNonNullable} from '../../../util'
 import {useDidUpdate} from '../../hooks/useDidUpdate'
 import {useOnClickOutside} from '../../hooks/useOnClickOutside'
+import {Translate, useTranslation} from '../../../i18n'
 import {useReferenceInput} from './useReferenceInput'
-import {
+import type {
   CreateReferenceOption,
   ReferenceInputProps,
   ReferenceSearchHit,
@@ -152,6 +157,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
   const autocompletePopoverReferenceElementRef = useRef<HTMLDivElement | null>(null)
 
   const {push} = useToast()
+  const {t} = useTranslation()
 
   const handleQueryChange = useObservableCallback(
     (inputValue$: Observable<string | null>) => {
@@ -164,7 +170,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
               map((hits) => ({hits, searchString, isLoading: false})),
               catchError((error) => {
                 push({
-                  title: 'Reference search failed',
+                  title: t('inputs.reference.error.search-failed-title'),
                   description: error.message,
                   status: 'error',
                   id: `reference-search-fail-${id}`,
@@ -185,7 +191,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
         tap(setSearchState),
       )
     },
-    [id, onSearch, push],
+    [id, onSearch, push, t],
   )
 
   const handleAutocompleteOpenButtonClick = useCallback(() => {
@@ -289,17 +295,22 @@ export function ReferenceInput(props: ReferenceInputProps) {
         {isWeakRefToNonexistent ? (
           <Alert
             data-testid="alert-nonexistent-document"
-            title="Nonexistent document reference"
+            title={t('inputs.reference.error.nonexistent-document-title')}
             suffix={
               <Stack padding={2}>
-                <Button text="Clear" onClick={handleClear} />
+                <Button
+                  text={t('inputs.reference.error.nonexistent-document.clear-button-label')}
+                  onClick={handleClear}
+                />
               </Stack>
             }
           >
             <Text size={1}>
-              This field is currently referencing a document that doesn't exist (ID:
-              <code>{value._ref}</code>). You can either remove the reference or replace it with
-              another document.
+              <Translate
+                i18nKey="inputs.reference.error.nonexistent-document-description"
+                t={t}
+                values={{documentId: value._ref}}
+              />
             </Text>
           </Alert>
         ) : null}
@@ -313,7 +324,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
             referenceElement={autocompletePopoverReferenceElementRef.current}
             options={hits}
             radius={1}
-            placeholder="Type to search"
+            placeholder={t('inputs.reference.search-placeholder')}
             onKeyDown={handleAutocompleteKeyDown}
             readOnly={loadableReferenceInfo.isLoading || readOnly}
             onQueryChange={handleQueryChange}

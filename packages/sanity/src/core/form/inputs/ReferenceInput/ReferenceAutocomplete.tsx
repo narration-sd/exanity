@@ -1,6 +1,7 @@
 import React, {forwardRef, useCallback} from 'react'
 import {Autocomplete, Box, Flex, Placement, Popover, Text} from '@sanity/ui'
 import styled from 'styled-components'
+import {Translate, useTranslation} from '../../../i18n'
 
 const StyledPopover = styled(Popover)`
   & > div {
@@ -23,6 +24,8 @@ export const ReferenceAutocomplete = forwardRef(function ReferenceAutocomplete(
   },
   ref: React.ForwardedRef<HTMLInputElement>,
 ) {
+  const {searchString, loading, portalRef, referenceElement, ...restProps} = props
+  const {t} = useTranslation()
   const hasResults = props.options && props.options.length > 0
   const renderPopover = useCallback(
     (
@@ -56,24 +59,25 @@ export const ReferenceAutocomplete = forwardRef(function ReferenceAutocomplete(
               <Box padding={4}>
                 <Flex align="center" height="fill" justify="center">
                   <StyledText align="center" muted>
-                    No results for <strong>“{props.searchString}”</strong>
-                    {props.searchString?.toLowerCase() === 'capybara' ? (
-                      <>. What a shame. There should be more Capybaras.</>
-                    ) : null}
+                    <Translate
+                      t={t}
+                      i18nKey="inputs.reference.no-results-for-query"
+                      values={{searchTerm: searchString || ''}}
+                    />
                   </StyledText>
                 </Flex>
               </Box>
             )}
           </div>
         }
-        open={!props.loading && !hidden}
-        ref={props.portalRef}
+        open={!loading && !hidden}
+        ref={portalRef}
         portal
-        referenceElement={props.referenceElement || inputElement}
+        referenceElement={referenceElement || inputElement}
         matchReferenceWidth
       />
     ),
-    [hasResults, props.searchString, props.loading, props.portalRef, props.referenceElement],
+    [hasResults, t, searchString, loading, portalRef, referenceElement],
   )
-  return <Autocomplete {...props} ref={ref} renderPopover={renderPopover} />
+  return <Autocomplete {...restProps} loading={loading} ref={ref} renderPopover={renderPopover} />
 })

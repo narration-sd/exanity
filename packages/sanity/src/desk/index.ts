@@ -30,3 +30,5 @@ export * from './useDeskTool'
 export * from './panes/document'
 
 export * from './panes/documentList'
+
+export {structureLocaleNamespace, type StructureLocaleResourceKeys} from './i18n'

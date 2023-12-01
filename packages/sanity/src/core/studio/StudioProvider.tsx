@@ -9,6 +9,7 @@ import typescript from 'refractor/lang/typescript'
 import {UserColorManagerProvider} from '../user-color'
 import {ErrorLogger} from '../error/ErrorLogger'
 import {ResourceCacheProvider} from '../store'
+import {LocaleProvider} from '../i18n'
 import {AuthBoundary} from './AuthBoundary'
 import {StudioProps} from './Studio'
 import {StudioThemeProvider} from './StudioThemeProvider'
@@ -53,7 +54,9 @@ export function StudioProvider({
 }: StudioProviderProps) {
   const _children = (
     <WorkspaceLoader LoadingComponent={LoadingScreen} ConfigErrorsComponent={ConfigErrorsScreen}>
-      <ResourceCacheProvider>{children}</ResourceCacheProvider>
+      <LocaleProvider>
+        <ResourceCacheProvider>{children}</ResourceCacheProvider>
+      </LocaleProvider>
     </WorkspaceLoader>
   )
 

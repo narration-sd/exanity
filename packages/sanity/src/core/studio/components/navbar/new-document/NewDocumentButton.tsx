@@ -14,8 +14,9 @@ import {
   Flex,
   Button,
 } from '@sanity/ui'
-import {ComposeIcon, SearchIcon} from '@sanity/icons'
+import {AddIcon, SearchIcon} from '@sanity/icons'
 import ReactFocusLock from 'react-focus-lock'
+import {useTranslation} from '../../../../i18n'
 import {InsufficientPermissionsMessage} from '../../../../components'
 import {useCurrentUser} from '../../../../store'
 import {useColorScheme} from '../../../colorScheme'
@@ -54,14 +55,16 @@ export function NewDocumentButton(props: NewDocumentButtonProps) {
   const [dialogElement, setDialogElement] = useState<HTMLDivElement | null>(null)
   const [buttonElement, setButtonElement] = useState<HTMLButtonElement | null>(null)
   const [searchInputElement, setSearchInputElement] = useState<HTMLInputElement | null>(null)
+  const {t} = useTranslation()
 
   const {scheme} = useColorScheme()
   const currentUser = useCurrentUser()
 
   const hasNewDocumentOptions = options.length > 0
   const disabled = !canCreateDocument || !hasNewDocumentOptions
-  const placeholder = `Search`
-  const title = `Create new document`
+  const placeholder = t('new-document.filter-placeholder')
+  const title = t('new-document.title')
+  const openDialogAriaLabel = t('new-document.open-dialog-aria-label')
 
   // Filter options based on search query
   const filteredOptions = useMemo(() => filterOptions(options, searchQuery), [options, searchQuery])
@@ -143,34 +146,31 @@ export function NewDocumentButton(props: NewDocumentButtonProps) {
   // Shared open button props for the popover and dialog
   const sharedOpenButtonProps: ButtonProps = useMemo(
     () => ({
-      'aria-label': title,
+      'aria-label': openDialogAriaLabel,
       disabled: disabled || loading,
-      icon: ComposeIcon,
+      icon: AddIcon,
       mode: 'bleed',
       onClick: handleToggleOpen,
       ref: setButtonElement,
       selected: open,
     }),
-    [disabled, handleToggleOpen, loading, open, title],
+    [disabled, handleToggleOpen, loading, open, openDialogAriaLabel],
   )
 
   // Tooltip content for the open button
   const tooltipContent: TooltipProps['content'] = useMemo(() => {
     if (!hasNewDocumentOptions) {
-      return <Text size={1}>No document types</Text>
+      return <Text size={1}>{t('new-document.no-document-types-label')}</Text>
     }
 
     if (canCreateDocument) {
-      return <Text size={1}>New document...</Text>
+      return <Text size={1}>{t('new-document.create-new-document-label')}</Text>
     }
 
     return (
-      <InsufficientPermissionsMessage
-        currentUser={currentUser}
-        operationLabel="create any document"
-      />
+      <InsufficientPermissionsMessage currentUser={currentUser} context="create-any-document" />
     )
-  }, [canCreateDocument, currentUser, hasNewDocumentOptions])
+  }, [canCreateDocument, currentUser, hasNewDocumentOptions, t])
 
   // Shared tooltip props for the popover and dialog
   const sharedTooltipProps: TooltipProps = useMemo(

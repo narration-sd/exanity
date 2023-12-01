@@ -11,7 +11,6 @@ import {
   CommentOperationsHookOptions,
   MentionHookOptions,
   useCommentOperations,
-  useCommentsEnabled,
   useCommentsSetup,
   useMentionOptions,
 } from '../../hooks'
@@ -41,68 +40,16 @@ export interface CommentsProviderProps {
   children: React.ReactNode
   documentId: string
   documentType: string
-}
 
-const EMPTY_COMMENTS = {
-  data: EMPTY_COMMENTS_DATA,
-  error: null,
-  loading: false,
-}
-
-const EMPTY_MENTION_OPTIONS = {
-  data: [],
-  error: null,
-  loading: false,
-}
-
-const noop = async () => {
-  await Promise.resolve()
-}
-
-const noopOperation = {
-  execute: noop,
-}
-
-const COMMENTS_DISABLED_CONTEXT: CommentsContextValue = {
-  comments: EMPTY_COMMENTS,
-  create: noopOperation,
-  edit: noopOperation,
-  getComment: () => undefined,
-  isRunningSetup: false,
-  mentionOptions: EMPTY_MENTION_OPTIONS,
-  remove: noopOperation,
-  setStatus: noop,
-  status: 'open',
-  update: noopOperation,
+  isCommentsOpen?: boolean
+  onCommentsOpen?: () => void
 }
 
 /**
  * @beta
- * @hidden
  */
 export const CommentsProvider = memo(function CommentsProvider(props: CommentsProviderProps) {
-  const {children, documentId, documentType} = props
-
-  const {isEnabled} = useCommentsEnabled({
-    documentId,
-    documentType,
-  })
-
-  if (!isEnabled) {
-    return (
-      <CommentsContext.Provider value={COMMENTS_DISABLED_CONTEXT}>
-        {children}
-      </CommentsContext.Provider>
-    )
-  }
-
-  return <CommentsProviderInner {...props} />
-})
-
-const CommentsProviderInner = memo(function CommentsProviderInner(
-  props: Omit<CommentsProviderProps, 'enabled'>,
-) {
-  const {children, documentId, documentType} = props
+  const {children, documentId, documentType, isCommentsOpen, onCommentsOpen} = props
   const [status, setStatus] = useState<CommentStatus>('open')
 
   const {client, runSetup, isRunningSetup} = useCommentsSetup()
@@ -280,6 +227,9 @@ const CommentsProviderInner = memo(function CommentsProviderInner(
 
       getComment,
 
+      isCommentsOpen,
+      onCommentsOpen,
+
       comments: {
         data: threadItemsByStatus,
         error,
@@ -300,17 +250,19 @@ const CommentsProviderInner = memo(function CommentsProviderInner(
       mentionOptions,
     }),
     [
-      isRunningSetup,
-      status,
-      getComment,
-      threadItemsByStatus,
       error,
+      getComment,
+      isCommentsOpen,
+      isRunningSetup,
       loading,
-      operation.create,
-      operation.remove,
-      operation.edit,
-      operation.update,
       mentionOptions,
+      onCommentsOpen,
+      operation.create,
+      operation.edit,
+      operation.remove,
+      operation.update,
+      status,
+      threadItemsByStatus,
     ],
   )
 

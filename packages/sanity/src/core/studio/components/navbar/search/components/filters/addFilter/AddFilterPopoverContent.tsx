@@ -10,6 +10,7 @@ import {useSearchState} from '../../../contexts/search/useSearchState'
 import {FilterMenuItem} from '../../../types'
 import {getFilterKey} from '../../../utils/filterUtils'
 import {FilterPopoverContentHeader} from '../common/FilterPopoverContentHeader'
+import {useTranslation} from '../../../../../../../i18n'
 import {createFilterMenuItems} from './createFilterMenuItems'
 import {MenuItemFilter} from './items/MenuItemFilter'
 import {MenuItemHeader} from './items/MenuItemHeader'
@@ -18,9 +19,12 @@ interface AddFilterPopoverContentProps {
   onClose: () => void
 }
 
+const POPOVER_STYLES = {width: '300px'}
+
 export function AddFilterPopoverContent({onClose}: AddFilterPopoverContentProps) {
   const [inputElement, setInputElement] = useState<HTMLInputElement | null>(null)
   const [titleFilter, setTitleFilter] = useState('')
+  const {t} = useTranslation()
 
   const handleFilterChange = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => setTitleFilter(e.currentTarget.value),
@@ -48,8 +52,9 @@ export function AddFilterPopoverContent({onClose}: AddFilterPopoverContentProps)
         schema,
         titleFilter,
         types,
+        t,
       }),
-    [documentTypesNarrowed, definitions.fields, definitions.filters, schema, titleFilter, types],
+    [documentTypesNarrowed, definitions.fields, definitions.filters, schema, titleFilter, types, t],
   )
 
   const renderItem = useCallback<CommandListRenderItemCallback<FilterMenuItem>>(
@@ -95,10 +100,10 @@ export function AddFilterPopoverContent({onClose}: AddFilterPopoverContentProps)
   )
 
   return (
-    <Flex direction="column" style={{width: '300px'}}>
+    <Flex direction="column" style={POPOVER_STYLES}>
       {/* Filter header */}
       <FilterPopoverContentHeader
-        ariaInputLabel="Filter by title"
+        ariaInputLabel={t('search.filter-by-title-aria-label')}
         onChange={handleFilterChange}
         onClear={handleFilterClear}
         ref={setInputElement}
@@ -109,7 +114,7 @@ export function AddFilterPopoverContent({onClose}: AddFilterPopoverContentProps)
         {filteredMenuItems.length > 0 && (
           <CommandList
             activeItemDataAttr="data-hovered"
-            ariaLabel="Filters"
+            ariaLabel={t('search.filters-aria-label', {count: filteredMenuItems.length})}
             autoFocus="input"
             getItemDisabled={getItemDisabled}
             getItemKey={getItemKey}
@@ -127,7 +132,7 @@ export function AddFilterPopoverContent({onClose}: AddFilterPopoverContentProps)
         {filteredMenuItems.length == 0 && (
           <Box padding={3}>
             <Text muted size={1} textOverflow="ellipsis">
-              No matches for '{titleFilter}'
+              {t('search.filter-no-matches-found', {filter: titleFilter})}
             </Text>
           </Box>
         )}

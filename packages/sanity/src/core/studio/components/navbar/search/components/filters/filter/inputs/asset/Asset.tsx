@@ -1,7 +1,7 @@
 import {ChevronDownIcon, ImageIcon, SearchIcon, UndoIcon} from '@sanity/icons'
 import type {AssetFromSource, AssetSource, ReferenceValue} from '@sanity/types'
 import {Box, Button, Flex, Menu, MenuButton, MenuItem, Portal, Stack} from '@sanity/ui'
-import {get} from 'lodash'
+import {get, startCase} from 'lodash'
 import React, {useCallback, useEffect, useId, useMemo, useState} from 'react'
 import styled from 'styled-components'
 import {Source} from '../../../../../../../../../config'
@@ -11,6 +11,7 @@ import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../../../../../../../studioCl
 import {useSource} from '../../../../../../../../source'
 import {useSearchState} from '../../../../../contexts/search/useSearchState'
 import type {OperatorInputComponentProps} from '../../../../../definitions/operators/operatorTypes'
+import {useTranslation} from '../../../../../../../../../i18n'
 import {AssetSourceError} from './AssetSourceError'
 import {AssetPreview} from './preview/AssetPreview'
 
@@ -40,6 +41,7 @@ export function SearchFilterAssetInput(type?: AssetType) {
     } = useSearchState()
 
     const {file, image} = useSource().form
+    const {t} = useTranslation()
 
     // Get available asset sources
     // NOTE: currently only the default studio asset source is supported
@@ -100,7 +102,9 @@ export function SearchFilterAssetInput(type?: AssetType) {
 
     const fontSize = fullscreen ? 2 : 1
 
-    const buttonText = value ? `Change ${type}` : `Select ${type}`
+    const buttonText = t(value ? 'search.filter-asset-change' : 'search.filter-asset-select', {
+      context: type,
+    })
 
     const accept = get(type, 'options.accept', type === 'image' ? 'image/*' : '')
 
@@ -112,7 +116,7 @@ export function SearchFilterAssetInput(type?: AssetType) {
             <Portal>
               <AssetSourceComponent
                 assetType={type}
-                dialogHeaderTitle={`Select ${type}`}
+                dialogHeaderTitle={t('search.action.select-asset', {context: type})}
                 onClose={handleCloseAssetSource}
                 onSelect={handleSelectAssetFromSource}
                 selectedAssets={[]}
@@ -154,7 +158,10 @@ export function SearchFilterAssetInput(type?: AssetType) {
                             key={source.name}
                             // eslint-disable-next-line react/jsx-no-bind
                             onClick={() => handleSelectAssetSource(source)}
-                            text={source.title}
+                            text={
+                              (source.i18nKey ? t(source.i18nKey) : source.title) ||
+                              startCase(source.name)
+                            }
                           />
                         ))}
                       </Menu>
@@ -186,7 +193,7 @@ export function SearchFilterAssetInput(type?: AssetType) {
                 mode="ghost"
                 onClick={handleClear}
                 style={{flex: 1}}
-                text="Clear"
+                text={t('search.filter-asset-clear')}
                 tone="critical"
               />
             )}

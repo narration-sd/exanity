@@ -19,6 +19,7 @@ import {
   ToastContextValue,
   Inline,
 } from '@sanity/ui'
+import {TFunction} from 'sanity'
 import {VisionCodeMirror} from '../codemirror/VisionCodeMirror'
 import {getLocalStorage, LocalStorageish} from '../util/localStorage'
 import {parseApiQueryString, ParsedApiQueryString} from '../util/parseApiQueryString'
@@ -98,6 +99,7 @@ interface Subscription {
 interface VisionGuiProps extends VisionProps {
   toast: ToastContextValue
   datasets: string[]
+  t: TFunction<'vision', undefined>
 }
 
 interface VisionGuiState {
@@ -200,7 +202,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
         ? document.body.getBoundingClientRect().height - 60
         : 0
 
-    const params = lastParams ? tryParseParams(lastParams) : undefined
+    const params = lastParams ? tryParseParams(lastParams, this.props.t) : undefined
 
     this.state = {
       // Selected options
@@ -633,7 +635,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
   }
 
   render() {
-    const {datasets} = this.props
+    const {datasets, t} = this.props
     const {
       error,
       queryResult,
@@ -668,7 +670,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
             <Box padding={1} column={2}>
               <Stack>
                 <Card paddingTop={2} paddingBottom={3}>
-                  <StyledLabel>Dataset</StyledLabel>
+                  <StyledLabel>{t('settings.dataset-label')}</StyledLabel>
                 </Card>
                 <Select value={dataset} onChange={this.handleChangeDataset}>
                   {datasets.map((ds) => (
@@ -682,17 +684,19 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
             <Box padding={1} column={2}>
               <Stack>
                 <Card paddingTop={2} paddingBottom={3}>
-                  <StyledLabel>API version</StyledLabel>
+                  <StyledLabel>{t('settings.api-version-label')}</StyledLabel>
                 </Card>
                 <Select
-                  value={customApiVersion === false ? apiVersion : 'other'}
+                  value={
+                    customApiVersion === false ? apiVersion : t('settings.other-api-version-label')
+                  }
                   onChange={this.handleChangeApiVersion}
                 >
                   {API_VERSIONS.map((version) => (
                     <option key={version}>{version}</option>
                   ))}
-                  <option key="other" value="other">
-                    Other
+                  <option key="other" value={t('settings.other-api-version-label')}>
+                    {t('settings.other-api-version-label')}
                   </option>
                 </Select>
               </Stack>
@@ -703,14 +707,18 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
               <Box padding={1} column={2}>
                 <Stack>
                   <Card paddingTop={2} paddingBottom={3}>
-                    <StyledLabel textOverflow="ellipsis">Custom API version</StyledLabel>
+                    <StyledLabel textOverflow="ellipsis">
+                      {t('settings.custom-api-version-label')}
+                    </StyledLabel>
                   </Card>
 
                   <TextInput
                     ref={this._customApiVersionElement}
                     value={customApiVersion}
                     onChange={this.handleCustomApiVersionChange}
-                    customValidity={isValidApiVersion ? undefined : 'Invalid API version'}
+                    customValidity={
+                      isValidApiVersion ? undefined : t('settings.error.invalid-api-version')
+                    }
                     maxLength={11}
                   />
                 </Stack>
@@ -723,7 +731,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                 <Card paddingBottom={1}>
                   <Inline space={1}>
                     <Box>
-                      <StyledLabel>PERSPECTIVE</StyledLabel>
+                      <StyledLabel>{t('settings.perspective-label')}</StyledLabel>
                     </Box>
 
                     <Box>
@@ -746,8 +754,10 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                 <Stack>
                   <Card paddingTop={2} paddingBottom={3}>
                     <StyledLabel>
-                      Query URL&nbsp;
-                      <QueryCopyLink onClick={this.handleCopyUrl}>[copy]</QueryCopyLink>
+                      {t('query.url')}&nbsp;
+                      <QueryCopyLink onClick={this.handleCopyUrl}>
+                        [{t('action.copy-url-to-clipboard')}]
+                      </QueryCopyLink>
                     </StyledLabel>
                   </Card>
                   <Flex flex={1} gap={1}>
@@ -757,12 +767,12 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                     <Tooltip
                       content={
                         <Box padding={2}>
-                          <Text>Copy to clipboard</Text>
+                          <Text>{t('action.copy-url-to-clipboard')}</Text>
                         </Box>
                       }
                     >
                       <Button
-                        aria-label="Copy to clipboard"
+                        aria-label={t('action.copy-url-to-clipboard')}
                         type="button"
                         mode="ghost"
                         icon={CopyIcon}
@@ -813,7 +823,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                   <Box flex={1}>
                     <InputBackgroundContainerLeft>
                       <Flex>
-                        <StyledLabel muted>Query</StyledLabel>
+                        <StyledLabel muted>{t('query.label')}</StyledLabel>
                       </Flex>
                     </InputBackgroundContainerLeft>
                     <VisionCodeMirror value={this.state.query} onChange={this.handleQueryChange} />
@@ -823,7 +833,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                   <Card flex={1} tone={hasValidParams ? 'default' : 'critical'}>
                     <InputBackgroundContainerLeft>
                       <Flex>
-                        <StyledLabel muted>Params</StyledLabel>
+                        <StyledLabel muted>{t('params.label')}</StyledLabel>
                         {paramsError && (
                           <Tooltip
                             placement="top-end"
@@ -852,7 +862,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                         content={
                           <Card padding={2} radius={4}>
                             <Text size={1} muted>
-                              Parameters are not valid JSON
+                              {t('params.error.params-invalid-json')}
                             </Text>
                           </Card>
                         }
@@ -877,7 +887,11 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                                 icon={queryInProgress ? StopIcon : PlayIcon}
                                 disabled={listenInProgress || !hasValidParams}
                                 tone={queryInProgress ? 'positive' : 'primary'}
-                                text={queryInProgress ? 'Cancel' : 'Fetch'}
+                                text={
+                                  queryInProgress
+                                    ? t('action.query-cancel')
+                                    : t('action.query-execute')
+                                }
                               />
                             </Tooltip>
                           </Box>
@@ -886,7 +900,11 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                               onClick={this.handleListenExecution}
                               type="button"
                               icon={listenInProgress ? StopIcon : PlayIcon}
-                              text={listenInProgress ? 'Stop' : 'Listen'}
+                              text={
+                                listenInProgress
+                                  ? t('action.listen-cancel')
+                                  : t('action.listen-execute')
+                              }
                               mode="ghost"
                               disabled={!hasValidParams}
                               tone={listenInProgress ? 'positive' : 'default'}
@@ -910,7 +928,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                   <Result overflow="auto">
                     <InputBackgroundContainer>
                       <Box marginLeft={3}>
-                        <StyledLabel muted>Result</StyledLabel>
+                        <StyledLabel muted>{t('result.label')}</StyledLabel>
                       </Box>
                     </InputBackgroundContainer>
                     <Box padding={3} paddingTop={5}>
@@ -934,12 +952,18 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                   <TimingsTextContainer align="center">
                     <Box>
                       <Text muted>
-                        Execution: {typeof queryTime === 'number' ? `${queryTime}ms` : 'n/a'}
+                        {t('result.execution-time-label')}:{' '}
+                        {typeof queryTime === 'number'
+                          ? `${queryTime}ms`
+                          : t('result.timing-not-applicable')}
                       </Text>
                     </Box>
                     <Box marginLeft={4}>
                       <Text muted>
-                        End-to-end: {typeof e2eTime === 'number' ? `${e2eTime}ms` : 'n/a'}
+                        {t('result.end-to-end-time-label')}:{' '}
+                        {typeof e2eTime === 'number'
+                          ? `${e2eTime}ms`
+                          : t('result.timing-not-applicable')}
                       </Text>
                     </Box>
                   </TimingsTextContainer>

@@ -9,6 +9,7 @@ import {
 import {useSearchState} from '../../contexts/search/useSearchState'
 import {RecentSearch} from '../../datastores/recentSearches'
 import {Instructions} from '../Instructions'
+import {useTranslation} from '../../../../../../i18n'
 import {RecentSearchItem} from './item/RecentSearchItem'
 
 const VIRTUAL_LIST_RECENT_SEARCH_ITEM_HEIGHT = 36 // px
@@ -34,6 +35,8 @@ export function RecentSearches({inputElement}: RecentSearchesProps) {
     state: {filtersVisible, fullscreen, recentSearches},
   } = useSearchState()
   const commandListRef = useRef<CommandListHandle | null>(null)
+
+  const {t} = useTranslation()
 
   /**
    * Remove terms from local storage.
@@ -74,17 +77,17 @@ export function RecentSearches({inputElement}: RecentSearchesProps) {
       borderTop={hasRecentSearches || (!hasRecentSearches && !filtersVisible && fullscreen)}
       flex={1}
     >
-      {recentSearches.length ? (
+      {recentSearches.length > 0 ? (
         <>
           <Box paddingBottom={2} paddingTop={4} paddingX={3}>
             <Label muted size={1}>
-              Recent searches
+              {t('search.recent-searches-label')}
             </Label>
           </Box>
           <Box>
             <CommandList
               activeItemDataAttr="data-hovered"
-              ariaLabel="Recent searches"
+              ariaLabel={t('search.recent-searches-aria-label')}
               inputElement={inputElement}
               initialIndex={0}
               itemHeight={VIRTUAL_LIST_RECENT_SEARCH_ITEM_HEIGHT}
@@ -104,7 +107,7 @@ export function RecentSearches({inputElement}: RecentSearchesProps) {
               tone="default"
             >
               <Text muted size={1}>
-                Clear recent searches
+                {t('search.action.clear-recent-searches')}
               </Text>
             </Button>
           </Box>

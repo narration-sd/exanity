@@ -1,10 +1,10 @@
 import React, {useCallback, createElement, useMemo} from 'react'
 import {Box, ButtonTone, Card, Flex, Label, Stack, Text} from '@sanity/ui'
-import {format} from 'date-fns'
-import {formatTimelineEventLabel, getTimelineEventIconComponent} from './helpers'
+import {getTimelineEventIconComponent} from './helpers'
 import {UserAvatarStack} from './userAvatarStack'
-import {EventLabel, IconBox, IconWrapper, Root, TimestampBox} from './timelineItem.styled'
-import {ChunkType, Chunk} from 'sanity'
+import {IconBox, IconWrapper, Root, TimestampBox} from './timelineItem.styled'
+import {TIMELINE_ITEM_I18N_KEY_MAPPING} from './timelineI18n'
+import {type ChunkType, type Chunk, useTranslation, useIntlDateTimeFormat} from 'sanity'
 
 const TIMELINE_ITEM_EVENT_TONE: Record<ChunkType | 'withinSelection', ButtonTone> = {
   initial: 'primary',
@@ -39,15 +39,18 @@ export function TimelineItem({
   timestamp,
   type,
 }: TimelineItemProps) {
+  const {t} = useTranslation('studio')
+
   const iconComponent = getTimelineEventIconComponent(type)
   const authorUserIds = Array.from(chunk.authors)
   const isSelectable = type !== 'delete'
+  const dateFormat = useIntlDateTimeFormat({dateStyle: 'medium', timeStyle: 'short'})
   const formattedTimestamp = useMemo(() => {
     const parsedDate = new Date(timestamp)
-    const formattedDate = format(parsedDate, 'MMM d, yyyy, hh:mm a')
+    const formattedDate = dateFormat.format(parsedDate)
 
     return formattedDate
-  }, [timestamp])
+  }, [timestamp, dateFormat])
 
   const handleClick = useCallback(
     (evt: React.MouseEvent<HTMLButtonElement>) => {
@@ -93,18 +96,18 @@ export function TimelineItem({
                   tone={isSelected ? 'primary' : TIMELINE_ITEM_EVENT_TONE[chunk.type]}
                 >
                   <Label muted size={0}>
-                    Latest
+                    {t('timeline.latest')}
                   </Label>
                 </Card>
               </Flex>
             )}
             <Box>
-              <EventLabel size={1} weight="medium">
-                {formatTimelineEventLabel(type) || <code>{type}</code>}
-              </EventLabel>
+              <Text size={1} weight="medium">
+                {t(TIMELINE_ITEM_I18N_KEY_MAPPING[type]) || <code>{type}</code>}
+              </Text>
             </Box>
             <TimestampBox paddingX={1}>
-              <Text size={0} muted>
+              <Text as="time" size={0} muted dateTime={timestamp}>
                 {formattedTimestamp}
               </Text>
             </TimestampBox>

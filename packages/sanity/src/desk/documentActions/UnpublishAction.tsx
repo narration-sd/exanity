@@ -1,6 +1,7 @@
 import {UnpublishIcon} from '@sanity/icons'
 import React, {useCallback, useMemo, useState} from 'react'
 import {ConfirmDeleteDialog} from '../components'
+import {structureLocaleNamespace} from '../i18n'
 import {
   DocumentActionComponent,
   InsufficientPermissionsMessage,
@@ -8,10 +9,13 @@ import {
   useCurrentUser,
   useDocumentOperation,
   DocumentActionModalDialogProps,
+  useTranslation,
 } from 'sanity'
 
-const DISABLED_REASON_TITLE = {
-  NOT_PUBLISHED: 'This document is not published',
+const DISABLED_REASON_KEY = {
+  NOT_PUBLISHED: 'action.unpublish.disabled.not-published',
+  NOT_READY: 'action.unpublish.disabled.not-ready',
+  LIVE_EDIT_ENABLED: 'action.unpublish.disabled.live-edit-enabled',
 }
 
 /** @internal */
@@ -30,6 +34,7 @@ export const UnpublishAction: DocumentActionComponent = ({
     permission: 'unpublish',
   })
   const currentUser = useCurrentUser()
+  const {t} = useTranslation(structureLocaleNamespace)
 
   const handleCancel = useCallback(() => {
     setConfirmDialogOpen(false)
@@ -51,6 +56,7 @@ export const UnpublishAction: DocumentActionComponent = ({
           <ConfirmDeleteDialog
             id={draft?._id || id}
             type={type}
+            // eslint-disable-next-line no-attribute-string-literals/no-attribute-string-literals
             action="unpublish"
             onCancel={handleCancel}
             onConfirm={handleConfirm}
@@ -72,10 +78,7 @@ export const UnpublishAction: DocumentActionComponent = ({
       icon: UnpublishIcon,
       label: 'Unpublish',
       title: (
-        <InsufficientPermissionsMessage
-          operationLabel="unpublish this document"
-          currentUser={currentUser}
-        />
+        <InsufficientPermissionsMessage context="unpublish-document" currentUser={currentUser} />
       ),
       disabled: true,
     }
@@ -85,10 +88,8 @@ export const UnpublishAction: DocumentActionComponent = ({
     tone: 'critical',
     icon: UnpublishIcon,
     disabled: Boolean(unpublish.disabled) || isPermissionsLoading,
-    label: 'Unpublish',
-    title: unpublish.disabled
-      ? DISABLED_REASON_TITLE[unpublish.disabled as keyof typeof DISABLED_REASON_TITLE]
-      : '',
+    label: t('action.unpublish.label'),
+    title: unpublish.disabled ? t(DISABLED_REASON_KEY[unpublish.disabled]) : '',
     onHandle: () => setConfirmDialogOpen(true),
     dialog,
   }

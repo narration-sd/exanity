@@ -2,22 +2,27 @@ import {SanityLogo} from '@sanity/logos'
 import {Box, Card, Flex, Heading, Stack, Text} from '@sanity/ui'
 import React from 'react'
 import styled from 'styled-components'
+import {useTranslation} from '../../../../../i18n'
 
 const LINKS = [
   {
     url: 'https://slack.sanity.io/',
+    i18nKey: 'workspaces.community-title',
     title: 'Community',
   },
   {
     url: 'https://www.sanity.io/docs',
+    i18nKey: 'workspaces.docs-title',
     title: 'Docs',
   },
   {
     url: 'https://www.sanity.io/legal/privacy',
+    i18nKey: 'workspaces.privacy-title',
     title: 'Privacy',
   },
   {
     url: 'https://www.sanity.io',
+    i18nKey: 'workspaces.sanity-io-title',
     title: 'sanity.io',
   },
 ]
@@ -36,6 +41,7 @@ interface LayoutProps {
 
 export function Layout(props: LayoutProps) {
   const {children, footer, header} = props
+  const {t} = useTranslation()
 
   return (
     <Stack space={6}>

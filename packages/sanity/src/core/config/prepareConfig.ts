@@ -6,6 +6,7 @@ import {startCase} from 'lodash'
 import {fromUrl} from '@sanity/bifur-client'
 import {createElement, isValidElement} from 'react'
 import {isValidElementType} from 'react-is'
+import type {i18n} from 'i18next'
 import {createSchema} from '../schema'
 import {type AuthStore, createAuthStore, isAuthStore} from '../store/_legacy'
 import {FileSource, ImageSource} from '../form/studio/assetSource'
@@ -14,8 +15,11 @@ import {EMPTY_ARRAY, isNonNullable} from '../util'
 import {validateWorkspaces} from '../studio'
 import {filterDefinitions} from '../studio/components/navbar/search/definitions/defaultFilters'
 import {operatorDefinitions} from '../studio/components/navbar/search/definitions/operators/defaultOperators'
+import {prepareI18n} from '../i18n/i18nConfig'
+import type {LocaleSource} from '../i18n'
 import type {
   Config,
+  ConfigContext,
   MissingConfigFile,
   PreparedConfig,
   SingleWorkspace,
@@ -144,6 +148,7 @@ export function prepareConfig(
       }
 
       const auth = getAuthStore(source)
+      const i18n = prepareI18n(source)
       const source$ = auth.state.pipe(
         map(({client, authenticated, currentUser}) => {
           return resolveSource({
@@ -153,6 +158,7 @@ export function prepareConfig(
             schema,
             authenticated,
             auth,
+            i18n,
           })
         }),
         shareReplay(1),
@@ -165,6 +171,7 @@ export function prepareConfig(
         title: source.title || startCase(source.name),
         auth,
         schema,
+        i18n: i18n.source,
         source: source$,
       }
     })
@@ -177,6 +184,7 @@ export function prepareConfig(
       basePath: joinBasePath(rootPath, rootSource.basePath),
       dataset: rootSource.dataset,
       schema: resolvedSources[0].schema,
+      i18n: resolvedSources[0].i18n,
       icon: normalizeIcon(rootSource.icon, title, `${rootSource.projectId} ${rootSource.dataset}`),
       name: rootSource.name || 'default',
       projectId: rootSource.projectId,
@@ -211,6 +219,7 @@ interface ResolveSourceOptions {
   currentUser: CurrentUser | null
   authenticated: boolean
   auth: AuthStore
+  i18n: {i18next: i18n; source: LocaleSource}
 }
 
 function getBifurClient(client: SanityClient, auth: AuthStore) {
@@ -230,6 +239,7 @@ function resolveSource({
   schema,
   authenticated,
   auth,
+  i18n,
 }: ResolveSourceOptions): Source {
   const {dataset, projectId} = config
   const bifur = getBifurClient(client, auth)
@@ -247,13 +257,14 @@ function resolveSource({
     return clients[options.apiVersion]
   }
 
-  const context = {
+  const context: ConfigContext & {client: SanityClient} = {
     client,
     getClient,
     currentUser,
     dataset,
     projectId,
     schema,
+    i18n: i18n.source,
   }
 
   // <TEMPORARY UGLY HACK TO PRINT DEPRECATION WARNINGS ON USE>
@@ -457,6 +468,7 @@ function resolveSource({
     authenticated,
     templates,
     auth,
+    i18n: i18n.source,
     document: {
       actions: (partialContext) =>
         resolveConfigProperty({
@@ -569,6 +581,7 @@ function resolveSource({
 
     __internal: {
       bifur,
+      i18next: i18n.i18next,
       staticInitialValueTemplateItems,
       options: config,
     },

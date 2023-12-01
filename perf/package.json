@@ -1,6 +1,6 @@
 {
   "name": "sanity-perf-tests",
-  "version": "3.20.0",
+  "version": "3.20.2",
   "private": true,
   "description": "Sanity Studio perf tests",
   "license": "MIT",
@@ -21,12 +21,12 @@
     "@types/lodash": "^4.14.191",
     "@types/node": "^18.15.3",
     "dotenv": "^16.0.3",
-    "esbuild": "^0.19.0",
+    "esbuild": "^0.19.8",
     "execa": "^2.0.0",
     "globby": "^10.0.0",
     "lodash": "^4.17.21",
     "rxjs": "^7.8.0",
-    "sanity": "3.20.0",
+    "sanity": "3.20.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   }

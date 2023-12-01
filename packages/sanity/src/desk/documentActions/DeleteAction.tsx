@@ -3,17 +3,20 @@
 import {TrashIcon} from '@sanity/icons'
 import React, {useCallback, useState} from 'react'
 import {ConfirmDeleteDialog} from '../components'
+import {useDocumentPane} from '../panes/document/useDocumentPane'
+import {structureLocaleNamespace} from '../i18n'
 import {
   DocumentActionComponent,
   InsufficientPermissionsMessage,
   useCurrentUser,
   useDocumentOperation,
   useDocumentPairPermissions,
+  useTranslation,
 } from 'sanity'
-import {useDocumentPane} from '../panes/document/useDocumentPane'
 
-const DISABLED_REASON_TITLE = {
-  NOTHING_TO_DELETE: 'This document doesn’t yet exist or is already deleted',
+const DISABLED_REASON_TITLE_KEY = {
+  NOTHING_TO_DELETE: 'action.delete.disabled.nothing-to-delete',
+  NOT_READY: 'action.delete.disabled.not-ready',
 }
 
 /** @internal */
@@ -22,6 +25,8 @@ export const DeleteAction: DocumentActionComponent = ({id, type, draft, onComple
   const {delete: deleteOp} = useDocumentOperation(id, type)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isConfirmDialogOpen, setConfirmDialogOpen] = useState(false)
+
+  const {t} = useTranslation(structureLocaleNamespace)
 
   const handleCancel = useCallback(() => {
     setConfirmDialogOpen(false)
@@ -53,13 +58,8 @@ export const DeleteAction: DocumentActionComponent = ({id, type, draft, onComple
       tone: 'critical',
       icon: TrashIcon,
       disabled: true,
-      label: 'Delete',
-      title: (
-        <InsufficientPermissionsMessage
-          operationLabel="delete this document"
-          currentUser={currentUser}
-        />
-      ),
+      label: t('action.delete.label'),
+      title: <InsufficientPermissionsMessage context="delete-document" currentUser={currentUser} />,
     }
   }
 
@@ -67,17 +67,15 @@ export const DeleteAction: DocumentActionComponent = ({id, type, draft, onComple
     tone: 'critical',
     icon: TrashIcon,
     disabled: isDeleting || Boolean(deleteOp.disabled) || isPermissionsLoading,
-    title:
-      (deleteOp.disabled &&
-        DISABLED_REASON_TITLE[deleteOp.disabled as keyof typeof DISABLED_REASON_TITLE]) ||
-      '',
-    label: isDeleting ? 'Deleting…' : 'Delete',
+    title: (deleteOp.disabled && t(DISABLED_REASON_TITLE_KEY[deleteOp.disabled])) || '',
+    label: isDeleting ? t('action.delete.running.label') : t('action.delete.label'),
     shortcut: 'Ctrl+Alt+D',
     onHandle: handle,
     dialog: isConfirmDialogOpen && {
       type: 'custom',
       component: (
         <ConfirmDeleteDialog
+          // eslint-disable-next-line no-attribute-string-literals/no-attribute-string-literals
           action="delete"
           id={draft?._id || id}
           type={type}

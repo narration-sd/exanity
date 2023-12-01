@@ -13,7 +13,7 @@ import {
   Stack,
   ToastParams,
 } from '@sanity/ui'
-import {get} from 'lodash'
+import {get, startCase} from 'lodash'
 import {Observable, Subscription} from 'rxjs'
 import {ChevronDownIcon, ImageIcon, SearchIcon} from '@sanity/icons'
 import {
@@ -74,6 +74,7 @@ export interface BaseImageInputProps
   observeAsset: (documentId: string) => Observable<ImageAsset>
   resolveUploader: UploaderResolver
   client: SanityClient
+  t: (key: string, values?: Record<string, string>) => string
 }
 
 const getDevicePixelRatio = () => {
@@ -182,7 +183,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
   }
 
   uploadWith = (uploader: Uploader, file: File, assetDocumentProps: UploadOptions = {}) => {
-    const {schemaType, onChange, client} = this.props
+    const {schemaType, onChange, client, t} = this.props
     const {label, title, description, creditLine, source} = assetDocumentProps
     const options = {
       metadata: get(schemaType, 'options.metadata'),
@@ -208,8 +209,8 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
         console.error(err)
         this.toast?.push({
           status: 'error',
-          description: 'The upload could not be completed at this time.',
-          title: 'Upload failed',
+          description: t('inputs.image.upload-error.description'),
+          title: t('inputs.image.upload-error.title'),
         })
 
         this.clearUploadStatus()
@@ -393,14 +394,14 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
   }
 
   renderHotspotInput = (hotspotInputProps: Omit<InputProps, 'renderDefault'>) => {
-    const {value, changed, id, imageUrlBuilder} = this.props
+    const {value, changed, id, imageUrlBuilder, t} = this.props
 
     const withImageTool = this.isImageToolEnabled() && value && value.asset
 
     return (
       <Dialog
         __unstable_autoFocus={false}
-        header="Edit hotspot and crop"
+        header={t('inputs.image.hotspot-dialog.title')}
         id={`${id}_dialog`}
         onClickOutside={this.handleCloseDialog}
         onClose={this.handleCloseDialog}
@@ -426,7 +427,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
   }
 
   renderPreview = () => {
-    const {value, schemaType, readOnly, directUploads, imageUrlBuilder, resolveUploader} =
+    const {value, schemaType, readOnly, directUploads, imageUrlBuilder, t, resolveUploader} =
       this.props
 
     if (!value || !isImageSource(value)) {
@@ -452,7 +453,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
         isRejected={rejectedFilesCount > 0 || !directUploads}
         readOnly={readOnly}
         src={imageUrl}
-        alt="Preview of uploaded image"
+        alt={t('inputs.image.preview-uploaded-image')}
       />
     )
   }
@@ -466,6 +467,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
       directUploads,
       imageUrlBuilder,
       observeAsset,
+      t,
     } = this.props
 
     const asset = value?.asset
@@ -481,7 +483,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
       assetSources && assetSources.length === 0 ? null : (
         <MenuItem
           icon={SearchIcon}
-          text="Select"
+          text={t('inputs.image.browse-menu.text')}
           onClick={() => {
             this.setState({isMenuOpen: false})
             this.handleSelectImageFromAssetSource(assetSources[0])
@@ -496,7 +498,10 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
         return (
           <MenuItem
             key={assetSource.name}
-            text={assetSource.title}
+            text={
+              (assetSource.i18nKey ? t(assetSource.i18nKey) : assetSource.title) ||
+              startCase(assetSource.name)
+            }
             onClick={() => {
               this.setState({isMenuOpen: false})
               this.handleSelectImageFromAssetSource(assetSource)
@@ -548,7 +553,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
   }
 
   renderBrowser() {
-    const {assetSources, readOnly, directUploads, id} = this.props
+    const {assetSources, readOnly, directUploads, id, t} = this.props
 
     if (assetSources && assetSources.length === 0) return null
 
@@ -563,7 +568,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
               icon={SearchIcon}
               iconRight={ChevronDownIcon}
               mode="ghost"
-              text="Select"
+              text={t('inputs.image.browse-menu.text')}
             />
           }
           menu={
@@ -572,7 +577,10 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
                 return (
                   <MenuItem
                     key={assetSource.name}
-                    text={assetSource.title}
+                    text={
+                      (assetSource.i18nKey ? t(assetSource.i18nKey) : assetSource.title) ||
+                      startCase(assetSource.name)
+                    }
                     onClick={() => {
                       this.setState({isMenuOpen: false})
                       this.handleSelectImageFromAssetSource(assetSource)
@@ -593,7 +601,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
     return (
       <Button
         fontSize={2}
-        text="Select"
+        text={t('inputs.image.browse-menu.text')}
         icon={SearchIcon}
         mode="ghost"
         onClick={() => {
@@ -848,7 +856,7 @@ export class BaseImageInput extends React.PureComponent<BaseImageInputProps, Bas
             return <MemberFieldError key={member.key} member={member} />
           }
           //@ts-expect-error all possible cases should be covered
-          return <>Unknown member kind: ${member.kind}</>
+          return <>{t('inputs.image.error.unknown-member-kind', {kind: member.kind})}</>
         })}
 
         {hotspotField && focusPath[0] === 'hotspot' && (

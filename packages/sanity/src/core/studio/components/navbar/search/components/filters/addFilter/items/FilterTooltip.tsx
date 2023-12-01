@@ -2,12 +2,13 @@ import {Card, Code, Flex, Inline, Label, Stack, Text, Tooltip} from '@sanity/ui'
 import {startCase, uniq} from 'lodash'
 import React, {ReactElement, useMemo} from 'react'
 import {useSchema} from '../../../../../../../../hooks'
-import {isNonNullable} from '../../../../../../../../util'
+import {isNonNullable, truncateString} from '../../../../../../../../util'
 import {useSearchState} from '../../../../contexts/search/useSearchState'
 import type {SearchFieldDefinition} from '../../../../definitions/fields'
 import type {SearchFilterDefinition} from '../../../../definitions/filters'
 import {getSchemaField} from '../../../../utils/getSchemaField'
 import {sanitizeFieldValue} from '../../../../utils/sanitizeField'
+import {useTranslation} from '../../../../../../../../i18n'
 
 interface FilterTooltipProps {
   children: ReactElement
@@ -27,6 +28,7 @@ export function FilterTooltip({
   const {
     state: {documentTypesNarrowed},
   } = useSearchState()
+  const {t} = useTranslation()
 
   const schema = useSchema()
 
@@ -80,7 +82,7 @@ export function FilterTooltip({
             {fieldDefinition && (
               <Stack space={2}>
                 <Label muted size={0}>
-                  Field name
+                  {t('search.filter-field-tooltip-name')}
                 </Label>
                 <Inline>
                   <Card tone="caution" padding={1} radius={2}>
@@ -94,10 +96,10 @@ export function FilterTooltip({
             {fieldDefinitionDescription && (
               <Stack space={3}>
                 <Label muted size={0}>
-                  Field description
+                  {t('search.filter-field-tooltip-description')}
                 </Label>
                 <Text muted size={0}>
-                  {truncateString(fieldDefinitionDescription)}
+                  {truncateString(fieldDefinitionDescription, 256)}
                 </Text>
               </Stack>
             )}
@@ -105,7 +107,7 @@ export function FilterTooltip({
             {/* Filter description */}
             {filterDefinition?.description && (
               <Text muted size={0}>
-                {truncateString(filterDefinition.description)}
+                {truncateString(filterDefinition.description, 256)}
               </Text>
             )}
 
@@ -114,7 +116,7 @@ export function FilterTooltip({
               <Stack space={2}>
                 <Flex align="center" gap={1}>
                   <Label muted size={0}>
-                    Used in document types
+                    {t('search.filter-field-tooltip-used-in-document-types')}
                   </Label>
                   <Card padding={1} radius={2} tone="transparent">
                     <Text size={0} muted>
@@ -141,8 +143,4 @@ export function FilterTooltip({
       {children}
     </Tooltip>
   )
-}
-
-function truncateString(str: string, maxLength = 256) {
-  return str.length > maxLength ? `${str.slice(0, maxLength - 1)}…` : str
 }

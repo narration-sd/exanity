@@ -15,6 +15,7 @@ import {
   InitialValueTemplateItem,
   DocumentStore,
   DocumentFieldActionNode,
+  LocaleSource,
 } from 'sanity'
 
 /** @internal */
@@ -53,6 +54,9 @@ export interface StructureResolverContext extends ConfigContext {
    * @alpha
    * */
   documentStore: DocumentStore
+
+  /** @alpha */
+  i18n: LocaleSource
 }
 
 /**

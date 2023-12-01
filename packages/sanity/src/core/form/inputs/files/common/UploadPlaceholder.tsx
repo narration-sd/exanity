@@ -2,6 +2,7 @@ import React, {useState} from 'react'
 import {UploadIcon} from '@sanity/icons'
 import {Flex, useElementSize} from '@sanity/ui'
 import {FileLike} from '../../../studio/uploads/types'
+import {useTranslation} from '../../../../i18n'
 import {FileInputButton} from './FileInputButton/FileInputButton'
 import {PlaceholderText} from './PlaceholderText'
 
@@ -35,6 +36,7 @@ function UploadPlaceholderComponent(props: UploadPlaceholderProps) {
 
   // Adjust the layout in narrow containers
   const collapsed = rect?.border && rect.border.width < 440
+  const {t} = useTranslation()
 
   return (
     <Flex
@@ -64,7 +66,7 @@ function UploadPlaceholderComponent(props: UploadPlaceholderProps) {
           icon={UploadIcon}
           mode="ghost"
           onSelect={onUpload}
-          text="Upload"
+          text={t('input.files.common.upload-placeholder.file-input-button.text')}
         />
 
         {browse}

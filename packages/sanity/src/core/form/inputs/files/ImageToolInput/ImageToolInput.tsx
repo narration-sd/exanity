@@ -9,6 +9,7 @@ import type {ObjectInputProps} from '../../../types'
 import {useDidUpdate} from '../../../hooks/useDidUpdate'
 import {ChangeIndicator} from '../../../../changeIndicators'
 import {EMPTY_ARRAY} from '../../../../util'
+import {useTranslation} from '../../../../i18n'
 import {ImageTool, HotspotImage, DEFAULT_CROP, DEFAULT_HOTSPOT} from './imagetool'
 import {useLoadImage} from './useLoadImage'
 
@@ -108,11 +109,12 @@ export function ImageToolInput(props: ImageToolInputProps) {
     [onChange, readOnly, schemaType.fields],
   )
 
+  const {t} = useTranslation()
   return (
     <FormField
-      title="Hotspot &amp; crop"
+      title={t('inputs.imagetool.title')}
       level={level}
-      description="Adjust the rectangle to crop image. Adjust the circle to specify the area that should always be visible."
+      description={t('inputs.imagetool.description')}
       __unstable_presence={presence}
     >
       <div>
@@ -133,10 +135,14 @@ export function ImageToolInput(props: ImageToolInputProps) {
                 <LoadStatus>
                   {imageLoadError ? (
                     <Card padding={4} radius={2} tone="critical" border>
-                      <Text>Error: {imageLoadError.message}</Text>
+                      <Text>
+                        {t('inputs.imagetool.load-error', {
+                          errorMessage: imageLoadError.message,
+                        })}
+                      </Text>
                     </Card>
                   ) : (
-                    <Text muted>Loading image… </Text>
+                    <Text muted>{t('inputs.imagetool.loading')}</Text>
                   )}
                 </LoadStatus>
               )}

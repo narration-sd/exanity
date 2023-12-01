@@ -19,6 +19,7 @@ import {
   ScrollContainer,
   UserAvatar,
   useTimelineSelector,
+  useTranslation,
 } from 'sanity'
 
 const Scroller = styled(ScrollContainer)`
@@ -41,6 +42,10 @@ export function ChangesInspector(props: DocumentInspectorProps): ReactElement {
   const loading = selectionState === 'loading'
   const isComparingCurrent = !onOlderRevision
 
+  // Note that we are using the studio core namespace here, as changes theoretically should
+  // be part of Sanity core (needs to be moved from desk at some point)
+  const {t} = useTranslation('studio')
+
   const documentContext: DocumentChangeContextInstance = React.useMemo(
     () => ({
       documentId,
@@ -62,10 +67,10 @@ export function ChangesInspector(props: DocumentInspectorProps): ReactElement {
     <Flex data-testid="review-changes-pane" direction="column" height="fill" overflow="hidden">
       <DocumentInspectorHeader
         as="header"
-        closeButtonLabel="Close review changes"
+        closeButtonLabel={t('changes.action.close-label')}
         flex="none"
         onClose={onClose}
-        title="Review changes"
+        title={t('changes.title')}
       >
         <Flex gap={1} padding={3} paddingTop={0} paddingBottom={2}>
           <Box flex={1}>
@@ -73,8 +78,12 @@ export function ChangesInspector(props: DocumentInspectorProps): ReactElement {
           </Box>
 
           <Box flex="none">
-            <DiffTooltip annotations={changeAnnotations} description="Changes by" portal>
-              <AvatarStack maxLength={4} aria-label="Changes by">
+            <DiffTooltip
+              annotations={changeAnnotations}
+              description={t('changes.changes-by-author')}
+              portal
+            >
+              <AvatarStack maxLength={4} aria-label={t('changes.changes-by-author')}>
                 {changeAnnotations.map(({author}) => (
                   <UserAvatar key={author} user={author} />
                 ))}

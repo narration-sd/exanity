@@ -1,5 +1,5 @@
-import React, {useCallback, useMemo} from 'react'
-import {
+import React, {type FormEvent, useCallback, useMemo} from 'react'
+import type {
   Path,
   SanityDocument,
   SlugParent,
@@ -11,8 +11,9 @@ import {
 import * as PathUtils from '@sanity/util/paths'
 import {Box, Button, Card, Flex, Stack, TextInput} from '@sanity/ui'
 import {PatchEvent, set, setIfMissing, unset} from '../../patch'
-import {ObjectInputProps} from '../../types'
-import {useFormBuilder} from '../../useFormBuilder'
+import type {ObjectInputProps} from '../../types'
+import {useGetFormValue} from '../../contexts/GetFormValue'
+import {useTranslation} from '../../../i18n'
 import {slugify} from './utils/slugify'
 import {useAsync} from './utils/useAsync'
 import {SlugContext, useSlugContext} from './utils/useSlugContext'
@@ -51,15 +52,17 @@ async function getNewFromSource(
  * @beta
  */
 export function SlugInput(props: SlugInputProps) {
-  const {getDocument} = useFormBuilder().__internal
+  const getFormValue = useGetFormValue()
   const {path, value, schemaType, validation, onChange, readOnly, elementProps} = props
   const sourceField = schemaType.options?.source
   const errors = useMemo(() => validation.filter((item) => item.level === 'error'), [validation])
 
   const slugContext = useSlugContext()
 
+  const {t} = useTranslation()
+
   const updateSlug = useCallback(
-    (nextSlug: any) => {
+    (nextSlug: string) => {
       if (!nextSlug) {
         onChange(PatchEvent.from(unset([])))
         return
@@ -75,21 +78,21 @@ export function SlugInput(props: SlugInputProps) {
   const [generateState, handleGenerateSlug] = useAsync(() => {
     if (!sourceField) {
       return Promise.reject(
-        new Error(`Source is missing. Check source on type "${schemaType.name}" in schema`),
+        new Error(t('inputs.slug.error.missing-source', {schemaType: schemaType.name})),
       )
     }
 
-    const doc = getDocument() || ({_type: schemaType.name} as SanityDocument)
+    const doc = (getFormValue([]) as SanityDocument) || ({_type: schemaType.name} as SanityDocument)
     const sourceContext = getSlugSourceContext(path, doc, slugContext)
     return getNewFromSource(sourceField, doc, sourceContext)
       .then((newFromSource) => slugify(newFromSource || '', schemaType, sourceContext))
       .then((newSlug) => updateSlug(newSlug))
-  }, [sourceField, getDocument, schemaType, path, slugContext, updateSlug])
+  }, [sourceField, getFormValue, schemaType, path, slugContext, updateSlug, t])
 
   const isUpdating = generateState?.status === 'pending'
 
   const handleChange = React.useCallback(
-    (event: any) => updateSlug(event.currentTarget.value),
+    (event: FormEvent<HTMLInputElement>) => updateSlug(event.currentTarget.value),
     [updateSlug],
   )
 
@@ -119,7 +122,11 @@ export function SlugInput(props: SlugInputProps) {
               type="button"
               disabled={readOnly || isUpdating}
               onClick={handleGenerateSlug}
-              text={generateState?.status === 'pending' ? 'Generating…' : 'Generate'}
+              text={
+                generateState?.status === 'pending'
+                  ? t('inputs.slug.action.generating')
+                  : t('inputs.slug.action.generate')
+              }
             />
           </Box>
         )}

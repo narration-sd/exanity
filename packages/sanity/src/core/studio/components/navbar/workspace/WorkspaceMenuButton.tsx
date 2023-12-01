@@ -13,6 +13,7 @@ import {
 } from '@sanity/ui'
 import React, {useCallback, useMemo, useState} from 'react'
 import styled from 'styled-components'
+import {useTranslation} from '../../../../i18n'
 import {useActiveWorkspace} from '../../../activeWorkspaceMatcher'
 import {useColorScheme} from '../../../colorScheme'
 import {useWorkspaces} from '../../../workspaces'
@@ -24,8 +25,6 @@ const StyledMenu = styled(Menu)`
   max-width: 350px;
   min-width: 250px;
 `
-
-const TITLE = 'Select workspace'
 
 interface WorkspaceMenuButtonProps {
   collapsed?: boolean
@@ -39,6 +38,7 @@ export function WorkspaceMenuButton(props: WorkspaceMenuButtonProps) {
   const {activeWorkspace, setActiveWorkspace} = useActiveWorkspace()
   const [authStates] = useWorkspaceAuthStates(workspaces)
   const {navigateUrl} = useRouter()
+  const {t} = useTranslation()
 
   const handleOnOpen = useCallback(() => setMenuOpen(true), [])
   const handleOnClose = useCallback(() => setMenuOpen(false), [])
@@ -47,16 +47,16 @@ export function WorkspaceMenuButton(props: WorkspaceMenuButtonProps) {
     () => ({constrainSize: true, scheme, portal: true}),
     [scheme],
   )
-  //Tooltip should be disabled in the Navdrawer
+  // Tooltip should be disabled in the Navdrawer
   const tooltipDisabled = menuOpen || !collapsed
-  const ariaLabel = collapsed ? TITLE : undefined
-  const buttonText = collapsed ? undefined : TITLE
+  const ariaLabel = collapsed ? t('workspaces.select-workspace-aria-label') : undefined
+  const buttonText = collapsed ? undefined : t('workspaces.select-workspace-label')
 
   return (
     <Tooltip
       content={
         <Box padding={2}>
-          <Text size={1}>Select workspace</Text>
+          <Text size={1}>{t('workspaces.title')}</Text>
         </Box>
       }
       disabled={tooltipDisabled}
@@ -76,12 +76,12 @@ export function WorkspaceMenuButton(props: WorkspaceMenuButtonProps) {
               justify={collapsed ? undefined : 'flex-start'}
             />
           }
-          id="workspace-menu"
+          id="workspaces"
           menu={
             <StyledMenu>
               <Box paddingX={3} paddingY={3}>
                 <Label size={1} muted>
-                  Workspaces
+                  {t('workspaces.title')}
                 </Label>
               </Box>
 

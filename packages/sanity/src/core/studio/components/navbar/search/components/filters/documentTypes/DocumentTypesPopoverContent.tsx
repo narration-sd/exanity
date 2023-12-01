@@ -15,6 +15,7 @@ import {useSearchState} from '../../../contexts/search/useSearchState'
 import type {DocumentTypeMenuItem} from '../../../types'
 import {getSelectableOmnisearchTypes} from '../../../utils/selectors'
 import {FilterPopoverContentHeader} from '../common/FilterPopoverContentHeader'
+import {useTranslation} from '../../../../../../../i18n'
 import {DocumentTypeFilterItem} from './items/DocumentTypeFilterItem'
 
 const ClearButtonBox = styled(Box)`
@@ -22,10 +23,13 @@ const ClearButtonBox = styled(Box)`
   flex-shrink: 0;
 `
 
+const POPOVER_STYLES = {width: '250px'}
+
 export function DocumentTypesPopoverContent() {
   const [inputElement, setInputElement] = useState<HTMLInputElement | null>(null)
   const [typeFilter, setTypeFilter] = useState('')
   const commandListRef = useRef<CommandListHandle | null>(null)
+  const {t} = useTranslation()
 
   const schema = useSchema()
 
@@ -118,10 +122,10 @@ export function DocumentTypesPopoverContent() {
   )
 
   return (
-    <Flex direction="column" style={{width: '250px'}}>
+    <Flex direction="column" style={POPOVER_STYLES}>
       {/* Search header */}
       <FilterPopoverContentHeader
-        ariaInputLabel="Filter by document type"
+        ariaInputLabel={t('search.action.filter-by-document-type-aria-label')}
         onChange={handleFilterChange}
         onClear={handleFilterClear}
         ref={setInputElement}
@@ -132,7 +136,7 @@ export function DocumentTypesPopoverContent() {
         {documentTypeItems.length > 0 && (
           <CommandList
             activeItemDataAttr="data-hovered"
-            ariaLabel="Document types"
+            ariaLabel={t('search.document-types-aria-label')}
             ariaMultiselectable
             autoFocus="input"
             getItemDisabled={getItemDisabled}
@@ -153,7 +157,7 @@ export function DocumentTypesPopoverContent() {
         {!documentTypeItems.length && (
           <Box padding={3}>
             <Text muted size={1} textOverflow="ellipsis">
-              No matches for '{typeFilter}'
+              {t('search.document-types-no-matches-found', {filter: typeFilter})}
             </Text>
           </Box>
         )}
@@ -174,18 +178,20 @@ function ClearButton({
   onClick: () => void
   selectedTypes: SearchableType[]
 }) {
+  const {t} = useTranslation()
+
   return (
     <ClearButtonBox padding={1}>
       <Stack>
         <Button
-          aria-label="Clear checked filters"
+          aria-label={t('search.action.clear-type-filters-aria-label')}
           data-name="type-filter-button"
           disabled={selectedTypes.length === 0}
           fontSize={1}
           mode="bleed"
           onClick={onClick}
           padding={3}
-          text="Clear"
+          text={t('search.action.clear-type-filters-label')}
           tone="primary"
         />
       </Stack>

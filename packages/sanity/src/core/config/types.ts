@@ -11,6 +11,7 @@ import type {
 } from '@sanity/types'
 import type {ComponentType, ReactNode} from 'react'
 import type {Observable} from 'rxjs'
+import type {i18n} from 'i18next'
 import type {
   BlockAnnotationProps,
   BlockProps,
@@ -20,6 +21,7 @@ import type {
   InputProps,
   ItemProps,
 } from '../form'
+import type {LocalePluginOptions, LocaleSource} from '../i18n/types'
 import type {InitialValueTemplateItem, Template, TemplateItem} from '../templates'
 import type {PreviewProps} from '../components/previews'
 import type {AuthStore} from '../store'
@@ -32,8 +34,8 @@ import type {
   DocumentActionComponent,
   DocumentBadgeComponent,
   DocumentFieldAction,
-  DocumentFieldActionsResolverContext,
   DocumentFieldActionsResolver,
+  DocumentFieldActionsResolverContext,
   DocumentInspector,
 } from './document'
 import type {Router, RouterState} from 'sanity/router'
@@ -217,6 +219,10 @@ export interface ConfigContext {
    * A function that returns a Sanity client with the {@link SourceClientOptions | specified options}.
    */
   getClient: (options: SourceClientOptions) => SanityClient
+  /**
+   * Localization resources
+   */
+  i18n: LocaleSource
 }
 
 /** @public */
@@ -232,7 +238,7 @@ export interface SchemaPluginOptions {
     | SchemaTypeDefinition[]
     | ComposableOption<
         SchemaTypeDefinition[],
-        Omit<ConfigContext, 'schema' | 'currentUser' | 'getClient' | 'client'>
+        Omit<ConfigContext, 'schema' | 'currentUser' | 'getClient' | 'client' | 'i18n'>
       >
   templates?: Template[] | TemplateResolver
 }
@@ -344,10 +350,7 @@ export type DocumentInspectorsResolver = ComposableOption<
   DocumentInspectorContext
 >
 
-/**
- * @hidden
- * @beta
- */
+/** @beta */
 export interface PluginOptions {
   name: string
   plugins?: PluginOptions[]
@@ -360,6 +363,8 @@ export interface PluginOptions {
   studio?: {
     components?: StudioComponentsPluginOptions
   }
+  /** @beta @hidden */
+  i18n?: LocalePluginOptions
 }
 
 /** @internal */
@@ -667,12 +672,24 @@ export interface Source {
   }
 
   /** @internal */
+  i18n: LocaleSource
+
+  /** @internal */
   __internal: {
+    /** @internal */
     bifur: BifurClient
+    /** @internal */
     staticInitialValueTemplateItems: InitialValueTemplateItem[]
+    /** @internal */
     options: SourceOptions
+    /**
+     * _VERY_ internal, likely to change at any point.
+     * @internal
+     */
+    i18next: i18n
   }
 }
+
 /** @internal */
 export interface WorkspaceSummary {
   type: 'workspace-summary'
@@ -686,6 +703,7 @@ export interface WorkspaceSummary {
   dataset: string
   theme: StudioTheme
   schema: Schema
+  i18n: LocaleSource
   /**
    * @internal
    * @deprecated not actually deprecated but don't use or you'll be fired
@@ -698,6 +716,7 @@ export interface WorkspaceSummary {
       title: string
       auth: AuthStore
       schema: Schema
+      i18n: LocaleSource
       source: Observable<Source>
     }>
   }

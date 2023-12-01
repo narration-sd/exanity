@@ -42,6 +42,8 @@ import {customInspector} from './inspectors/custom'
 import {pasteAction} from './fieldActions/pasteAction'
 import {routerDebugTool} from './plugins/router-debug'
 import {StegaDebugger} from './schema/debug/components/DebugStega'
+import {noNBLocale} from './plugins/locale-no-nb'
+import {testStudioLocaleBundles} from './locales'
 
 const sharedSettings = definePlugin({
   name: 'sharedSettings',
@@ -59,6 +61,11 @@ const sharedSettings = definePlugin({
       logo: Branding,
     },
   },
+
+  i18n: {
+    bundles: testStudioLocaleBundles,
+  },
+
   document: {
     actions: documentActions,
     inspectors: (prev, ctx) => {
@@ -82,6 +89,7 @@ const sharedSettings = definePlugin({
     },
   },
   plugins: [
+    noNBLocale(),
     deskTool({
       icon: BookIcon,
       structure,

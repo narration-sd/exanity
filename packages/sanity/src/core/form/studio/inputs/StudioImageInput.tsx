@@ -8,6 +8,7 @@ import {resolveUploader as defaultResolveUploader} from '../uploads/resolveUploa
 import {FileLike} from '../uploads/types'
 import {useDocumentPreviewStore} from '../../../store'
 import {useClient} from '../../../hooks'
+import {useTranslation} from '../../../i18n'
 import {observeImageAsset} from './client-adapters/assets'
 
 /**
@@ -31,8 +32,7 @@ export function StudioImageInput(props: ImageInputProps) {
   const {image} = useFormBuilder().__internal
   const documentPreviewStore = useDocumentPreviewStore()
   const client = useClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
-  const formBuilder = useFormBuilder()
-  const supportsImageUploads = formBuilder.__internal.image.directUploads
+  const supportsImageUploads = image.directUploads
 
   const resolveUploader = useCallback(
     (type: SchemaType, file: FileLike) => {
@@ -58,12 +58,14 @@ export function StudioImageInput(props: ImageInputProps) {
     [documentPreviewStore],
   )
 
+  const {t} = useTranslation()
   return (
     <BaseImageInput
       {...props}
+      t={t}
       client={client}
       assetSources={assetSources}
-      directUploads={image.directUploads}
+      directUploads={supportsImageUploads}
       imageUrlBuilder={builder}
       observeAsset={observeAsset}
       resolveUploader={resolveUploader}

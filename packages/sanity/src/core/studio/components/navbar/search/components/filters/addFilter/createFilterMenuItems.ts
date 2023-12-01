@@ -20,6 +20,7 @@ import type {
   SearchFilter,
 } from '../../../types'
 import {buildSearchFilter, getFieldFromFilter} from '../../../utils/filterUtils'
+import type {TFunction} from '../../../../../../../i18n'
 
 /**
  * Creates a flat list of filter menu items based on the current filter text input.
@@ -31,6 +32,7 @@ export function createFilterMenuItems({
   schema,
   titleFilter,
   types,
+  t,
 }: {
   documentTypesNarrowed: string[]
   fieldDefinitions: SearchFieldDefinitionDictionary
@@ -38,6 +40,7 @@ export function createFilterMenuItems({
   schema: Schema
   titleFilter: string
   types: SearchableType[]
+  t: TFunction<'studio', undefined>
 }): FilterMenuItem[] {
   // Construct field filters based on available definitions and current title fitler
   const fieldFilters = Object.values(fieldDefinitions)
@@ -65,7 +68,7 @@ export function createFilterMenuItems({
         fieldDefinitions,
         filterDefinitions,
         filters: fieldFilters,
-        headerTitle: 'All fields',
+        headerTitle: t('search.filter-all-fields-header'),
         id: 'field',
       }),
     ]
@@ -81,6 +84,7 @@ export function createFilterMenuItems({
       filters: fieldFilters,
       schema,
       types,
+      t,
     }),
   ]
 }
@@ -136,6 +140,7 @@ function buildFieldMenuItemsNarrowed({
   filters,
   schema,
   types,
+  t,
 }: {
   documentTypesNarrowed: string[]
   fieldDefinitions: SearchFieldDefinitionDictionary
@@ -143,6 +148,7 @@ function buildFieldMenuItemsNarrowed({
   filters: SearchFilter[]
   schema: Schema
   types: SearchableType[]
+  t: TFunction<'studio', undefined>
 }) {
   const sharedFilters = filters.filter((filter) => {
     const fieldDefinition = getFieldFromFilter(fieldDefinitions, filter)
@@ -155,7 +161,7 @@ function buildFieldMenuItemsNarrowed({
           fieldDefinitions,
           filterDefinitions,
           filters: sharedFilters,
-          headerTitle: 'Shared fields',
+          headerTitle: t('search.filter-shared-fields-header'),
           id: 'shared',
           tone: 'primary',
         })
@@ -165,6 +171,9 @@ function buildFieldMenuItemsNarrowed({
     .map((documentType) => {
       const docType = schema.get(documentType)
       return {
+        // Note: it shouldn't be possible to select document types that do not exist in schema,
+        // and there is no way to inject it into state (eg not persisted in URL), thus we leave
+        // this fallback (`Unknown type`) only as a edge-case safety net and will not translate it.
         title: docType?.title || startCase(docType?.name) || '(Unknown type)',
         documentType,
       }

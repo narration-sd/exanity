@@ -1,10 +1,11 @@
-import {Path} from '@sanity/types'
+import type {Path} from '@sanity/types'
 import {Tooltip, TooltipProps, Text, Stack, Flex, Inline, Label} from '@sanity/ui'
 import React from 'react'
 import {LegacyLayerProvider, UserAvatar} from '../../../components'
-import {useTimeAgo} from '../../../hooks'
+import {useRelativeTime} from '../../../hooks'
 import {useUser} from '../../../store'
-import {AnnotationDetails, Diff} from '../../types'
+import {useTranslation} from '../../../i18n'
+import type {AnnotationDetails, Diff} from '../../types'
 import {getAnnotationAtPath, useAnnotationColor} from '../annotations'
 
 /** @internal */
@@ -24,18 +25,19 @@ export interface DiffTooltipWithAnnotationsProps extends TooltipProps {
 
 /** @internal */
 export function DiffTooltip(props: DiffTooltipProps | DiffTooltipWithAnnotationsProps) {
-  if ('diff' in props) {
-    const {diff, path = [], ...restProps} = props
-    const annotation = getAnnotationAtPath(diff, path)
-
-    return <DiffTooltipWithAnnotation {...restProps} annotations={annotation ? [annotation] : []} />
+  if (!('diff' in props)) {
+    return <DiffTooltipWithAnnotation {...props} />
   }
 
-  return <DiffTooltipWithAnnotation {...props} />
+  const {diff, path = [], ...restProps} = props
+  const annotation = getAnnotationAtPath(diff, path)
+
+  return <DiffTooltipWithAnnotation {...restProps} annotations={annotation ? [annotation] : []} />
 }
 
 function DiffTooltipWithAnnotation(props: DiffTooltipWithAnnotationsProps) {
-  const {annotations, children, description = 'Changed', ...restProps} = props
+  const {annotations, children, description, ...restProps} = props
+  const {t} = useTranslation()
 
   if (!annotations) {
     return children
@@ -44,7 +46,7 @@ function DiffTooltipWithAnnotation(props: DiffTooltipWithAnnotationsProps) {
   const content = (
     <Stack padding={3} space={2}>
       <Label size={1} style={{textTransform: 'uppercase'}}>
-        {description}
+        {description || t('changes.changed-label')}
       </Label>
       <Stack space={2}>
         {annotations.map((annotation, idx) => (
@@ -67,7 +69,8 @@ function AnnotationItem({annotation}: {annotation: AnnotationDetails}) {
   const {author, timestamp} = annotation
   const [user] = useUser(author)
   const color = useAnnotationColor(annotation)
-  const timeAgo = useTimeAgo(timestamp, {minimal: true})
+  const timeAgo = useRelativeTime(timestamp, {minimal: true})
+  const {t} = useTranslation()
 
   return (
     <Inline space={2}>
@@ -83,7 +86,7 @@ function AnnotationItem({annotation}: {annotation: AnnotationDetails}) {
         <UserAvatar user={author} />
         <Inline paddingLeft={2}>
           <Text muted size={1} style={{color: color.text}}>
-            {user ? user.displayName : 'Loading…'}
+            {user ? user.displayName : t('changes.loading-author')}
           </Text>
         </Inline>
       </Flex>

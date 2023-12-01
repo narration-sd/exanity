@@ -1,16 +1,17 @@
 import type {AssetSource, SchemaTypeDefinition} from '@sanity/types'
 import {getPrintableType} from '../util/getPrintableType'
 import type {Template, TemplateItem} from '../templates'
+import type {LocaleConfigContext, LocaleDefinition, LocaleResourceBundle} from '../i18n'
 import type {DocumentActionComponent, DocumentBadgeComponent, DocumentInspector} from './document'
 import type {
-  DocumentLanguageFilterComponent,
-  DocumentLanguageFilterContext,
   AsyncConfigPropertyReducer,
   ConfigContext,
   ConfigPropertyReducer,
   DocumentActionsContext,
   DocumentBadgesContext,
   DocumentInspectorContext,
+  DocumentLanguageFilterComponent,
+  DocumentLanguageFilterContext,
   NewDocumentOptionsContext,
   ResolveProductionUrlContext,
   Tool,
@@ -27,7 +28,7 @@ export const initialLanguageFilter: DocumentLanguageFilterComponent[] = []
 
 export const schemaTypesReducer: ConfigPropertyReducer<
   SchemaTypeDefinition[],
-  Omit<ConfigContext, 'schema' | 'currentUser' | 'client' | 'getClient'>
+  Omit<ConfigContext, 'schema' | 'currentUser' | 'client' | 'getClient' | 'i18n'>
 > = (prev, {schema}, context) => {
   const schemaTypes = schema?.types
 
@@ -111,6 +112,37 @@ export const schemaTemplatesReducer: ConfigPropertyReducer<Template[], ConfigCon
     `Expected \`schema.templates\` to be an array or a function, but received ${getPrintableType(
       schemaTemplates,
     )}`,
+  )
+}
+
+export const localeDefReducer: ConfigPropertyReducer<LocaleDefinition[], LocaleConfigContext> = (
+  prev,
+  {i18n},
+  context,
+) => {
+  const locales = i18n?.locales
+  if (!locales) return prev
+  if (typeof locales === 'function') return locales(prev, context)
+  if (Array.isArray(locales)) return [...prev, ...locales]
+
+  throw new Error(
+    `Expected \`i18n.locales\` to be an array or a function, but received ${getPrintableType(
+      locales,
+    )}`,
+  )
+}
+
+export const localeBundlesReducer: ConfigPropertyReducer<
+  LocaleResourceBundle[],
+  LocaleConfigContext
+> = (prev, {i18n}, context) => {
+  const bundles = i18n?.bundles
+  if (!bundles) return prev
+  if (Array.isArray(bundles)) return [...prev, ...bundles]
+  if (typeof bundles === 'function') return bundles(prev, context)
+
+  throw new Error(
+    `Expected \`i18n.bundles\` to be an array or a function, but received ${typeof bundles}`,
   )
 }
 

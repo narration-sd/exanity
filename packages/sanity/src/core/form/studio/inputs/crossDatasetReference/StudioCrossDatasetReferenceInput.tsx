@@ -1,7 +1,7 @@
 import React, {useCallback, useMemo, useRef} from 'react'
 import {
-  CrossDatasetReferenceValue,
   CrossDatasetReferenceSchemaType,
+  CrossDatasetReferenceValue,
   Path,
   ReferenceFilterOptions,
   ReferenceFilterSearchOptions,
@@ -15,9 +15,9 @@ import {CrossDatasetReferenceInput} from '../../../inputs/CrossDatasetReferenceI
 import {ObjectInputProps} from '../../../types'
 import {Source} from '../../../../config'
 import {useSource} from '../../../../studio'
-import {useFormValue} from '../../../useFormValue'
 import {useDocumentPreviewStore} from '../../../../store'
 import {FIXME} from '../../../../FIXME'
+import {useFormValue} from '../../../contexts/FormValue'
 import {search} from './datastores/search'
 import {createGetReferenceInfo} from './datastores/getReferenceInfo'
 

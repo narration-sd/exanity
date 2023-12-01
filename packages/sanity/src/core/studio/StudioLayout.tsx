@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string */
 import {Card, Flex, Spinner, Text} from '@sanity/ui'
 import {startCase} from 'lodash'
 import React, {
@@ -13,7 +14,7 @@ import styled from 'styled-components'
 import {NoToolsScreen} from './screens/NoToolsScreen'
 import {RedirectingScreen} from './screens/RedirectingScreen'
 import {ToolNotFoundScreen} from './screens/ToolNotFoundScreen'
-import {useNavbarComponent} from './studio-components-hooks'
+import {useLayoutComponent, useNavbarComponent} from './studio-components-hooks'
 import {StudioErrorBoundary} from './StudioErrorBoundary'
 import {useWorkspace} from './workspace'
 import {RouteScope, useRouter, useRouterState} from 'sanity/router'
@@ -65,6 +66,18 @@ export const NavbarContext = createContext<NavbarContextValue>({
  * ```
  */
 export function StudioLayout() {
+  // Use the layout component that is resolved by the Components API (`studio.components.layout`).
+  // The default component is the `StudioLayoutComponent` defined below.
+  const Layout = useLayoutComponent()
+
+  return <Layout />
+}
+
+/**
+ * @internal
+ * The default Studio Layout component
+ * */
+export function StudioLayoutComponent() {
   const {name, title, tools} = useWorkspace()
   const router = useRouter()
   const activeToolName = useRouterState(

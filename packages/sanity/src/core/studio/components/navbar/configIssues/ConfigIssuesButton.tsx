@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string,no-attribute-string-literals/no-attribute-string-literals */
 import React, {useCallback, useState, useId} from 'react'
 import {Dialog, Heading, Stack, Text} from '@sanity/ui'
 import {WarningOutlineIcon} from '@sanity/icons'
@@ -5,6 +6,7 @@ import {useSchema} from '../../../../hooks'
 import {SchemaProblemGroups} from '../../../screens/schemaErrors/SchemaProblemGroups'
 import {useColorScheme} from '../../../colorScheme'
 import {StatusButton} from '../../../../components'
+import {useTranslation} from '../../../../i18n'
 
 export function ConfigIssuesButton() {
   const schema = useSchema()
@@ -15,6 +17,7 @@ export function ConfigIssuesButton() {
 
   // get root scheme
   const {scheme} = useColorScheme()
+  const {t} = useTranslation()
 
   const dialogId = useId()
 
