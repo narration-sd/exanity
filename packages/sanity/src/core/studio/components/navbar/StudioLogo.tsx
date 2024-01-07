@@ -9,8 +9,8 @@ export function StudioLogo(props: LogoProps) {
   const {title} = props
 
   return (
-    <Box padding={3}>
-      <Text weight="bold">{title}</Text>
+    <Box padding={3} data-testid="studio-logo">
+      <Text weight="medium">{title}</Text>
     </Box>
   )
 }

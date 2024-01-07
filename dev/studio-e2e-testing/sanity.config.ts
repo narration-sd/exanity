@@ -1,5 +1,5 @@
 import {defineConfig, definePlugin} from 'sanity'
-import {deskTool} from 'sanity/desk'
+import {structureTool} from 'sanity/structure'
 import {visionTool} from '@sanity/vision'
 import {BookIcon} from '@sanity/icons'
 import {muxInput} from 'sanity-plugin-mux-input'
@@ -14,8 +14,8 @@ import {copyAction} from 'sanity-test-studio/fieldActions/copyAction'
 import {assistFieldActionGroup} from 'sanity-test-studio/fieldActions/assistFieldActionGroup'
 import {customInspector} from 'sanity-test-studio/inspectors/custom'
 import {pasteAction} from 'sanity-test-studio/fieldActions/pasteAction'
-import {Branding} from './components/Branding'
 import {schemaTypes} from './schemas'
+import {customComponents} from './components-api'
 
 const sharedSettings = definePlugin({
   name: 'sharedSettings',
@@ -28,11 +28,7 @@ const sharedSettings = definePlugin({
       assetSources: [imageAssetSource],
     },
   },
-  studio: {
-    components: {
-      logo: Branding,
-    },
-  },
+
   document: {
     actions: documentActions,
     inspectors: (prev, ctx) => {
@@ -52,7 +48,8 @@ const sharedSettings = definePlugin({
     newDocumentOptions,
   },
   plugins: [
-    deskTool({
+    customComponents(),
+    structureTool({
       icon: BookIcon,
       name: 'content',
       title: 'Content',

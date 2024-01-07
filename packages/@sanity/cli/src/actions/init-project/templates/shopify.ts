@@ -3,9 +3,9 @@ import type {ProjectTemplate} from '../initProject'
 const configTemplate = `
 import {defineConfig, isDev} from 'sanity'
 
-import {deskTool} from 'sanity/desk'
+import {structureTool} from 'sanity/structure'
 import {schemaTypes} from './schemas'
-import {structure} from './desk'
+import {structure} from './structure'
 
 import {visionTool} from '@sanity/vision'
 import {colorInput} from '@sanity/color-input'
@@ -23,7 +23,7 @@ export default defineConfig({
   dataset: '%dataset%',
 
   plugins: [
-    deskTool({structure}),
+    structureTool({structure}),
     colorInput(),
     imageHotspotArrayPlugin(),
     customDocumentActions(),
@@ -55,7 +55,7 @@ const shopifyTemplate: ProjectTemplate = {
     '@sanity/asset-utils': '^1.3.0',
     '@sanity/color-input': '^3.0.2',
     '@sanity/icons': '^2.6.0',
-    '@sanity/ui': '^1.8.3',
+    '@sanity/ui': '^2.0.0-beta',
     'lodash.get': '^4.4.2',
     'pluralize-esm': '^9.0.2',
     'sanity-plugin-hotspot-array': '^1.0.1',

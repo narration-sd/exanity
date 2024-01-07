@@ -1,4 +1,4 @@
-/* eslint-disable i18next/no-literal-string,no-attribute-string-literals/no-attribute-string-literals */
+/* eslint-disable i18next/no-literal-string,@sanity/i18n/no-attribute-string-literals */
 import React, {useEffect} from 'react'
 import {Flex, Box, Card, Code, Text} from '@sanity/ui'
 import {startCase} from 'lodash'
@@ -25,7 +25,7 @@ export function ErrorMessage({error, message, path, stack}: ErrorMessageProps) {
   return (
     <ErrorMessageRoot forwardedAs={Flex} direction="column" gap={4}>
       <Flex direction="column" gap={2}>
-        <Text weight="semibold" size={3}>
+        <Text weight="medium" size={3}>
           {startCase(last.type)} Error
         </Text>
       </Flex>

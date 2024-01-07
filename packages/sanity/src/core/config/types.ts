@@ -12,18 +12,9 @@ import type {
 import type {ComponentType, ReactNode} from 'react'
 import type {Observable} from 'rxjs'
 import type {i18n} from 'i18next'
-import type {
-  BlockAnnotationProps,
-  BlockProps,
-  FieldProps,
-  FormBuilderCustomMarkersComponent,
-  FormBuilderMarkersComponent,
-  InputProps,
-  ItemProps,
-} from '../form'
+import type {FormBuilderCustomMarkersComponent, FormBuilderMarkersComponent} from '../form'
 import type {LocalePluginOptions, LocaleSource} from '../i18n/types'
 import type {InitialValueTemplateItem, Template, TemplateItem} from '../templates'
-import type {PreviewProps} from '../components/previews'
 import type {AuthStore} from '../store'
 import type {StudioTheme} from '../theme'
 import type {SearchFilterDefinition} from '../studio/components/navbar/search/definitions/filters'
@@ -38,6 +29,7 @@ import type {
   DocumentFieldActionsResolverContext,
   DocumentInspector,
 } from './document'
+import {FormComponents} from './form'
 import type {Router, RouterState} from 'sanity/router'
 
 /**
@@ -61,19 +53,14 @@ export interface SanityFormConfig {
     CustomMarkers?: FormBuilderCustomMarkersComponent
     Markers?: FormBuilderMarkersComponent
   }
+
   /**
+   * Components for the form.
    * @hidden
    * @beta
    */
-  components?: {
-    input?: ComponentType<InputProps>
-    field?: ComponentType<FieldProps>
-    item?: ComponentType<ItemProps>
-    preview?: ComponentType<PreviewProps>
-    block?: ComponentType<BlockProps>
-    inlineBlock?: ComponentType<BlockProps>
-    annotation?: ComponentType<BlockAnnotationProps>
-  }
+  components?: FormComponents
+
   file?: {
     /**
      * @hidden
@@ -106,7 +93,7 @@ export interface FormBuilderComponentResolverContext extends ConfigContext {
  * In essence, a tool is a React component that is rendered when the tool is active,
  * along with a title, name (URL segment) and icon.
  *
- * Tools can handle {@link desk.Intent | intents} such as "edit" or "create" by defining a
+ * Tools can handle {@link structure.Intent | intents} such as "edit" or "create" by defining a
  * function for the `canHandleIntent` property, as well as the `getIntentState` property,
  * which defines what an intent will be mapped to in terms of the tool's URL state.
  *
@@ -120,6 +107,8 @@ export interface Tool<Options = any> {
 
   /**
    * React component for the icon representing the tool.
+   *
+   * @deprecated Tool icons are no longer displayed.
    */
   icon?: ComponentType
 
@@ -273,6 +262,13 @@ export type NewDocumentCreationContext =
 export interface DocumentPluginOptions {
   badges?: DocumentBadgeComponent[] | DocumentBadgesResolver
   actions?: DocumentActionComponent[] | DocumentActionsResolver
+
+  /**
+   * Components for the document.
+   * @internal
+   */
+  components?: DocumentComponents
+
   /** @internal */
   unstable_fieldActions?: DocumentFieldAction[] | DocumentFieldActionsResolver
   /** @hidden @beta */
@@ -360,11 +356,23 @@ export interface PluginOptions {
   document?: DocumentPluginOptions
   tools?: Tool[] | ComposableOption<Tool[], ConfigContext>
   form?: SanityFormConfig
+
   studio?: {
+    /**
+     * Components for the studio.
+     * @hidden
+     * @beta
+     */
     components?: StudioComponentsPluginOptions
   }
+
   /** @beta @hidden */
   i18n?: LocalePluginOptions
+  search?: {
+    unstable_partialIndexing?: {
+      enabled: boolean
+    }
+  }
 }
 
 /** @internal */
@@ -394,6 +402,12 @@ export type Plugin<TOptions = void> = (options: TOptions) => PluginOptions
 export interface WorkspaceOptions extends SourceOptions {
   basePath: string
   subtitle?: string
+  /**
+   * The workspace logo
+   *
+   * @deprecated Custom logo components are no longer supported.
+   * Users are encouraged to provide custom components for individual workspace icons instead.
+   */
   logo?: ComponentType
   icon?: ComponentType
 
@@ -496,6 +510,24 @@ export type PartialContext<TContext extends ConfigContext> = Pick<
   Exclude<keyof TContext, keyof ConfigContext>
 >
 
+/** @internal*/
+export interface DocumentLayoutProps {
+  /**
+   * The ID of the document. This is a read-only property and changing it will have no effect.
+   */
+  documentId: string
+  /**
+   * The type of the document. This is a read-only property and changing it will have no effect.
+   */
+  documentType: string
+  renderDefault: (props: DocumentLayoutProps) => React.ReactElement
+}
+
+interface DocumentComponents {
+  /** @internal */
+  unstable_layout?: ComponentType<DocumentLayoutProps>
+}
+
 /** @public */
 export interface SourceClientOptions {
   /**
@@ -558,6 +590,12 @@ export interface Source {
      * @beta
      */
     badges: (props: PartialContext<DocumentActionsContext>) => DocumentBadgeComponent[]
+
+    /**
+     * Components for the document.
+     * @internal
+     */
+    components?: DocumentComponents
 
     /** @internal */
     unstable_fieldActions: (
@@ -634,12 +672,7 @@ export interface Source {
      * @hidden
      * @beta
      */
-    components?: {
-      input?: ComponentType<Omit<InputProps, 'renderDefault'>>
-      field?: ComponentType<Omit<FieldProps, 'renderDefault'>>
-      item?: ComponentType<Omit<ItemProps, 'renderDefault'>>
-      preview?: ComponentType<Omit<PreviewProps, 'renderDefault'>>
-    }
+    components?: FormComponents
 
     /**
      * these have not been migrated over and are not merged by the form builder
@@ -659,6 +692,7 @@ export interface Source {
    */
   studio?: {
     /**
+     * Components for the studio.
      * @hidden
      * @beta
      */
@@ -669,6 +703,9 @@ export interface Source {
   search: {
     filters: SearchFilterDefinition[]
     operators: SearchOperatorDefinition[]
+    unstable_partialIndexing?: {
+      enabled: boolean
+    }
   }
 
   /** @internal */
@@ -695,7 +732,13 @@ export interface WorkspaceSummary {
   type: 'workspace-summary'
   name: string
   title: string
+  /**
+   * User supplied component if provided, otherwise falls back to
+   * an automatically generated default icon.
+   */
   icon: ReactNode
+  /** Returns true if a custom icon has been provided in studio config */
+  customIcon: boolean
   subtitle?: string
   basePath: string
   auth: AuthStore

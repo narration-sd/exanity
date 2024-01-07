@@ -5,7 +5,7 @@ import {SanityClient} from '@sanity/client'
 import {ReferenceInfo, ReferenceSearchHit} from '../../../inputs/ReferenceInput/types'
 import {DocumentPreviewStore, getPreviewPaths, prepareForPreview} from '../../../../preview'
 import {collate, CollatedHit, getDraftId, getIdPair, isRecord} from '../../../../util'
-import {createWeightedSearch} from '../../../../search'
+import {createWeightedSearch, getSearchTypesWithMaxDepth} from '../../../../search'
 
 const READABLE = {
   available: true,
@@ -100,11 +100,7 @@ export function getReferenceInfo(
             } as const)
           }
 
-          const previewPaths = [
-            ...(getPreviewPaths(refSchemaType?.preview) || []),
-            ['_updatedAt'],
-            ['_createdAt'],
-          ]
+          const previewPaths = getPreviewPaths(refSchemaType?.preview) || []
 
           const draftPreview$ = documentPreviewStore.observePaths(draftRef, previewPaths).pipe(
             map((result) =>
@@ -195,7 +191,11 @@ export function referenceSearch(
   type: ReferenceSchemaType,
   options: ReferenceFilterSearchOptions,
 ): Observable<ReferenceSearchHit[]> {
-  const searchWeighted = createWeightedSearch(type.to, client, options)
+  const searchWeighted = createWeightedSearch(
+    getSearchTypesWithMaxDepth(type.to, options.maxFieldDepth),
+    client,
+    options,
+  )
   return searchWeighted(textTerm, {includeDrafts: true}).pipe(
     map((results) => results.map((result) => result.hit)),
     map(collate),

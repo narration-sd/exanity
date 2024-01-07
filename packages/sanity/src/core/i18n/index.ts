@@ -1,8 +1,7 @@
 export * from './hooks/useTranslation'
 export * from './hooks/useLocale'
-export * from './hooks/useIntlListFormat'
-export * from './hooks/useIntlNumberFormat'
-export * from './hooks/useIntlDateTimeFormat'
+export * from './hooks/useI18nText'
+export * from './hooks/useGetI18nText'
 export * from './components/LocaleProvider'
 export * from './locales'
 export * from './Translate'
@@ -18,6 +17,7 @@ export type {
   LocalesBundlesOption,
   LocalesOption,
   LocaleSource,
+  LocaleWeekInfo,
   StaticLocaleResourceBundle,
   StudioLocaleResourceKeys,
   TFunction,

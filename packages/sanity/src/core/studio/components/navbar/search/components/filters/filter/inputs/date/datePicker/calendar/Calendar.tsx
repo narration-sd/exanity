@@ -1,6 +1,7 @@
 import {Box, Flex} from '@sanity/ui'
 import {addDays, addMonths, isAfter, isBefore, set} from 'date-fns'
 import React, {KeyboardEvent, useCallback, useEffect, useRef, useState} from 'react'
+import {useCurrentLocale} from '../../../../../../../../../../../i18n/hooks/useLocale'
 import {CalendarContext} from './contexts/CalendarContext'
 import {CalendarHeader} from './CalendarHeader'
 import {CalendarMonth} from './CalendarMonth'
@@ -9,7 +10,6 @@ import {ARROW_KEYS} from './constants'
 type CalendarProps = Omit<React.ComponentProps<'div'>, 'onSelect'> & {
   date?: Date
   endDate?: Date
-  fontSize: number
   onSelect: ({date, endDate}: {date: Date | null; endDate?: Date | null}) => void
   selectRange?: boolean
   selectTime?: boolean
@@ -31,7 +31,7 @@ const PRESERVE_FOCUS_ELEMENT = (
 )
 
 export function Calendar(props: CalendarProps) {
-  const {date, endDate, fontSize, onSelect, selectRange, selectTime} = props
+  const {date, endDate, onSelect, selectRange, selectTime} = props
 
   const [calendarElement, setCalendarElement] = useState<HTMLElement | null>(null)
   const [selectEndValue, setSelectEndValue] = useState(false)
@@ -39,6 +39,10 @@ export function Calendar(props: CalendarProps) {
 
   const previousDate = useRef<Date | null>(date || null)
   const previousEndDate = useRef<Date | null>(endDate || null)
+
+  const {
+    weekInfo: {firstDay: firstWeekDay},
+  } = useCurrentLocale()
 
   const focusCurrentWeekDay = useCallback(() => {
     calendarElement?.querySelector<HTMLElement>(`[data-focused="true"]`)?.focus()
@@ -179,20 +183,16 @@ export function Calendar(props: CalendarProps) {
         date,
         endDate,
         focusedDate,
-        fontSize,
         selectRange,
         selectTime,
+        firstWeekDay,
       }}
     >
       <Box data-ui="Calendar" ref={setCalendarElement}>
         {/* Select month and year */}
         <Flex>
           <Box flex={1}>
-            <CalendarHeader
-              fontSize={fontSize}
-              moveFocusedDate={moveFocusedDate}
-              onNowClick={handleNowClick}
-            />
+            <CalendarHeader moveFocusedDate={moveFocusedDate} onNowClick={handleNowClick} />
           </Box>
         </Flex>
 

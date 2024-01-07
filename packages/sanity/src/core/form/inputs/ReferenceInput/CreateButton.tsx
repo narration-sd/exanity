@@ -1,12 +1,20 @@
-import React, {ComponentProps} from 'react'
+import React from 'react'
 import {AddIcon} from '@sanity/icons'
-import {Box, Button, Menu, MenuButton, type MenuButtonProps, MenuItem, Tooltip} from '@sanity/ui'
-import {useTranslation} from '../../../i18n'
+import {Menu} from '@sanity/ui'
+import {useGetI18nText, useTranslation} from '../../../i18n'
 import {InsufficientPermissionsMessage} from '../../../components'
+import {
+  Button,
+  MenuButton,
+  type MenuButtonProps,
+  MenuItem,
+  Tooltip,
+} from '../../../../ui-components'
 import {useCurrentUser} from '../../../store'
 import type {CreateReferenceOption} from './types'
 
-interface Props extends ComponentProps<typeof Button> {
+interface Props
+  extends Omit<React.HTMLProps<HTMLButtonElement>, 'as' | 'size' | 'width' | 'type' | 'ref'> {
   id: string
   createOptions: CreateReferenceOption[]
   menuRef?: React.RefObject<HTMLDivElement>
@@ -31,23 +39,23 @@ export function CreateButton(props: Props) {
   const currentUser = useCurrentUser()
 
   const {t} = useTranslation()
+  const getI18nText = useGetI18nText(createOptions)
+
   const canCreateAny = createOptions.some((option) => option.permission.granted)
   if (!canCreateAny) {
     return (
       <Tooltip
         content={
-          <Box padding={2}>
-            <InsufficientPermissionsMessage
-              currentUser={currentUser}
-              context="create-new-reference"
-            />
-          </Box>
+          <InsufficientPermissionsMessage
+            currentUser={currentUser}
+            context="create-new-reference"
+          />
         }
       >
         {/* this wrapper div is needed because disabled button doesn't trigger mouse events */}
         <div style={INLINE_BLOCK_STYLE}>
           <Button
-            text={t('inputs.reference.create-new-document')}
+            text={t('inputs.reference.action.create-new-document')}
             mode="ghost"
             disabled
             icon={AddIcon}
@@ -64,9 +72,10 @@ export function CreateButton(props: Props) {
         <Button
           {...rest}
           disabled={props.readOnly}
-          text={t('inputs.reference.action-create-new-document-select')}
+          text={t('inputs.reference.action.create-new-document-select')}
           mode="ghost"
           icon={AddIcon}
+          size="large"
         />
       }
       id={id}
@@ -77,12 +86,10 @@ export function CreateButton(props: Props) {
               disabled={createOption.permission.granted}
               key={createOption.id}
               content={
-                <Box padding={2}>
-                  <InsufficientPermissionsMessage
-                    currentUser={currentUser}
-                    context="create-document-type"
-                  />
-                </Box>
+                <InsufficientPermissionsMessage
+                  currentUser={currentUser}
+                  context="create-document-type"
+                />
               }
               portal
             >
@@ -91,7 +98,7 @@ export function CreateButton(props: Props) {
                 <MenuItem
                   disabled={!createOption.permission.granted}
                   icon={createOption.icon}
-                  text={createOption.title}
+                  text={getI18nText(createOption).title}
                   // eslint-disable-next-line react/jsx-no-bind
                   onClick={() => onCreate(createOption)}
                 />
@@ -105,12 +112,13 @@ export function CreateButton(props: Props) {
   ) : (
     <Button
       {...rest}
-      text={t('inputs.reference.action-create-new-document-select')}
+      text={t('inputs.reference.action.create-new-document-select')}
       mode="ghost"
       disabled={!createOptions[0].permission.granted || props.readOnly}
       // eslint-disable-next-line react/jsx-no-bind
       onClick={() => onCreate(createOptions[0])}
       icon={AddIcon}
+      size="large"
     />
   )
 }

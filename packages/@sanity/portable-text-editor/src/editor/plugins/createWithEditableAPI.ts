@@ -24,12 +24,13 @@ import {
   PortableTextMemberSchemaTypes,
   PortableTextSlateEditor,
 } from '../../types/editor'
-import {toSlateValue, fromSlateValue} from '../../utils/values'
+import {toSlateValue, fromSlateValue, isEqualToEmptyEditor} from '../../utils/values'
 import {toSlateRange, toPortableTextRange} from '../../utils/ranges'
 import {PortableTextEditor} from '../PortableTextEditor'
 
 import {debugWithName} from '../../utils/debug'
 import {KEY_TO_VALUE_ELEMENT, SLATE_TO_PORTABLE_TEXT_RANGE} from '../../utils/weakMaps'
+import {normalizeMarkDefs} from './createWithPortableTextMarkModel'
 
 const debug = debugWithName('API:editable')
 
@@ -180,6 +181,20 @@ export function createWithEditableAPI(
           ],
           portableTextEditor,
         )[0] as unknown as Node
+        const [focusBlock] = Array.from(
+          Editor.nodes(editor, {
+            at: editor.selection.focus.path.slice(0, 1),
+            match: (n) => n._type === types.block.name,
+          }),
+        )[0] || [undefined]
+
+        const isEmptyTextBlock = focusBlock && isEqualToEmptyEditor([focusBlock], types)
+
+        if (isEmptyTextBlock) {
+          // If the text block is empty, remove it before inserting the new block.
+          Transforms.removeNodes(editor, {at: editor.selection})
+        }
+
         Editor.insertNode(editor, block)
         editor.onChange()
         return (
@@ -444,44 +459,32 @@ export function createWithEditableAPI(
               if (!selection) {
                 return
               }
-              // Split the span first
-              Transforms.setNodes(editor, {}, {match: Text.isText, split: true})
-              editor.onChange()
-
-              // Everything in the selection which has marks
-              const spans = [
+              // Find the selected block, to identify the annotation to remove
+              const blocks = [
                 ...Editor.nodes(editor, {
                   at: selection,
-                  match: (node) =>
-                    Text.isText(node) &&
-                    node.marks !== undefined &&
-                    Array.isArray(node.marks) &&
-                    node.marks.length > 0,
+                  match: (node) => {
+                    return (
+                      editor.isTextBlock(node) &&
+                      Array.isArray(node.markDefs) &&
+                      node.markDefs.some((def) => def._type === type.name)
+                    )
+                  },
                 }),
               ]
-              spans.forEach(([span, path]) => {
-                const [block] = Editor.node(editor, path, {depth: 1})
-                if (editor.isTextBlock(block)) {
-                  block.markDefs
-                    ?.filter((def) => def._type === type.name)
-                    .forEach((def) => {
-                      if (
-                        Text.isText(span) &&
-                        Array.isArray(span.marks) &&
-                        span.marks.includes(def._key)
-                      ) {
-                        const newMarks = [...(span.marks || []).filter((mark) => mark !== def._key)]
-                        Transforms.setNodes(
-                          editor,
-                          {
-                            marks: newMarks,
-                          },
-                          {at: path, voids: false, split: false},
-                        )
-                      }
-                    })
+              const removedMarks: string[] = []
+
+              // Removes the marks from the text nodes
+              blocks.forEach(([block]) => {
+                if (editor.isTextBlock(block) && Array.isArray(block.markDefs)) {
+                  const marksToRemove = block.markDefs.filter((def) => def._type === type.name)
+                  marksToRemove.forEach((def) => {
+                    if (!removedMarks.includes(def._key)) removedMarks.push(def._key)
+                    Editor.removeMark(editor, def._key)
+                  })
                 }
               })
+              normalizeMarkDefs(editor, types)
             }
           })
           Editor.normalize(editor)

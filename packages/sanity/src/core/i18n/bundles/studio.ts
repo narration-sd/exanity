@@ -6,6 +6,7 @@ import {studioLocaleNamespace} from '../localeNamespaces'
  * The string resources for the studio core.
  *
  * @internal
+ * @hidden
  */
 export const studioLocaleStrings = defineLocalesResources('studio', {
   /** Menu item for deleting the asset */
@@ -73,6 +74,7 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'asset-source.file.asset-list.action.delete.text': 'Delete',
   'asset-source.file.asset-list.action.delete.title': 'Delete file',
   'asset-source.file.asset-list.action.select-file.title': 'Select the file {{filename}}',
+  'asset-source.file.asset-list.action.show-usage.title': 'Show usage',
   'asset-source.file.asset-list.delete-failed': 'File could not be deleted',
   'asset-source.file.asset-list.delete-successful': 'File was deleted',
   'asset-source.file.asset-list.header.date-added': 'Date added',
@@ -139,7 +141,7 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   /** Label for selecting an hour preset. Receives a `time` param as a string on hh:mm format and a `date` param as a Date instance denoting the preset date */
   'calendar.action.set-to-time-preset': '{{time}} on {{date, datetime}}',
   /** Error message displayed in calendar when entered date is not the correct format */
-  'calendar.error.must-be-in-format': 'Must be in the format <Emphasis>{{exampleDate}}</Emphasis>',
+  'calendar.error.must-be-in-format': 'Must be in the format: {{exampleDate}}',
   /** Month name for April */
   'calendar.month-names.april': 'April',
   /** Month name for August */
@@ -298,6 +300,49 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   /** Title for the Review Changes pane */
   'changes.title': 'Review changes',
 
+  /** --- Common components --- */
+  /** Tooltip text for context menu buttons */
+  'common.context-menu-button.tooltip': 'Show more',
+
+  /** Default text for dialog cancel button */
+  'common.dialog.cancel-button.text': 'Cancel',
+
+  /** Default text for dialog confirm button */
+  'common.dialog.confirm-button.text': 'Confirm',
+
+  /** Default text in shared loader text / spinner lockup */
+  'common.loading': 'Loading',
+
+  /** --- Configuration issues --- */
+
+  /** Tooltip displayed on configuration issues button */
+  'configuration-issues.button.tooltip': 'Found configuration issues',
+
+  /** The fallback title for an ordering menu item if no localized titles are provided. */
+  'default-menu-item.fallback-title': 'Sort by {{title}}',
+
+  /** Title for the default ordering/SortOrder if no orderings are provided and the caption field is found */
+  'default-orderings.caption': 'Sort by Caption',
+  /** Title for the default ordering/SortOrder if no orderings are provided and the description field is found */
+  'default-orderings.description': 'Sort by Description',
+  /** Title for the default ordering/SortOrder if no orderings are provided and the header field is found */
+  'default-orderings.header': 'Sort by Header',
+  /** Title for the default ordering/SortOrder if no orderings are provided and the heading field is found */
+  'default-orderings.heading': 'Sort by Heading',
+  /** Title for the default ordering/SortOrder if no orderings are provided and the label field is found */
+  'default-orderings.label': 'Sort by Label',
+  /** Title for the default ordering/SortOrder if no orderings are provided and the name field is found */
+  'default-orderings.name': 'Sort by Name',
+  /** Title for the default ordering/SortOrder if no orderings are provided and the title field is found */
+  'default-orderings.title': 'Sort by Title',
+
+  /** Label to show in the document footer indicating the last edited date of the document */
+  'document-status.edited': 'Edited {{date}}',
+  /** Label to show in the document footer indicating the document is not published*/
+  'document-status.not-published': 'Not published',
+  /** Label to show in the document footer indicating the published date of the document */
+  'document-status.published': 'Published {{date}}',
+
   /** The value of the <code>_key</code> property must be a unique string. */
   'form.error.duplicate-keys-alert.details.additional-description':
     'The value of the <code>_key</code> property must be a unique string.',
@@ -388,6 +433,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   /** Title for help and resources menus */
   'help-resources.title': 'Help and resources',
 
+  /** Text for button to cancel an ongoing upload */
+  'input.files.common.cancel-upload': 'Cancel',
   /** Text for file input button in upload placeholder */
   'input.files.common.upload-placeholder.file-input-button.text': 'Upload',
   /** Uploading <FileName/> */
@@ -406,6 +453,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
    * eg. will prompt the user to select a type once triggered
    */
   'inputs.array.action.add-item-select-type': 'Add item...',
+  /** Array drag handle button tooltip */
+  'inputs.array.action.drag.tooltip': 'Drag to re-order',
   /** Label for duplicating an array item  */
   'inputs.array.action.duplicate': 'Duplicate',
   /** Label for editing the item of a specific type, eg "Edit Person" */
@@ -446,6 +495,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'inputs.array.read-only-label': 'This field is read-only',
   /** Label for when the array input is resolving the initial value for the item */
   'inputs.array.resolving-initial-value': 'Resolving initial value…',
+  /** Placeholder value for datetime input */
+  'inputs.datetime.placeholder': 'e.g. {{example}}',
   /** Acessibility label for button to open file options menu */
   'inputs.file.actions-menu.file-options.aria-label': 'Open file options menu',
   /** Browse */
@@ -555,12 +606,10 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
     'Adjust the rectangle to crop image. Adjust the circle to specify the area that should always be visible.',
   /** Error: `{{errorMessage}}` */
   'inputs.imagetool.load-error': 'Error: {{errorMessage}}',
-  /** Loading image… */
-  'inputs.imagetool.loading': 'Loading image…',
   /** Hotspot & Crop */
   'inputs.imagetool.title': 'Hotspot & Crop',
-  /** Convert to <code>`{{targetType}}`</code> */
-  'inputs.invalid-value.convert-button.text': 'Convert to <code>{{targetType}}</code>',
+  /** Convert to `{{targetType}}` */
+  'inputs.invalid-value.convert-button.text': 'Convert to {{targetType}}',
   /** The current value (<code>`{{actualType}}`</code>) */
   'inputs.invalid-value.current-type': 'The current value (<code>{{actualType}}</code>)',
   /** The property value is stored as a value type that does not match the expected type. */
@@ -620,6 +669,13 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'inputs.portable-text.action.insert-inline-object-aria-label': 'Insert {{typeName}} (inline)',
   /** Label for action to remove an annotation */
   'inputs.portable-text.action.remove-annotation': 'Remove annotation',
+  /** Label for activate on focus with context of click and not focused */
+  'inputs.portable-text.activate-on-focus-message_click': 'Click to activate',
+  /** Label for activate on focus with context of click and focused */
+  'inputs.portable-text.activate-on-focus-message_click-focused':
+    'Click or press space to activate',
+  /** Label for activate on focus with context of tap and not focused */
+  'inputs.portable-text.activate-on-focus-message_tap': 'Tap to activate',
   /** Title for dialog that allows editing an annotation */
   'inputs.portable-text.annotation-editor.title': 'Edit {{schemaType}}',
   /** Title of the default "link" annotation */
@@ -763,12 +819,12 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'inputs.portable-text.style.normal': 'Normal',
   /** Title of the "quote" block style */
   'inputs.portable-text.style.quote': 'Quote',
-  /** Label for action to create a new document from the reference input, when there are multiple templates or document types to choose from */
-  'inputs.reference.action-create-new-document-select': 'Create new…',
   /** Label for action to clear the current value of the reference field */
   'inputs.reference.action.clear': 'Clear',
   /** Label for action to create a new document from the reference input */
-  'inputs.reference.action.create-new-document': 'Create new',
+  'inputs.reference.action.create-new-document': 'Create',
+  /** Label for action to create a new document from the reference input, when there are multiple templates or document types to choose from */
+  'inputs.reference.action.create-new-document-select': 'Create…',
   /** Label for action to duplicate the current item to a new item (used within arrays) */
   'inputs.reference.action.duplicate': 'Duplicate',
   /** Label for action that opens the referenced document in a new tab */
@@ -890,8 +946,12 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   /** Error message for when the source to generate a slug from is missing */
   'inputs.slug.error.missing-source':
     'Source is missing. Check source on type {{schemaType}} in schema',
-  /** Convert to <code>`{{targetType}}`</code> */
-  'inputs.untyped-value.convert-button.text': 'Convert to <code>{{targetType}}</code>',
+  /** Placeholder for an empty tag input */
+  'inputs.tags.placeholder': 'Enter tag and press ENTER…',
+  /** Placeholder for an empty tag input on touch devices */
+  'inputs.tags.placeholder_touch': 'Enter tag…',
+  /** Convert to `{{targetType}}` */
+  'inputs.untyped-value.convert-button.text': 'Convert to {{targetType}}',
   /** Encountered an object value without a <code>_type</code> property. */
   'inputs.untyped-value.description':
     'Encountered an object value without a <code>_type</code> property.',
@@ -948,6 +1008,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   /** Unexpected error: `{{error}}` */
   'member-field-error.unexpected-error': 'Unexpected error: {{error}}',
 
+  /** Button label for "Create new document" button */
+  'new-document.button': 'Create',
   /**
    * Tooltip message displayed when hovering/activating the "Create new document" action,
    * when there are templates/types available for creation
@@ -1038,6 +1100,14 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'search.action.toggle-filters-aria-label_hide': 'Hide filters',
   /** Accessibility label for when the search is full screen (on narrow screens) and you want to show filters */
   'search.action.toggle-filters-aria-label_show': 'Show filters',
+  /** Label for when the search is full screen (on narrow screens) and you want to hide filters */
+  'search.action.toggle-filters-label_hide': 'Hide filters',
+  /** Label for when the search is full screen (on narrow screens) and you want to show filters */
+  'search.action.toggle-filters-label_show': 'Show filters',
+
+  /** Tooltip text for the global search button */
+  'search.button.tooltip': 'Search',
+
   /**
    * A list of provided types (use `list` formatter preferably).
    */
@@ -1462,18 +1532,34 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'timeline.operation.created': 'Created',
   /** Label shown in review changes timeline when a document was initially created */
   'timeline.operation.created-initial': 'Created',
+  /** Label shown in review changes timeline when a document was initially created, with a timestamp */
+  'timeline.operation.created-initial_timestamp': 'Created: {{timestamp, datetime}}',
+  /** Label shown in review changes timeline when a document has been created, with a timestamp */
+  'timeline.operation.created_timestamp': 'Created: {{timestamp, datetime}}',
   /** Label shown in review changes timeline when a document has been deleted */
   'timeline.operation.deleted': 'Deleted',
+  /** Label shown in review changes timeline when a document has been deleted, with a timestamp */
+  'timeline.operation.deleted_timestamp': 'Deleted: {{timestamp, datetime}}',
   /** Label shown in review changes timeline when a draft has been discarded */
   'timeline.operation.draft-discarded': 'Discarded draft',
+  /** Label shown in review changes timeline when a draft has been discarded, with a timestamp */
+  'timeline.operation.draft-discarded_timestamp': 'Discarded draft: {{timestamp, datetime}}',
   /** Label shown in review changes timeline when a draft has been edited */
   'timeline.operation.edited-draft': 'Edited',
+  /** Label shown in review changes timeline when a draft has been edited, with a timestamp */
+  'timeline.operation.edited-draft_timestamp': 'Edited: {{timestamp, datetime}}',
   /** Label shown in review changes timeline when a document has been edited live */
   'timeline.operation.edited-live': 'Live edited',
+  /** Label shown in review changes timeline when a document has been edited live, with a timestamp */
+  'timeline.operation.edited-live_timestamp': 'Live edited: {{timestamp, datetime}}',
   /** Label shown in review changes timeline when a document was published */
   'timeline.operation.published': 'Published',
+  /** Label shown in review changes timeline when a document was published, with a timestamp */
+  'timeline.operation.published_timestamp': 'Published: {{timestamp, datetime}}',
   /** Label shown in review changes timeline when a document was unpublished */
   'timeline.operation.unpublished': 'Unpublished',
+  /** Label shown in review changes timeline when a document was unpublished, with a timestamp */
+  'timeline.operation.unpublished_timestamp': 'Unpublished: {{timestamp, datetime}}',
   /**
    * Label for determining since which version the changes for timeline menu dropdown are showing.
    * Receives the time label as a parameter (`timestamp`).
@@ -1481,7 +1567,11 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'timeline.since': 'Since: {{timestamp, datetime}}',
   /** Label for missing change version for timeline menu dropdown are showing */
   'timeline.since-version-missing': 'Since: unknown version',
-
+  /** Label for the button showed after trial ended */
+  'user-menu.action.free-trial-finished': 'Upgrade from free',
+  /** Label for button showing the free trial days left */
+  'user-menu.action.free-trial_one': '{{count}} day left in trial',
+  'user-menu.action.free-trial_other': '{{count}} days left in trial',
   /** Label for action to invite members to the current sanity project */
   'user-menu.action.invite-members': 'Invite members',
   /** Accessibility label for action to invite members to the current sanity project */
@@ -1490,6 +1580,12 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'user-menu.action.manage-project': 'Manage project',
   /** Accessibility label for the action to manage the current project */
   'user-menu.action.manage-project-aria-label': 'Manage project',
+  /** Tooltip helper text when portable text annotation is disabled for empty block*/
+  'user-menu.action.portable-text.annotation-disabled_empty-block':
+    'Cannot apply {{name}} to empty block',
+  /** Tooltip helper text when portable text annotation is disabled for multiple blocks */
+  'user-menu.action.portable-text.annotation-disabled_multiple-blocks':
+    'Cannot apply {{name}} to multiple blocks',
   /** Label for action to sign out of the current sanity project */
   'user-menu.action.sign-out': 'Sign out',
   /** Title for appearance section for the current studio (dark / light / system scheme) */
@@ -1512,7 +1608,6 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'user-menu.locale-title': 'Language',
   /** Label for tooltip to show which provider the currently logged in user is using */
   'user-menu.login-provider': 'Signed in with {{providerTitle}}',
-
   /**
    * Label for action to add a workspace (currently a developer-oriented action, as this will
    * lead to the documentation on workspace configuration)

@@ -1,14 +1,19 @@
 import {BookIcon} from '@sanity/icons'
+import {SanityMonogram} from '@sanity/logos'
 import {visionTool} from '@sanity/vision'
 import {defineConfig, definePlugin} from 'sanity'
-import {deskTool} from 'sanity/desk'
+import {structureTool} from 'sanity/structure'
 import {muxInput} from 'sanity-plugin-mux-input'
 import {assist} from '@sanity/assist'
 import {googleMapsInput} from '@sanity/google-maps-input'
 import {tsdoc} from '@sanity/tsdoc/studio'
+import {koKRLocale} from '@sanity/locale-ko-kr'
+import {nbNOLocale} from '@sanity/locale-nb-no'
+import {nnNOLocale} from '@sanity/locale-nn-no'
+import {ptPTLocale} from '@sanity/locale-pt-pt'
+import {svSELocale} from '@sanity/locale-sv-se'
 import {theme as tailwindTheme} from './sanity.theme.mjs'
 import {imageAssetSource} from './assetSources'
-import {Branding} from './components/Branding'
 import {resolveDocumentActions as documentActions} from './documentActions'
 import {resolveInitialValueTemplates} from './initialValueTemplates'
 import {languageFilter} from './plugins/language-filter'
@@ -26,6 +31,7 @@ import {
 import {
   Annotation,
   Block,
+  CustomBadge,
   Field,
   formComponentsPlugin,
   InlineBlock,
@@ -42,8 +48,9 @@ import {customInspector} from './inspectors/custom'
 import {pasteAction} from './fieldActions/pasteAction'
 import {routerDebugTool} from './plugins/router-debug'
 import {StegaDebugger} from './schema/debug/components/DebugStega'
-import {noNBLocale} from './plugins/locale-no-nb'
 import {testStudioLocaleBundles} from './locales'
+
+const localePlugins = [koKRLocale(), nbNOLocale(), nnNOLocale(), ptPTLocale(), svSELocale()]
 
 const sharedSettings = definePlugin({
   name: 'sharedSettings',
@@ -54,11 +61,6 @@ const sharedSettings = definePlugin({
   form: {
     image: {
       assetSources: [imageAssetSource],
-    },
-  },
-  studio: {
-    components: {
-      logo: Branding,
     },
   },
 
@@ -87,10 +89,10 @@ const sharedSettings = definePlugin({
     unstable_comments: {
       enabled: true,
     },
+    badges: (prev, context) => (context.schemaType === 'author' ? [CustomBadge, ...prev] : prev),
   },
   plugins: [
-    noNBLocale(),
-    deskTool({
+    structureTool({
       icon: BookIcon,
       structure,
       defaultDocumentNode,
@@ -118,8 +120,7 @@ const sharedSettings = definePlugin({
     workshopTool({
       collections: [
         {name: 'sanity', title: 'sanity'},
-        {name: 'default-layout', title: '@sanity/default-layout'},
-        {name: 'desk-tool', title: '@sanity/desk-tool'},
+        {name: 'structure-tool', title: 'sanity/structure'},
         {name: 'form-builder', title: '@sanity/form-builder'},
       ],
     }),
@@ -142,6 +143,20 @@ export default defineConfig([
     dataset: 'test',
     plugins: [sharedSettings()],
     basePath: '/test',
+    icon: SanityMonogram,
+  },
+  {
+    name: 'partialIndexing',
+    title: 'Partial Indexing',
+    projectId: 'ppsg7ml5',
+    dataset: 'partial-indexing-2',
+    plugins: [sharedSettings()],
+    basePath: '/partial-indexing',
+    search: {
+      unstable_partialIndexing: {
+        enabled: true,
+      },
+    },
   },
   {
     name: 'tsdoc',
@@ -153,12 +168,21 @@ export default defineConfig([
   },
   {
     name: 'playground',
-    title: 'Test Studio',
+    title: 'Test Studio (playground)',
     subtitle: 'Playground dataset',
     projectId: 'ppsg7ml5',
     dataset: 'playground',
     plugins: [sharedSettings()],
     basePath: '/playground',
+  },
+  {
+    name: 'playground-partial-indexing',
+    title: 'Test Studio (playground-partial-indexing)',
+    subtitle: 'Playground dataset',
+    projectId: 'ppsg7ml5',
+    dataset: 'playground-partial-indexing',
+    plugins: [sharedSettings()],
+    basePath: '/playground-partial-indexing',
   },
   {
     name: 'staging',

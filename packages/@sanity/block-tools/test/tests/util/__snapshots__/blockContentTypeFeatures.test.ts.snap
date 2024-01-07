@@ -740,6 +740,12 @@ Object {
                   "field": "language",
                 },
               ],
+              "i18n": Object {
+                "title": Object {
+                  "key": "default-orderings.language",
+                  "ns": "studio",
+                },
+              },
               "name": "language",
               "title": "Language",
             },
@@ -933,6 +939,12 @@ Object {
                 "field": "language",
               },
             ],
+            "i18n": Object {
+              "title": Object {
+                "key": "default-orderings.language",
+                "ns": "studio",
+              },
+            },
             "name": "language",
             "title": "Language",
           },
@@ -1295,6 +1307,12 @@ Object {
                     "field": "name",
                   },
                 ],
+                "i18n": Object {
+                  "title": Object {
+                    "key": "default-orderings.name",
+                    "ns": "studio",
+                  },
+                },
                 "name": "name",
                 "title": "Name",
               },
@@ -1363,6 +1381,12 @@ Object {
                       "field": "name",
                     },
                   ],
+                  "i18n": Object {
+                    "title": Object {
+                      "key": "default-orderings.name",
+                      "ns": "studio",
+                    },
+                  },
                   "name": "name",
                   "title": "Name",
                 },
@@ -1379,7 +1403,7 @@ Object {
                 "title": "Document",
                 "type": null,
               },
-              Symbol(__cachedStringFields): Array [
+              Symbol(__cachedStringFields_4): Array [
                 Object {
                   "path": Array [
                     "_id",
@@ -1650,6 +1674,12 @@ Object {
                                     "field": "name",
                                   },
                                 ],
+                                "i18n": Object {
+                                  "title": Object {
+                                    "key": "default-orderings.name",
+                                    "ns": "studio",
+                                  },
+                                },
                                 "name": "name",
                                 "title": "Name",
                               },
@@ -1718,6 +1748,12 @@ Object {
                                       "field": "name",
                                     },
                                   ],
+                                  "i18n": Object {
+                                    "title": Object {
+                                      "key": "default-orderings.name",
+                                      "ns": "studio",
+                                    },
+                                  },
                                   "name": "name",
                                   "title": "Name",
                                 },
@@ -1734,7 +1770,7 @@ Object {
                                 "title": "Document",
                                 "type": null,
                               },
-                              Symbol(__cachedStringFields): Array [
+                              Symbol(__cachedStringFields_4): Array [
                                 Object {
                                   "path": Array [
                                     "_id",
@@ -2110,6 +2146,12 @@ Object {
                                 "field": "name",
                               },
                             ],
+                            "i18n": Object {
+                              "title": Object {
+                                "key": "default-orderings.name",
+                                "ns": "studio",
+                              },
+                            },
                             "name": "name",
                             "title": "Name",
                           },
@@ -2178,6 +2220,12 @@ Object {
                                   "field": "name",
                                 },
                               ],
+                              "i18n": Object {
+                                "title": Object {
+                                  "key": "default-orderings.name",
+                                  "ns": "studio",
+                                },
+                              },
                               "name": "name",
                               "title": "Name",
                             },
@@ -2194,7 +2242,7 @@ Object {
                             "title": "Document",
                             "type": null,
                           },
-                          Symbol(__cachedStringFields): Array [
+                          Symbol(__cachedStringFields_4): Array [
                             Object {
                               "path": Array [
                                 "_id",
@@ -2215,7 +2263,7 @@ Object {
                             },
                           ],
                         },
-                        Symbol(__cachedStringFields): Array [
+                        Symbol(__cachedStringFields_4): Array [
                           Object {
                             "path": Array [
                               "_id",
@@ -2451,6 +2499,12 @@ Object {
                                       "field": "name",
                                     },
                                   ],
+                                  "i18n": Object {
+                                    "title": Object {
+                                      "key": "default-orderings.name",
+                                      "ns": "studio",
+                                    },
+                                  },
                                   "name": "name",
                                   "title": "Name",
                                 },
@@ -2519,6 +2573,12 @@ Object {
                                         "field": "name",
                                       },
                                     ],
+                                    "i18n": Object {
+                                      "title": Object {
+                                        "key": "default-orderings.name",
+                                        "ns": "studio",
+                                      },
+                                    },
                                     "name": "name",
                                     "title": "Name",
                                   },
@@ -2535,7 +2595,7 @@ Object {
                                   "title": "Document",
                                   "type": null,
                                 },
-                                Symbol(__cachedStringFields): Array [
+                                Symbol(__cachedStringFields_4): Array [
                                   Object {
                                     "path": Array [
                                       "_id",
@@ -2911,6 +2971,12 @@ Object {
                                   "field": "name",
                                 },
                               ],
+                              "i18n": Object {
+                                "title": Object {
+                                  "key": "default-orderings.name",
+                                  "ns": "studio",
+                                },
+                              },
                               "name": "name",
                               "title": "Name",
                             },
@@ -2979,6 +3045,12 @@ Object {
                                     "field": "name",
                                   },
                                 ],
+                                "i18n": Object {
+                                  "title": Object {
+                                    "key": "default-orderings.name",
+                                    "ns": "studio",
+                                  },
+                                },
                                 "name": "name",
                                 "title": "Name",
                               },
@@ -2995,7 +3067,7 @@ Object {
                               "title": "Document",
                               "type": null,
                             },
-                            Symbol(__cachedStringFields): Array [
+                            Symbol(__cachedStringFields_4): Array [
                               Object {
                                 "path": Array [
                                   "_id",
@@ -3016,7 +3088,7 @@ Object {
                               },
                             ],
                           },
-                          Symbol(__cachedStringFields): Array [
+                          Symbol(__cachedStringFields_4): Array [
                             Object {
                               "path": Array [
                                 "_id",
@@ -3263,6 +3335,12 @@ Object {
                       "field": "name",
                     },
                   ],
+                  "i18n": Object {
+                    "title": Object {
+                      "key": "default-orderings.name",
+                      "ns": "studio",
+                    },
+                  },
                   "name": "name",
                   "title": "Name",
                 },
@@ -3331,6 +3409,12 @@ Object {
                         "field": "name",
                       },
                     ],
+                    "i18n": Object {
+                      "title": Object {
+                        "key": "default-orderings.name",
+                        "ns": "studio",
+                      },
+                    },
                     "name": "name",
                     "title": "Name",
                   },
@@ -3347,7 +3431,7 @@ Object {
                   "title": "Document",
                   "type": null,
                 },
-                Symbol(__cachedStringFields): Array [
+                Symbol(__cachedStringFields_4): Array [
                   Object {
                     "path": Array [
                       "_id",

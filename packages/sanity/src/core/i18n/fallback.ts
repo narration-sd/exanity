@@ -6,9 +6,7 @@ import {defaultLocale, usEnglishLocale} from './locales'
 import {isStaticResourceBundle} from './helpers'
 
 const shouldEscape = typeof window === 'undefined' || typeof document === 'undefined'
-const fallbackLocales: LocaleSource['locales'] = [
-  {id: defaultLocale.id, title: defaultLocale.title},
-]
+const fallbackLocales: LocaleSource['locales'] = [defaultLocale]
 
 /**
  * Returns a fallback source for internationalization that can be used in cases where you need
@@ -20,13 +18,14 @@ const fallbackLocales: LocaleSource['locales'] = [
  *
  * @returns The fallback source
  * @internal
+ * @hidden
  */
 export const getFallbackLocaleSource: () => LocaleSource = memoize(
   function getFallbackLocaleSource(): LocaleSource {
     const i18n = getFallbackI18nInstance()
     i18n.init()
     return {
-      currentLocale: defaultLocale.id,
+      currentLocale: defaultLocale,
       locales: fallbackLocales,
       loadNamespaces: i18n.loadNamespaces,
       t: i18n.t,

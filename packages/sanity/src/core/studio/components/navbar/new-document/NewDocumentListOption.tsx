@@ -1,15 +1,11 @@
 import {CurrentUser} from '@sanity/types'
-import {Tooltip, Box, Card, Text} from '@sanity/ui'
+import {Card, Text} from '@sanity/ui'
 import React, {useCallback, useMemo} from 'react'
-import styled from 'styled-components'
+import {Tooltip} from '../../../../../ui-components'
 import {InsufficientPermissionsMessage} from '../../../../components'
-import {useTranslation} from '../../../../i18n'
+import {useI18nText} from '../../../../i18n'
 import {NewDocumentOption, PreviewLayout} from './types'
 import {useIntentLink} from 'sanity/router'
-
-const TooltipContentBox = styled(Box)`
-  max-width: 300px;
-`
 
 // This value is used to calculate the max-height of the popover and for the virtual list item size.
 // This value is not used anywhere in this file, but it is exported
@@ -26,7 +22,6 @@ interface NewDocumentListOptionProps {
 
 export function NewDocumentListOption(props: NewDocumentListOptionProps) {
   const {option, currentUser, onClick, preview} = props
-  const {t} = useTranslation()
   const params = useMemo(
     () => ({template: option.templateId, type: option.schemaType}),
     [option.schemaType, option.templateId],
@@ -44,20 +39,21 @@ export function NewDocumentListOption(props: NewDocumentListOptionProps) {
     [onIntentClick, onClick, option],
   )
 
+  const {title} = useI18nText(option)
+
   return (
     <Tooltip
       disabled={option.hasPermission}
       key={option.id}
       portal
       content={
-        <TooltipContentBox padding={2}>
-          <InsufficientPermissionsMessage currentUser={currentUser} context="create-document" />
-        </TooltipContentBox>
+        <InsufficientPermissionsMessage currentUser={currentUser} context="create-document" />
       }
     >
       <div>
         <Card
           as={option.hasPermission ? 'a' : 'button'}
+          data-testid={`create-new-${option.templateId}`}
           disabled={!option.hasPermission}
           href={href}
           marginBottom={1}
@@ -65,7 +61,7 @@ export function NewDocumentListOption(props: NewDocumentListOptionProps) {
           padding={preview === 'inline' ? 3 : 4}
           radius={2}
         >
-          <Text size={preview === 'inline' ? 1 : undefined}>{option.title}</Text>
+          <Text size={preview === 'inline' ? 1 : undefined}>{title}</Text>
         </Card>
       </div>
     </Tooltip>

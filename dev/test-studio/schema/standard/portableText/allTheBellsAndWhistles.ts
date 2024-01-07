@@ -1,14 +1,19 @@
-import {BellIcon, ImageIcon, InfoOutlineIcon} from '@sanity/icons'
+import {BellIcon, ColorWheelIcon, ImageIcon, InfoOutlineIcon} from '@sanity/icons'
 import {Rule} from '@sanity/types'
 import {defineArrayMember, defineField, defineType} from 'sanity'
 import {InfoBoxPreview} from './InfoBoxPreview'
-import {LinkAnnotationInput} from './LinkAnnotationInput'
 
 export const ptAllTheBellsAndWhistlesType = defineType({
   type: 'document',
   icon: BellIcon,
   name: 'pt_allTheBellsAndWhistles',
   title: 'All the bells & whistles',
+  fieldsets: [
+    {
+      name: 'whitespace',
+      title: 'Whitespace',
+    },
+  ],
   fields: [
     defineField({
       type: 'string',
@@ -33,7 +38,6 @@ export const ptAllTheBellsAndWhistlesType = defineType({
                 type: 'object',
                 name: 'link',
                 title: 'Link',
-                components: {input: LinkAnnotationInput},
                 // options: {
                 //   modal: {type: 'dialog'},
                 // },
@@ -69,6 +73,19 @@ export const ptAllTheBellsAndWhistlesType = defineType({
                     title: 'Open in new tab?',
                     description: 'Will open the link in a new tab when checked.',
                     initialValue: false,
+                  },
+                ],
+              },
+              {
+                type: 'object',
+                name: 'color',
+                title: 'Color',
+                icon: ColorWheelIcon,
+                fields: [
+                  {
+                    type: 'string',
+                    name: 'color',
+                    title: 'Color',
                   },
                 ],
               },
@@ -160,6 +177,53 @@ export const ptAllTheBellsAndWhistlesType = defineType({
             prepare({title, body}) {
               return {title, body}
             },
+          },
+        }),
+      ],
+    }),
+
+    // Whitespace testing
+    defineField({
+      type: 'array',
+      name: 'whitespacePreserve',
+      title: 'Whitespace: Preserve',
+      fieldset: 'whitespace',
+      of: [
+        defineArrayMember({
+          type: 'block',
+          name: 'block',
+          title: 'Block',
+        }),
+      ],
+    }),
+    defineField({
+      type: 'array',
+      name: 'whitespaceRemove',
+      title: 'Whitespace: remove',
+      fieldset: 'whitespace',
+      of: [
+        defineArrayMember({
+          type: 'block',
+          name: 'block',
+          title: 'Block',
+          options: {
+            unstable_whitespaceOnPasteMode: 'remove',
+          },
+        }),
+      ],
+    }),
+    defineField({
+      type: 'array',
+      name: 'whitespaceNormalize',
+      title: 'Whitespace: Normalize',
+      fieldset: 'whitespace',
+      of: [
+        defineArrayMember({
+          type: 'block',
+          name: 'block',
+          title: 'Block',
+          options: {
+            unstable_whitespaceOnPasteMode: 'normalize',
           },
         }),
       ],

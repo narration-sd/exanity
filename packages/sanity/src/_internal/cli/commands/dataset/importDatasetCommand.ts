@@ -99,14 +99,19 @@ const importDatasetCommand: CliCommandDefinition = {
   name: 'import',
   group: 'dataset',
   signature: '[FILE | FOLDER | URL] [TARGET_DATASET]',
-  description: 'Import documents to given dataset from ndjson file',
+  description: 'Import documents to given dataset from either an ndjson file or a gzipped tarball',
   helpText,
   // eslint-disable-next-line max-statements
   action: async (args, context) => {
     const {apiClient, output, chalk, fromInitCommand} = context
     const flags = parseFlags(args.extOptions)
-    const {allowAssetsInDifferentDataset, allowFailingAssets, assetConcurrency, replaceAssets} =
-      flags
+    const {
+      allowAssetsInDifferentDataset,
+      allowFailingAssets,
+      assetConcurrency,
+      skipCrossDatasetReferences,
+      replaceAssets,
+    } = flags
 
     const operation = getMutationOperation(args.extOptions)
     const client = apiClient()
@@ -242,6 +247,7 @@ const importDatasetCommand: CliCommandDefinition = {
         onProgress,
         allowFailingAssets,
         allowAssetsInDifferentDataset,
+        skipCrossDatasetReferences,
         assetConcurrency,
         replaceAssets,
       })

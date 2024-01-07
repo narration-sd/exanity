@@ -50,7 +50,6 @@ import {
   ResultContainer,
   Result,
   ControlsContainer,
-  ButtonFullWidth,
   TimingsFooter,
   TimingsCard,
   TimingsTextContainer,
@@ -392,7 +391,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
 
   handleChangeApiVersion(evt: ChangeEvent<HTMLSelectElement>) {
     const apiVersion = evt.target.value
-    if (apiVersion === 'other') {
+    if (apiVersion?.toLowerCase() === 'other') {
       this.setState({customApiVersion: 'v'}, () => {
         this._customApiVersionElement.current?.focus()
       })
@@ -687,15 +686,13 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                   <StyledLabel>{t('settings.api-version-label')}</StyledLabel>
                 </Card>
                 <Select
-                  value={
-                    customApiVersion === false ? apiVersion : t('settings.other-api-version-label')
-                  }
+                  value={customApiVersion === false ? apiVersion : 'other'}
                   onChange={this.handleChangeApiVersion}
                 >
                   {API_VERSIONS.map((version) => (
                     <option key={version}>{version}</option>
                   ))}
-                  <option key="other" value={t('settings.other-api-version-label')}>
+                  <option key="other" value="other">
                     {t('settings.other-api-version-label')}
                   </option>
                 </Select>
@@ -764,13 +761,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                     <Box flex={1}>
                       <TextInput readOnly type="url" ref={this._operationUrlElement} value={url} />
                     </Box>
-                    <Tooltip
-                      content={
-                        <Box padding={2}>
-                          <Text>{t('action.copy-url-to-clipboard')}</Text>
-                        </Box>
-                      }
-                    >
+                    <Tooltip content={t('action.copy-url-to-clipboard')}>
                       <Button
                         aria-label={t('action.copy-url-to-clipboard')}
                         type="button"
@@ -790,6 +781,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
         <SplitpaneContainer flex="auto">
           {/* @ts-expect-error: https://github.com/tomkp/react-split-pane/pull/819 */}
           <SplitPane
+            // eslint-disable-next-line @sanity/i18n/no-attribute-string-literals
             split={narrowBreakpoint() ? 'vertical' : 'horizontal'}
             minSize={280}
             defaultSize={400}
@@ -835,15 +827,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                       <Flex>
                         <StyledLabel muted>{t('params.label')}</StyledLabel>
                         {paramsError && (
-                          <Tooltip
-                            placement="top-end"
-                            portal
-                            content={
-                              <Box padding={2}>
-                                <Text>{paramsError}</Text>
-                              </Box>
-                            }
-                          >
+                          <Tooltip placement="top-end" portal content={paramsError}>
                             <Box padding={1} marginX={2}>
                               <Text>
                                 <ErrorOutlineIcon />
@@ -860,7 +844,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                     <Card padding={3} paddingX={3}>
                       <Tooltip
                         content={
-                          <Card padding={2} radius={4}>
+                          <Card radius={4}>
                             <Text size={1} muted>
                               {t('params.error.params-invalid-json')}
                             </Text>
@@ -874,14 +858,15 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                           <Box flex={1}>
                             <Tooltip
                               content={
-                                <Card padding={2} radius={4}>
+                                <Card radius={4}>
                                   <Hotkeys keys={['Ctrl', 'Enter']} />
                                 </Card>
                               }
                               placement="top"
                               portal
                             >
-                              <ButtonFullWidth
+                              <Button
+                                width="fill"
                                 onClick={this.handleQueryExecution}
                                 type="button"
                                 icon={queryInProgress ? StopIcon : PlayIcon}
@@ -896,7 +881,8 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                             </Tooltip>
                           </Box>
                           <Box flex={1} marginLeft={3}>
-                            <ButtonFullWidth
+                            <Button
+                              width="fill"
                               onClick={this.handleListenExecution}
                               type="button"
                               icon={listenInProgress ? StopIcon : PlayIcon}

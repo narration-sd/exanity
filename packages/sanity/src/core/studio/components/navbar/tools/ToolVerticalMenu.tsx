@@ -1,7 +1,7 @@
-import {PlugIcon} from '@sanity/icons'
-import {Button, Stack} from '@sanity/ui'
+import {Stack} from '@sanity/ui'
 import {startCase} from 'lodash'
 import React, {forwardRef, useMemo} from 'react'
+import {Button} from '../../../../../ui-components'
 import {Tool} from '../../../../config'
 import {ToolLink, ToolLinkProps} from './ToolLink'
 
@@ -18,23 +18,27 @@ export function ToolVerticalMenu(props: ToolVerticalMenuProps) {
     () => (
       <Stack as="ul" space={1}>
         {tools.map((tool) => {
-          const title = tool?.title || startCase(tool.name) || undefined
+          const title = tool?.title || startCase(tool.name)
 
           const Link = forwardRef(function Link(
             linkProps: ToolLinkProps,
             ref: React.Ref<HTMLAnchorElement>,
           ) {
-            return <ToolLink {...linkProps} ref={ref} name={tool.name} />
+            return (
+              <ToolLink {...linkProps} ref={ref} name={tool.name}>
+                {linkProps.children}
+              </ToolLink>
+            )
           })
 
           return (
             <Stack as="li" key={tool.name}>
               <Button
                 as={Link}
-                icon={tool.icon || PlugIcon}
                 justify="flex-start"
                 mode="bleed"
                 selected={activeToolName === tool.name}
+                size="large"
                 tabIndex={isVisible ? 0 : -1}
                 text={title}
               />

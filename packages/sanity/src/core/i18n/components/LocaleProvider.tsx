@@ -1,13 +1,16 @@
 import {I18nextProvider} from 'react-i18next'
 import React, {PropsWithChildren, Suspense, useCallback, useMemo, useSyncExternalStore} from 'react'
 import type {i18n} from 'i18next'
+import {LoadingBlock} from '../../components/loadingBlock'
 import {useSource} from '../../studio'
-import {LoadingScreen} from '../../studio/screens'
 import {storePreferredLocale} from '../localeStore'
 import {LocaleContext, type LocaleContextValue} from '../LocaleContext'
+import type {Locale} from '../types'
+import {defaultLocale} from '../locales'
 
 /**
  * @internal
+ * @hidden
  */
 export function LocaleProvider(props: PropsWithChildren) {
   const {
@@ -31,6 +34,7 @@ export function LocaleProvider(props: PropsWithChildren) {
 
 /**
  * @internal
+ * @hidden
  */
 export function LocaleProviderBase({
   projectId,
@@ -41,7 +45,7 @@ export function LocaleProviderBase({
 }: PropsWithChildren<{
   projectId: string
   sourceId: string
-  locales: {id: string; title: string}[]
+  locales: Locale[]
   i18next: i18n
 }>) {
   const subscribe = useCallback(
@@ -51,7 +55,10 @@ export function LocaleProviderBase({
     },
     [i18next],
   )
-  const currentLocale = useSyncExternalStore(subscribe, () => i18next.language)
+  const currentLocale = useSyncExternalStore(
+    subscribe,
+    () => locales.find((candidate) => i18next.language === candidate.id) || defaultLocale,
+  )
 
   const context = useMemo<LocaleContextValue>(
     () => ({
@@ -67,10 +74,10 @@ export function LocaleProviderBase({
   )
 
   return (
-    <Suspense fallback={<LoadingScreen />}>
+    <Suspense fallback={<LoadingBlock />}>
       <I18nextProvider i18n={i18next}>
         {/* Use locale as key to force re-render, updating non-reactive parts */}
-        <LocaleContext.Provider value={context} key={currentLocale}>
+        <LocaleContext.Provider value={context} key={currentLocale.id}>
           {children}
         </LocaleContext.Provider>
       </I18nextProvider>

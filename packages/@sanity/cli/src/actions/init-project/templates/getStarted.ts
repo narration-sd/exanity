@@ -3,7 +3,7 @@ import type {ProjectTemplate} from '../initProject'
 const configTemplate = `
 import {defineConfig, isDev} from 'sanity'
 import {visionTool} from '@sanity/vision'
-import {deskTool} from 'sanity/desk'
+import {structureTool} from 'sanity/structure'
 import {schemaTypes} from './schemas'
 import {getStartedPlugin} from './plugins/sanity-plugin-tutorial'
 
@@ -16,7 +16,7 @@ export default defineConfig({
   projectId: '%projectId%',
   dataset: '%dataset%',
 
-  plugins: [deskTool(), visionTool(), ...(isDev ? devOnlyPlugins : [])],
+  plugins: [structureTool(), visionTool(), ...(isDev ? devOnlyPlugins : [])],
 
   schema: {
     types: schemaTypes,
@@ -30,7 +30,7 @@ const getStartedTemplate: ProjectTemplate = {
   typescriptOnly: true,
   dependencies: {
     '@sanity/icons': '^2.6.0',
-    '@sanity/ui': '^1.8.3',
+    '@sanity/ui': '^2.0.0-beta',
   },
 }
 

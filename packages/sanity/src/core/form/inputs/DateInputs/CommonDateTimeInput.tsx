@@ -1,8 +1,9 @@
 /* eslint-disable no-nested-ternary */
 
-import React, {useEffect} from 'react'
+import React, {FocusEvent, useEffect} from 'react'
 
 import {TextInput, useForwardedRef} from '@sanity/ui'
+import {useTranslation} from '../../../i18n/hooks/useTranslation'
 import {DateTimeInput} from './base/DateTimeInput'
 import {ParseResult} from './types'
 import {CalendarLabels} from './base/calendar/types'
@@ -45,12 +46,14 @@ export const CommonDateTimeInput = React.forwardRef(function CommonDateTimeInput
 
   const [localValue, setLocalValue] = React.useState<string | null>(null)
 
+  const {t} = useTranslation()
+
   useEffect(() => {
     setLocalValue(null)
   }, [value])
 
   const handleDatePickerInputChange = React.useCallback(
-    (event: any) => {
+    (event: FocusEvent<HTMLInputElement>) => {
       const nextInputValue = event.currentTarget.value
       const result = nextInputValue === '' ? null : parseInputValue(nextInputValue)
 
@@ -97,7 +100,12 @@ export const CommonDateTimeInput = React.forwardRef(function CommonDateTimeInput
       id={id}
       selectTime={selectTime}
       timeStep={timeStep}
-      placeholder={placeholder || `e.g. ${formatInputValue(DEFAULT_PLACEHOLDER_TIME)}`}
+      placeholder={
+        placeholder ||
+        t('inputs.datetime.placeholder', {
+          example: formatInputValue(DEFAULT_PLACEHOLDER_TIME),
+        })
+      }
       ref={forwardedRef}
       value={parseResult?.date}
       inputValue={inputValue || ''}

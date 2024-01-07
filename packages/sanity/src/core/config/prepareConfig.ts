@@ -41,6 +41,7 @@ import {
   initialDocumentBadges,
   initialLanguageFilter,
   newDocumentOptionsResolver,
+  partialIndexingEnabledReducer,
   resolveProductionUrlReducer,
   schemaTemplatesReducer,
   schemaTypesReducer,
@@ -185,6 +186,7 @@ export function prepareConfig(
       dataset: rootSource.dataset,
       schema: resolvedSources[0].schema,
       i18n: resolvedSources[0].i18n,
+      customIcon: !!rootSource.icon,
       icon: normalizeIcon(rootSource.icon, title, `${rootSource.projectId} ${rootSource.dataset}`),
       name: rootSource.name || 'default',
       projectId: rootSource.projectId,
@@ -418,6 +420,7 @@ function resolveSource({
             templateId: response.templateId,
             type: 'initialValueTemplateItem',
             title,
+            i18n: response.i18n || template.i18n,
             subtitle: response.subtitle || defaultSubtitle,
             description: response.description || template.description,
             icon: response.icon || template.icon || schemaType?.icon,
@@ -562,6 +565,12 @@ function resolveSource({
     search: {
       filters: filterDefinitions,
       operators: operatorDefinitions,
+      unstable_partialIndexing: {
+        enabled: partialIndexingEnabledReducer({
+          config,
+          initialValue: config.search?.unstable_partialIndexing?.enabled ?? false,
+        }),
+      },
       // we will use this when we add search config to PluginOptions
       /*filters: resolveConfigProperty({
         config,
