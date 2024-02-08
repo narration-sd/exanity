@@ -91,6 +91,8 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'banners.deleted-document-banner.restore-button.text': 'Restore most recent version',
   /** The text content for the deleted document banner */
   'banners.deleted-document-banner.text': 'This document has been deleted.',
+  /** The text content for the deprecated document type banner */
+  'banners.deprecated-document-type-banner.text': 'This document type has been deprecated.',
   /** The text for the permission check banner if the user only has one role, and it does not allow updating this document */
   'banners.permission-check-banner.missing-permission_create_one':
     'Your role <Roles/> does not have permissions to create this document.',
@@ -233,6 +235,8 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   /** The text shown if a document's title via a preview value cannot be determined due to an unknown schema type */
   'doc-title.unknown-schema-type.text': 'Unknown schema type: {{schemaType}}',
 
+  /** Tooltip text shown for the close button of the document inspector */
+  'document-inspector.close-button.tooltip': 'Close',
   /** The title shown in the dialog header, when inspecting a valid document */
   'document-inspector.dialog.title': 'Inspecting <DocumentTitle/>',
   /** The title shown in the dialog header, when the document being inspected is not created yet/has no value */
@@ -352,10 +356,13 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'panes.document-operation-results.operation-success_discardChanges':
     'All changes since last publish has now been discarded. The discarded draft can still be recovered from history',
   /** The text when a publish operation succeeded  */
-  'panes.document-operation-results.operation-success_publish': 'The document was published',
+  'panes.document-operation-results.operation-success_publish':
+    '<Strong>{{title}}</Strong> was published',
   /** The text when an unpublish operation succeeded  */
   'panes.document-operation-results.operation-success_unpublish':
-    'The document was unpublished. A draft has been created from the latest published version.',
+    '<Strong>{{title}}</Strong> was unpublished. A draft has been created from the latest published version.',
+  /** The document title shown when document title is "undefined" in operation message */
+  'panes.document-operation-results.operation-undefined-title': 'Untitled',
   /** The title of the reconnecting toast */
   'panes.document-pane-provider.reconnecting.title': 'Connection lost. Reconnecting…',
   /** The loading message for the document not found pane */

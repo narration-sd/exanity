@@ -3,7 +3,7 @@
   "useWorkspaces": true,
   "packages": [
     "dev/*",
-    "perf",
+    "perf/tests",
     "perf/studio",
     "examples/*",
     "packages/@sanity/*",
@@ -11,5 +11,5 @@
     "packages/groq",
     "packages/sanity"
   ],
-  "version": "3.25.0"
+  "version": "3.28.0"
 }

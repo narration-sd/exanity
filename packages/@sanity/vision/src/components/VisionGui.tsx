@@ -1,57 +1,57 @@
 /* eslint-disable complexity */
-import React, {ChangeEvent, type RefObject} from 'react'
 import SplitPane from '@rexxars/react-split-pane'
-import type {ListenEvent, MutationEvent, SanityClient, ClientPerspective} from '@sanity/client'
-import {PlayIcon, StopIcon, CopyIcon, ErrorOutlineIcon} from '@sanity/icons'
-import isHotkey from 'is-hotkey'
+import type {ClientPerspective, ListenEvent, MutationEvent, SanityClient} from '@sanity/client'
+import {CopyIcon, ErrorOutlineIcon, PlayIcon, StopIcon} from '@sanity/icons'
 import {
-  Flex,
-  Card,
-  Stack,
   Box,
+  Button,
+  Card,
+  Flex,
+  Grid,
   Hotkeys,
+  Inline,
   Select,
+  Stack,
   Text,
   TextInput,
-  Tooltip,
-  Grid,
-  Button,
   ToastContextValue,
-  Inline,
+  Tooltip,
 } from '@sanity/ui'
+import isHotkey from 'is-hotkey'
+import React, {ChangeEvent, type RefObject} from 'react'
 import {TFunction} from 'sanity'
-import {VisionCodeMirror} from '../codemirror/VisionCodeMirror'
-import {getLocalStorage, LocalStorageish} from '../util/localStorage'
-import {parseApiQueryString, ParsedApiQueryString} from '../util/parseApiQueryString'
-import {validateApiVersion} from '../util/validateApiVersion'
-import {prefixApiVersion} from '../util/prefixApiVersion'
-import {tryParseParams} from '../util/tryParseParams'
-import {encodeQueryString} from '../util/encodeQueryString'
 import {API_VERSIONS, DEFAULT_API_VERSION} from '../apiVersions'
-import {PERSPECTIVES, DEFAULT_PERSPECTIVE, isPerspective} from '../perspectives'
-import {ResizeObserver} from '../util/resizeObserver'
+import {VisionCodeMirror} from '../codemirror/VisionCodeMirror'
+import {DEFAULT_PERSPECTIVE, PERSPECTIVES, isPerspective} from '../perspectives'
 import type {VisionProps} from '../types'
+import {encodeQueryString} from '../util/encodeQueryString'
+import {getLocalStorage, type LocalStorageish} from '../util/localStorage'
+import {parseApiQueryString, type ParsedApiQueryString} from '../util/parseApiQueryString'
+import {prefixApiVersion} from '../util/prefixApiVersion'
+import {ResizeObserver} from '../util/resizeObserver'
+import {tryParseParams} from '../util/tryParseParams'
+import {validateApiVersion} from '../util/validateApiVersion'
 import {DelayedSpinner} from './DelayedSpinner'
 import {ParamsEditor, type ParamsEditorChangeEvent} from './ParamsEditor'
-import {ResultView} from './ResultView'
-import {QueryErrorDialog} from './QueryErrorDialog'
 import {PerspectivePopover} from './PerspectivePopover'
+import {QueryErrorDialog} from './QueryErrorDialog'
+import {ResultView} from './ResultView'
 import {
-  Root,
+  ControlsContainer,
   Header,
-  SplitpaneContainer,
-  QueryCopyLink,
   InputBackgroundContainer,
   InputBackgroundContainerLeft,
   InputContainer,
-  StyledLabel,
-  ResultOuterContainer,
-  ResultInnerContainer,
-  ResultContainer,
+  QueryCopyLink,
   Result,
-  ControlsContainer,
-  TimingsFooter,
+  ResultContainer,
+  ResultInnerContainer,
+  ResultOuterContainer,
+  Root,
+  SplitpaneContainer,
+  StyledLabel,
   TimingsCard,
+  TimingsFooter,
   TimingsTextContainer,
 } from './VisionGui.styled'
 
@@ -158,15 +158,14 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
     const {client, datasets, config} = props
     this._localStorage = getLocalStorage(client.config().projectId || 'default')
 
-    const lastQuery = this._localStorage.get('query', '')
-    const lastParams = this._localStorage.get('params', '{\n  \n}')
-
     const defaultDataset = config.defaultDataset || client.config().dataset || datasets[0]
     const defaultApiVersion = prefixApiVersion(`${config.defaultApiVersion}`)
     const defaultPerspective = DEFAULT_PERSPECTIVE
 
     let dataset = this._localStorage.get('dataset', defaultDataset)
     let apiVersion = this._localStorage.get('apiVersion', defaultApiVersion)
+    let lastQuery = this._localStorage.get('query', '')
+    let lastParams = this._localStorage.get('params', '{\n  \n}')
     const customApiVersion = API_VERSIONS.includes(apiVersion) ? false : apiVersion
     let perspective = this._localStorage.get('perspective', defaultPerspective)
 
@@ -180,6 +179,14 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
 
     if (!PERSPECTIVES.includes(perspective)) {
       perspective = DEFAULT_PERSPECTIVE
+    }
+
+    if (typeof lastQuery !== 'string') {
+      lastQuery = ''
+    }
+
+    if (typeof lastParams !== 'string') {
+      lastParams = '{\n  \n}'
     }
 
     this._visionRoot = React.createRef()
@@ -338,7 +345,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
       () => {
         this._localStorage.merge({
           query: this.state.query,
-          params: this.state.params,
+          params: this.state.rawParams,
           dataset: this.state.dataset,
           apiVersion: customApiVersion || apiVersion,
           perspective: this.state.perspective,
@@ -636,22 +643,24 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
   render() {
     const {datasets, t} = this.props
     const {
-      error,
-      queryResult,
-      url,
-      queryInProgress,
-      listenInProgress,
-      paneSizeOptions,
-      queryTime,
-      e2eTime,
-      listenMutations,
       apiVersion,
-      dataset,
       customApiVersion,
-      isValidApiVersion,
+      dataset,
+      e2eTime,
+      error,
       hasValidParams,
+      isValidApiVersion,
+      listenInProgress,
+      listenMutations,
+      paneSizeOptions,
       paramsError,
       perspective,
+      query,
+      queryInProgress,
+      queryResult,
+      queryTime,
+      rawParams,
+      url,
     } = this.state
     const hasResult = !error && !queryInProgress && typeof queryResult !== 'undefined'
 
@@ -818,7 +827,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                         <StyledLabel muted>{t('query.label')}</StyledLabel>
                       </Flex>
                     </InputBackgroundContainerLeft>
-                    <VisionCodeMirror value={this.state.query} onChange={this.handleQueryChange} />
+                    <VisionCodeMirror value={query} onChange={this.handleQueryChange} />
                   </Box>
                 </InputContainer>
                 <InputContainer display="flex" ref={this._paramsEditorContainer}>
@@ -837,7 +846,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                         )}
                       </Flex>
                     </InputBackgroundContainerLeft>
-                    <ParamsEditor value={this.state.rawParams} onChange={this.handleParamsChange} />
+                    <ParamsEditor value={rawParams} onChange={this.handleParamsChange} />
                   </Card>
                   {/* Controls (listen/run) */}
                   <ControlsContainer>

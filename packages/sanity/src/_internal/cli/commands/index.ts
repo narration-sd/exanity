@@ -21,6 +21,7 @@ import createDocumentsCommand from './documents/createDocumentsCommand'
 import validateDocumentsCommand from './documents/validateDocumentsCommand'
 import devCommand from './dev/devCommand'
 import startCommand from './start/startCommand'
+import validateSchemaCommand from './schema/validateSchemaCommand'
 import previewCommand from './preview/previewCommand'
 import uninstallCommand from './uninstall/uninstallCommand'
 import hookGroup from './hook/hookGroup'
@@ -41,6 +42,11 @@ import deleteGraphQLAPICommand from './graphql/deleteGraphQLAPICommand'
 import usersGroup from './users/usersGroup'
 import inviteUserCommand from './users/inviteUserCommand'
 import listUsersCommand from './users/listUsersCommand'
+import migrationGroup from './migration/migrationGroup'
+import createMigrationCommand from './migration/createMigrationCommand'
+import runMigrationCommand from './migration/runMigrationCommand'
+import listMigrationsCommand from './migration/listMigrationsCommand'
+import schemaGroup from './schema/schemaGroup'
 
 const commands: (CliCommandDefinition | CliCommandGroupDefinition)[] = [
   buildCommand,
@@ -67,6 +73,10 @@ const commands: (CliCommandDefinition | CliCommandGroupDefinition)[] = [
   hookGroup,
   listHooksCommand,
   createHookCommand,
+  migrationGroup,
+  createMigrationCommand,
+  runMigrationCommand,
+  listMigrationsCommand,
   deleteHookCommand,
   listHookLogsCommand,
   printHookAttemptCommand,
@@ -82,6 +92,8 @@ const commands: (CliCommandDefinition | CliCommandGroupDefinition)[] = [
   deleteGraphQLAPICommand,
   devCommand,
   startCommand,
+  schemaGroup,
+  validateSchemaCommand,
   previewCommand,
   uninstallCommand,
   execCommand,

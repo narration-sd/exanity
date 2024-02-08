@@ -1,11 +1,12 @@
-import {Flex, Text, Stack, Box} from '@sanity/ui'
-import React, {Fragment, useMemo} from 'react'
+import {Box, Flex, Stack, Text} from '@sanity/ui'
+import React, {useCallback} from 'react'
 import styled from 'styled-components'
-import {COMMENT_REACTION_EMOJIS} from '../../constants'
-import {CommentReactionShortNames} from '../../types'
 import {Tooltip} from '../../../../../ui-components'
+import {commentsLocaleNamespace} from '../../../i18n'
+import {COMMENT_REACTION_EMOJIS} from '../../constants'
+import type {CommentReactionShortNames} from '../../types'
 import {EmojiText} from './EmojiText.styled'
-import {CurrentUser, useUser} from 'sanity'
+import {Translate, useListFormat, useTranslation, useUser, type CurrentUser} from 'sanity'
 
 const TEXT_SIZE: number | number[] = 1
 
@@ -13,8 +14,16 @@ const ContentStack = styled(Stack)`
   max-width: 180px;
 `
 
+const TextGroup = styled.div`
+  display: inline-block;
+`
+
 const InlineText = styled(Text).attrs({size: TEXT_SIZE})`
   display: inline-block !important;
+
+  & > span {
+    white-space: break-spaces;
+  }
 `
 
 const TextBox = styled(Box)`
@@ -22,23 +31,26 @@ const TextBox = styled(Box)`
   text-align: center;
 `
 
+const LEADING_NON_WHITESPACE_RE = /^\S+/
+
 interface UserDisplayNameProps {
   currentUserId: string
   isFirst?: boolean
-  separator?: boolean
   userId: string
 }
 
-function UserDisplayName(props: UserDisplayNameProps) {
-  const {currentUserId, isFirst, userId, separator} = props
+function UserDisplayName(props: UserDisplayNameProps): string {
+  const {currentUserId, isFirst, userId} = props
   const [user] = useUser(userId)
+  const {t} = useTranslation(commentsLocaleNamespace)
 
   const isCurrentUser = currentUserId === userId
-  const you = isFirst ? 'You' : 'you'
-  const content = isCurrentUser ? you : user?.displayName ?? 'Unknown user'
-  const text = separator ? `${content}, ` : content
+  if (isCurrentUser) {
+    const context = isFirst ? 'leading' : undefined
+    return t('reactions.user-list.you', {context, replace: {name: user?.displayName}})
+  }
 
-  return <InlineText weight="medium"> {text} </InlineText>
+  return user?.displayName || t('reactions.user-list.unknown-user-fallback-name')
 }
 
 interface CommentReactionsUsersTooltipProps {
@@ -62,36 +74,72 @@ export function CommentReactionsUsersTooltip(props: CommentReactionsUsersTooltip
   )
 }
 
+function FormattedUserList({currentUserId, userIds}: {currentUserId: string; userIds: string[]}) {
+  const listFormat = useListFormat({style: 'long', type: 'conjunction'})
+  if (userIds.length === 0) return null
+
+  /**
+   * We need to do some surgery on the list: in some locales (such as en-US), the literal segments
+   * can contain oxford commas, which we want to include as the part of the element preceeding it.
+   * This ensures that we do not wrap to a new line that starts with a comma. In general, we should
+   * not special case on _comma_ per se, but rather by the presence of a non-whitespace character.
+   */
+  const parts = listFormat.formatToParts(userIds)
+  const elements: JSX.Element[] = []
+  for (let i = 0; i < parts.length; i++) {
+    const item = parts[i]
+
+    if (item.type === 'literal') {
+      // Add literals as-is - the next case will rewrite literals to exclude leading non-whitespace
+      elements.push(<InlineText key={`literal-${i}`}>{item.value}</InlineText>)
+      continue
+    }
+
+    const nextItem = parts[i + 1]
+    const nextLeadsWithNonWhitespace =
+      nextItem && nextItem.type === 'literal' && LEADING_NON_WHITESPACE_RE.test(nextItem.value)
+    if (nextLeadsWithNonWhitespace) {
+      // This is the 'oxford comma' case, where we want to include any leading non-whitespace from
+      // the literal as trailing characters to the element we are currently adding.
+      const [nonWhitespace = ''] = nextItem.value.match(LEADING_NON_WHITESPACE_RE) || []
+
+      elements.push(
+        // Key (value) is user ID, thus unique
+        <TextGroup key={item.value}>
+          <InlineText weight="medium">
+            <UserDisplayName currentUserId={currentUserId} isFirst={i === 0} userId={item.value} />
+          </InlineText>
+          <InlineText>{nonWhitespace}</InlineText>
+        </TextGroup>,
+      )
+
+      // Rewrite the next item to not contain this leading non-whitespace
+      nextItem.value = nextItem.value.slice(nonWhitespace.length)
+      continue
+    }
+
+    // Literals have been taken care of and returns early, so the only remaining case is that we're
+    // in an element that does _not_ have a leading non-whitespace literal following it.
+    elements.push(
+      // Key (value) is user ID, thus unique
+      <InlineText weight="medium" key={item.value}>
+        <UserDisplayName currentUserId={currentUserId} isFirst={i === 0} userId={item.value} />
+      </InlineText>,
+    )
+  }
+
+  return elements
+}
+
 export function CommentReactionsUsersTooltipContent(
   props: Omit<CommentReactionsUsersTooltipProps, 'children'>,
 ) {
   const {currentUser, reactionName, userIds} = props
+  const {t} = useTranslation(commentsLocaleNamespace)
 
-  const content = useMemo(() => {
-    const len = userIds.length
-
-    if (len === 0 || !currentUser) return null
-
-    return userIds.map((id, index) => {
-      const separator = index < userIds.length - 1 && len > 2 && index !== userIds.length - 2
-      const showAnd = index === len - 1 && len > 1
-
-      return (
-        <Fragment key={id}>
-          {showAnd && (
-            <>
-              <InlineText>and </InlineText>{' '}
-            </>
-          )}
-          <UserDisplayName
-            currentUserId={currentUser.id}
-            isFirst={index === 0}
-            separator={separator}
-            userId={id}
-          />{' '}
-        </Fragment>
-      )
-    })
+  const UserList = useCallback(() => {
+    if (!currentUser) return null
+    return <FormattedUserList currentUserId={currentUser.id} userIds={userIds} />
   }, [currentUser, userIds])
 
   return (
@@ -101,8 +149,20 @@ export function CommentReactionsUsersTooltipContent(
       </Flex>
 
       <TextBox>
-        {content} <InlineText muted>reacted with </InlineText> <wbr />{' '}
-        <InlineText muted>{reactionName}</InlineText>
+        <Translate
+          t={t}
+          i18nKey="reactions.users-reacted-with-reaction"
+          values={{reactionName}}
+          components={{
+            UserList,
+            ReactionName: () => <InlineText muted>{reactionName}</InlineText>,
+            Text: ({children}) => (
+              <>
+                <InlineText muted>{children}</InlineText> <wbr />{' '}
+              </>
+            ),
+          }}
+        />
       </TextBox>
     </ContentStack>
   )

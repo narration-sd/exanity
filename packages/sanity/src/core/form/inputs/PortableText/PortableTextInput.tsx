@@ -18,10 +18,15 @@ import React, {
 } from 'react'
 import {Subject} from 'rxjs'
 import {Box, useToast} from '@sanity/ui'
+import {useTelemetry} from '@sanity/telemetry/react'
 import {SANITY_PATCH_TYPE} from '../../patch'
 import {ArrayOfObjectsItemMember, ObjectFormNode} from '../../store'
 import type {PortableTextInputProps} from '../../types'
 import {EMPTY_ARRAY} from '../../../util'
+import {
+  PortableTextInputCollapsed,
+  PortableTextInputExpanded,
+} from '../../__telemetry__/form.telemetry'
 import {Compositor, PortableTextEditorElement} from './Compositor'
 import {InvalidValue as RespondToInvalidContent} from './InvalidValue'
 import {usePatches} from './usePatches'
@@ -46,7 +51,7 @@ export interface PortableTextMemberItem {
  * Supports multi-user real-time block content editing on larger documents.
  *
  * This component can be configured and customized extensively.
- * {@link https://www.sanity.io/docs/portable-text-features | Go to the documentation for more details}.
+ * {@link https://www.sanity.io/docs/customizing-the-portable-text-editor | Go to the documentation for more details}.
  *
  * @public
  * @param props - {@link PortableTextInputProps} component props.
@@ -89,6 +94,7 @@ export function PortableTextInput(props: PortableTextInputProps) {
   const [isActive, setIsActive] = useState(false)
   const [isOffline, setIsOffline] = useState(false)
   const [hasFocusWithin, setHasFocusWithin] = useState(false)
+  const telemetry = useTelemetry()
 
   const toast = useToast()
 
@@ -103,9 +109,17 @@ export function PortableTextInput(props: PortableTextInputProps) {
 
   const handleToggleFullscreen = useCallback(() => {
     if (editorRef.current) {
-      setIsFullscreen((v) => !v)
+      setIsFullscreen((v) => {
+        const next = !v
+        if (next) {
+          telemetry.log(PortableTextInputExpanded)
+        } else {
+          telemetry.log(PortableTextInputCollapsed)
+        }
+        return next
+      })
     }
-  }, [])
+  }, [telemetry])
 
   // Reset invalidValue if new value is coming in from props
   useEffect(() => {

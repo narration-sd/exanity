@@ -1,4 +1,4 @@
-import {CheckmarkCircleIcon, UndoIcon, EditIcon, TrashIcon, LinkIcon} from '@sanity/icons'
+import {CheckmarkCircleIcon, EditIcon, LinkIcon, TrashIcon, UndoIcon} from '@sanity/icons'
 import {Card, Flex, Menu, MenuDivider} from '@sanity/ui'
 import styled from 'styled-components'
 import {
@@ -8,19 +8,28 @@ import {
   MenuItem,
   TooltipDelayGroupProvider,
 } from '../../../../../ui-components'
-import {CommentReactionOption, CommentStatus} from '../../types'
-import {CommentReactionsMenuButton} from '../reactions'
+import {commentsLocaleNamespace} from '../../../i18n'
 import {COMMENT_REACTION_OPTIONS} from '../../constants'
 import {ReactionIcon} from '../icons'
-import {ContextMenuButton} from 'sanity'
+import {CommentReactionsMenuButton} from '../reactions'
+import type {CommentReactionOption, CommentStatus, CommentsUIMode} from '../../types'
+import {ContextMenuButton, TFunction, useTranslation} from 'sanity'
 
-const renderMenuButton = ({open}: {open: boolean}) => (
+const renderMenuButton = ({
+  open,
+  tooltipContent,
+  t,
+}: {
+  open: boolean
+  tooltipContent: string
+  t: TFunction
+}) => (
   <Button
-    aria-label="Add reaction"
+    aria-label={t('list-item.context-menu-add-reaction-aria-label')}
     icon={ReactionIcon}
     mode="bleed"
     selected={open}
-    tooltipProps={{content: 'Add reaction'}}
+    tooltipProps={{content: tooltipContent}}
   />
 )
 
@@ -47,6 +56,7 @@ interface CommentsListItemContextMenuProps {
   onStatusChange?: () => void
   readOnly?: boolean
   status: CommentStatus
+  mode: CommentsUIMode
 }
 
 export function CommentsListItemContextMenu(props: CommentsListItemContextMenuProps) {
@@ -63,9 +73,12 @@ export function CommentsListItemContextMenu(props: CommentsListItemContextMenuPr
     onStatusChange,
     readOnly,
     status,
+    mode,
   } = props
 
   const showMenuButton = Boolean(onCopyLink || onDeleteStart || onEditStart)
+
+  const {t} = useTranslation(commentsLocaleNamespace)
 
   return (
     <TooltipDelayGroupProvider>
@@ -74,6 +87,7 @@ export function CommentsListItemContextMenu(props: CommentsListItemContextMenuPr
           {onReactionSelect && (
             <CommentReactionsMenuButton
               onMenuClose={onMenuClose}
+              mode={mode}
               onMenuOpen={onMenuOpen}
               onSelect={onReactionSelect}
               options={COMMENT_REACTION_OPTIONS}
@@ -84,12 +98,21 @@ export function CommentsListItemContextMenu(props: CommentsListItemContextMenuPr
 
           {isParent && (
             <Button
-              aria-label={status === 'open' ? 'Mark comment as resolved' : 'Re-open'}
+              aria-label={
+                status === 'open'
+                  ? t('list-item.resolved-tooltip-aria-label')
+                  : t('list-item.re-open-resolved-aria-label')
+              }
               disabled={readOnly}
               icon={status === 'open' ? CheckmarkCircleIcon : UndoIcon}
               mode="bleed"
               onClick={onStatusChange}
-              tooltipProps={{content: status === 'open' ? 'Mark as resolved' : 'Re-open'}}
+              tooltipProps={{
+                content:
+                  status === 'open'
+                    ? t('list-item.resolved-tooltip-content')
+                    : t('list-item.re-open-resolved'),
+              }}
             />
           )}
 
@@ -97,7 +120,7 @@ export function CommentsListItemContextMenu(props: CommentsListItemContextMenuPr
             id="comment-actions-menu"
             button={
               <ContextMenuButton
-                aria-label="Open comment actions menu"
+                aria-label={t('list-item.open-menu-aria-label')}
                 disabled={readOnly}
                 hidden={!showMenuButton}
               />
@@ -110,14 +133,18 @@ export function CommentsListItemContextMenu(props: CommentsListItemContextMenuPr
                   hidden={!canEdit}
                   icon={EditIcon}
                   onClick={onEditStart}
-                  text="Edit comment"
+                  text={t('list-item.edit-comment')}
+                  tooltipProps={
+                    mode === 'upsell' ? {content: t('list-item.edit-comment-upsell')} : undefined
+                  }
+                  disabled={mode === 'upsell'}
                 />
 
                 <MenuItem
                   hidden={!canDelete}
                   icon={TrashIcon}
                   onClick={onDeleteStart}
-                  text="Delete comment"
+                  text={t('list-item.delete-comment')}
                   tone="critical"
                 />
 
@@ -127,7 +154,7 @@ export function CommentsListItemContextMenu(props: CommentsListItemContextMenuPr
                   hidden={!onCopyLink}
                   icon={LinkIcon}
                   onClick={onCopyLink}
-                  text="Copy link to comment"
+                  text={t('list-item.copy-link')}
                 />
               </Menu>
             }

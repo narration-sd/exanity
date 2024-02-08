@@ -83,7 +83,7 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'asset-source.file.asset-list.header.size': 'Size',
   'asset-source.file.asset-list.header.type': 'Type',
   /** Text displayed on button or menu invoking the file asset source */
-  'asset-source.file.title': 'Uplaoded files',
+  'asset-source.file.title': 'Uploaded files',
   'asset-source.image.asset-list.delete-failed': 'Image could not be deleted',
   /** Image asset source */
   'asset-source.image.asset-list.delete-successful': 'Image was deleted',
@@ -394,6 +394,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   /** Error text shown when form is unable to find an array item at a given keyed path */
   'form.error.no-array-item-at-key':
     'No array item with `_key` <code>"{{key}}"</code> found at path <code>{{path}}</code>',
+  /** Form field deprecated label */
+  'form.field.deprecated-label': 'deprecated',
   /** Fallback title shown above field if it has no defined title */
   'form.field.untitled-field-label': 'Untitled',
   /** Fallback title shown above fieldset if it has no defined title */
@@ -661,8 +663,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'inputs.object.unknown-fields.warning.title_other': 'Unknown fields found',
   /** Collapse the editor to save screen space  */
   'inputs.portable-text.action.collapse-editor': 'Collapse editor',
-  /** Label for action to edit an existing annotation */
-  'inputs.portable-text.action.edit-annotation': 'Edit annotation',
+  /** Aria label for action to edit an existing annotation */
+  'inputs.portable-text.action.edit-annotation-aria-label': 'Edit annotation',
   /** Expand the editor to give more editing space */
   'inputs.portable-text.action.expand-editor': 'Expand editor',
   /** Label label for action to insert a block of a given type (`{{typeName}}`) */
@@ -673,8 +675,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'inputs.portable-text.action.insert-inline-object': 'Insert {{typeName}}',
   /** Accessibility label for action to insert an inline object of a given type (`{{typeName}}`) */
   'inputs.portable-text.action.insert-inline-object-aria-label': 'Insert {{typeName}} (inline)',
-  /** Label for action to remove an annotation */
-  'inputs.portable-text.action.remove-annotation': 'Remove annotation',
+  /** Aria label for action to remove an annotation */
+  'inputs.portable-text.action.remove-annotation-aria-label': 'Remove annotation',
   /** Label for activate on focus with context of click and not focused */
   'inputs.portable-text.activate-on-focus-message_click': 'Click to activate',
   /** Label for activate on focus with context of click and focused */
@@ -682,10 +684,14 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
     'Click or press space to activate',
   /** Label for activate on focus with context of tap and not focused */
   'inputs.portable-text.activate-on-focus-message_tap': 'Tap to activate',
+  /**Aria label for the annotation object */
+  'inputs.portable-text.annotation-aria-label': 'Annotation object',
   /** Title for dialog that allows editing an annotation */
   'inputs.portable-text.annotation-editor.title': 'Edit {{schemaType}}',
   /** Title of the default "link" annotation */
   'inputs.portable-text.annotation.link': 'Link',
+  /**Aria label for the block object */
+  'inputs.portable-text.block.aria-label': 'Block object',
   /** Label for action to edit a block item, in the case where it is editable */
   'inputs.portable-text.block.edit': 'Edit',
   /** Accessibility label for the button that opens the actions menu on blocks */
@@ -708,10 +714,16 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'inputs.portable-text.decorator.underline': 'Underline',
   /** Placeholder text for when the editor is empty */
   'inputs.portable-text.empty-placeholder': 'Empty',
+  /**Aria label for the block object */
+  'inputs.portable-text.inline-block.aria-label': 'Inline object',
   /** Label for action to edit an inline object item */
   'inputs.portable-text.inline-object.edit': 'Edit object',
+  /** Aria label for icon for action to edit an inline object item */
+  'inputs.portable-text.inline-object.edit-aria-label': 'Edit object',
   /** Label for action to remove an inline object item */
   'inputs.portable-text.inline-object.remove': 'Remove object',
+  /** Aria label for icon for action to remove an inline object item */
+  'inputs.portable-text.inline-object.remove-aria-label': 'Remove object',
   /** Disclaimer text shown on invalid Portable Text value, when an action is available to unblock the user, but it is not guaranteed to be safe */
   'inputs.portable-text.invalid-value.action-disclaimer':
     'NOTE: It’s generally safe to perform the action above, but if you are in doubt, get in touch with those responsible for configuring your studio.',

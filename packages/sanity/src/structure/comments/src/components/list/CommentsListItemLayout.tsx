@@ -1,25 +1,33 @@
 import {hues} from '@sanity/color'
-import {TextSkeleton, Flex, Stack, Text, Card, useClickOutside, Box} from '@sanity/ui'
+import type {CurrentUser} from '@sanity/types'
+import {Box, Card, Flex, Stack, Text, TextSkeleton, useClickOutside} from '@sanity/ui'
 import React, {useCallback, useMemo, useRef, useState} from 'react'
-import {CurrentUser} from '@sanity/types'
 import styled, {css} from 'styled-components'
-import {format} from 'date-fns'
-import {CommentMessageSerializer} from '../pte'
-import {CommentInput, CommentInputHandle} from '../pte/comment-input'
+import {commentsLocaleNamespace} from '../../../i18n'
+import {hasCommentMessageValue, useCommentHasChanged} from '../../helpers'
 import {
   CommentDocument,
   CommentEditPayload,
   CommentMessage,
   CommentReactionOption,
   CommentStatus,
+  CommentsUIMode,
   MentionOptionsHookValue,
 } from '../../types'
-import {FLEX_GAP} from '../constants'
-import {hasCommentMessageValue, useCommentHasChanged} from '../../helpers'
 import {AVATAR_HEIGHT, CommentsAvatar, SpacerAvatar} from '../avatars'
+import {FLEX_GAP} from '../constants'
+import {CommentMessageSerializer} from '../pte'
+import {CommentInput, CommentInputHandle} from '../pte/comment-input'
 import {CommentReactionsBar} from '../reactions'
 import {CommentsListItemContextMenu} from './CommentsListItemContextMenu'
-import {TimeAgoOpts, useTimeAgo, useUser, useDidUpdate} from 'sanity'
+import {
+  useDateTimeFormat,
+  useDidUpdate,
+  useRelativeTime,
+  useTranslation,
+  useUser,
+  type RelativeTimeOptions,
+} from 'sanity'
 
 const stopPropagation = (e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()
 
@@ -107,6 +115,7 @@ interface CommentsListItemLayoutProps {
   isParent?: boolean
   isRetrying?: boolean
   mentionOptions: MentionOptionsHookValue
+  mode: CommentsUIMode
   onCopyLink?: (id: string) => void
   onCreateRetry?: (id: string) => void
   onDelete: (id: string) => void
@@ -117,7 +126,7 @@ interface CommentsListItemLayoutProps {
   readOnly?: boolean
 }
 
-const TIME_AGO_OPTS: TimeAgoOpts = {agoSuffix: true}
+const RELATIVE_TIME_OPTIONS: RelativeTimeOptions = {useTemporalPhrase: true}
 
 export function CommentsListItemLayout(props: CommentsListItemLayoutProps) {
   const {
@@ -129,6 +138,7 @@ export function CommentsListItemLayout(props: CommentsListItemLayoutProps) {
     isParent,
     isRetrying,
     mentionOptions,
+    mode,
     onCopyLink,
     onCreateRetry,
     onDelete,
@@ -140,6 +150,7 @@ export function CommentsListItemLayout(props: CommentsListItemLayoutProps) {
   } = props
   const {_createdAt, authorId, message, _id, lastEditedAt} = comment
   const [user] = useUser(authorId)
+  const {t} = useTranslation(commentsLocaleNamespace)
 
   const [value, setValue] = useState<CommentMessage>(message)
   const [isEditing, setIsEditing] = useState<boolean>(false)
@@ -167,10 +178,11 @@ export function CommentsListItemLayout(props: CommentsListItemLayoutProps) {
   const commentInputRef = useRef<CommentInputHandle>(null)
 
   const createdDate = _createdAt ? new Date(_createdAt) : new Date()
-  const createdTimeAgo = useTimeAgo(createdDate, TIME_AGO_OPTS)
-  const formattedCreatedAt = format(createdDate, 'PPPPp')
-
-  const formattedLastEditAt = lastEditedAt ? format(new Date(lastEditedAt), 'PPPPp') : null
+  const editedDate = lastEditedAt ? new Date(lastEditedAt) : null
+  const createdTimeAgo = useRelativeTime(createdDate, RELATIVE_TIME_OPTIONS)
+  const dateTimeFormat = useDateTimeFormat({dateStyle: 'full', timeStyle: 'medium'})
+  const formattedCreatedAt = dateTimeFormat.format(createdDate)
+  const formattedLastEditAt = editedDate ? dateTimeFormat.format(editedDate) : null
   const displayError = hasError || isRetrying
 
   const handleMenuOpen = useCallback(() => setMenuOpen(true), [])
@@ -291,13 +303,17 @@ export function CommentsListItemLayout(props: CommentsListItemLayoutProps) {
 
               {!displayError && (
                 <Flex align="center" gap={1}>
-                  <TimeText muted size={0} title={formattedCreatedAt}>
-                    {createdTimeAgo}
+                  <TimeText muted size={0}>
+                    <time dateTime={createdDate.toISOString()} title={formattedCreatedAt}>
+                      {createdTimeAgo}
+                    </time>
                   </TimeText>
 
-                  {formattedLastEditAt && (
+                  {formattedLastEditAt && editedDate && (
                     <TimeText muted size={0} title={formattedLastEditAt}>
-                      (edited)
+                      <time dateTime={editedDate.toISOString()} title={formattedLastEditAt}>
+                        ({t('list-item.layout-edited')})
+                      </time>
                     </TimeText>
                   )}
                 </Flex>
@@ -311,6 +327,7 @@ export function CommentsListItemLayout(props: CommentsListItemLayoutProps) {
                 canDelete={canDelete}
                 canEdit={canEdit}
                 isParent={isParent}
+                mode={mode}
                 onCopyLink={handleCopyLink}
                 onDeleteStart={handleDelete}
                 onEditStart={toggleEdit}
@@ -363,6 +380,7 @@ export function CommentsListItemLayout(props: CommentsListItemLayoutProps) {
             <Box onClick={stopPropagation}>
               <CommentReactionsBar
                 currentUser={currentUser}
+                mode={mode}
                 onSelect={handleReactionSelect}
                 reactions={reactions}
                 readOnly={readOnly}
@@ -378,8 +396,8 @@ export function CommentsListItemLayout(props: CommentsListItemLayoutProps) {
 
           <Flex align="center" gap={1} flex={1}>
             <Text muted size={1}>
-              {hasError && 'Failed to send.'}
-              {isRetrying && 'Posting...'}
+              {hasError && t('list-item.layout-failed-sent')}
+              {isRetrying && t('list-item.layout-posting')}
             </Text>
 
             <Flex hidden={isRetrying}>
@@ -393,7 +411,7 @@ export function CommentsListItemLayout(props: CommentsListItemLayoutProps) {
                 tone="primary"
               >
                 <Text size={1} muted>
-                  Retry
+                  {t('list-item.layout-retry')}
                 </Text>
               </RetryCardButton>
             </Flex>

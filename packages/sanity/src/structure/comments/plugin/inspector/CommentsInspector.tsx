@@ -15,14 +15,18 @@ import {
   CommentsOnboardingPopover,
   CommentsSelectedPath,
   CommentStatus,
+  CommentsUIMode,
+  CommentsUpsellPanel,
   useComments,
   useCommentsEnabled,
   useCommentsOnboarding,
   useCommentsSelectedPath,
+  useCommentsUpsell,
 } from '../../src'
+import {commentsLocaleNamespace} from '../../i18n'
 import {CommentsInspectorHeader} from './CommentsInspectorHeader'
 import {CommentsInspectorFeedbackFooter} from './CommentsInspectorFeedbackFooter'
-import {DocumentInspectorProps, useCurrentUser, useUnique} from 'sanity'
+import {DocumentInspectorProps, useCurrentUser, useTranslation, useUnique} from 'sanity'
 
 interface CommentToDelete {
   commentId: string
@@ -37,23 +41,27 @@ const RootLayer = styled(Layer)`
 `
 
 export function CommentsInspector(props: DocumentInspectorProps) {
-  const isEnabled = useCommentsEnabled()
+  const {enabled, mode} = useCommentsEnabled()
 
-  if (!isEnabled) return null
+  if (!enabled) return null
 
   // We wrap the comments inspector in a Layer in order to know when the comments inspector
   // is the top layer (that is, if there is e.g. a popover open). This is used to determine
   // if we should deselect the selected path when clicking outside the comments inspector.
   return (
     <RootLayer>
-      <CommentsInspectorInner {...props} />
+      <CommentsInspectorInner {...props} mode={mode} />
     </RootLayer>
   )
 }
 
-function CommentsInspectorInner(props: DocumentInspectorProps) {
-  const {onClose} = props
-
+function CommentsInspectorInner(
+  props: DocumentInspectorProps & {
+    mode: CommentsUIMode
+  },
+) {
+  const {t} = useTranslation(commentsLocaleNamespace)
+  const {onClose, mode} = props
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false)
   const [commentToDelete, setCommentToDelete] = useState<CommentToDelete | null>(null)
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false)
@@ -90,6 +98,26 @@ function CommentsInspectorInner(props: DocumentInspectorProps) {
   }, [comments.loading, ready])
 
   const {selectedPath, setSelectedPath} = useCommentsSelectedPath()
+  const {upsellData, telemetryLogs} = useCommentsUpsell()
+
+  useEffect(() => {
+    if (mode === 'upsell') {
+      if (selectedPath?.origin === 'form') {
+        telemetryLogs.panelViewed('field_action')
+      } else if (commentIdParamRef.current) {
+        telemetryLogs.panelViewed('link')
+      } else {
+        telemetryLogs.panelViewed('document_action')
+      }
+    }
+    return () => {
+      if (mode === 'upsell') {
+        telemetryLogs.panelDismissed()
+      }
+    }
+    // We want to run this effect only on mount and unmount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleChangeView = useCallback(
     (nextView: CommentStatus) => {
@@ -119,18 +147,18 @@ function CommentsInspectorInner(props: DocumentInspectorProps) {
           pushToast({
             closable: true,
             status: 'info',
-            title: 'Copied link to clipboard',
+            title: t('copy-link-success-message'),
           })
         })
         .catch(() => {
           pushToast({
             closable: true,
             status: 'error',
-            title: 'Unable to copy link to clipboard',
+            title: t('copy-link-error-message'),
           })
         })
     },
-    [createPathWithParams, params, pushToast],
+    [createPathWithParams, params, pushToast, t],
   )
 
   const handleCreateRetry = useCallback(
@@ -305,6 +333,22 @@ function CommentsInspectorInner(props: DocumentInspectorProps) {
     }
   }, [getComment, handleScrollToComment, loading, params, setParams, setStatus])
 
+  const beforeListNode = useMemo(() => {
+    if (mode === 'upsell' && upsellData) {
+      return (
+        <CommentsUpsellPanel
+          data={upsellData}
+          // eslint-disable-next-line react/jsx-handler-names
+          onPrimaryClick={telemetryLogs.panelPrimaryClicked}
+          // eslint-disable-next-line react/jsx-handler-names
+          onSecondaryClick={telemetryLogs.panelSecondaryClicked}
+        />
+      )
+    }
+
+    return null
+  }, [mode, telemetryLogs.panelPrimaryClicked, telemetryLogs.panelSecondaryClicked, upsellData])
+
   return (
     <Fragment>
       {commentToDelete && showDeleteDialog && (
@@ -334,16 +378,19 @@ function CommentsInspectorInner(props: DocumentInspectorProps) {
             onClose={handleCloseInspector}
             onViewChange={handleChangeView}
             view={status}
+            mode={mode}
           />
         </CommentsOnboardingPopover>
 
         {currentUser && (
           <CommentsList
+            beforeListNode={beforeListNode}
             comments={currentComments}
             currentUser={currentUser}
             error={comments.error}
             loading={loading}
             mentionOptions={mentionOptions}
+            mode={mode}
             onCopyLink={handleCopyLink}
             onCreateRetry={handleCreateRetry}
             onDelete={onDeleteStart}
@@ -359,8 +406,7 @@ function CommentsInspectorInner(props: DocumentInspectorProps) {
             status={status}
           />
         )}
-
-        <CommentsInspectorFeedbackFooter />
+        {mode === 'default' && <CommentsInspectorFeedbackFooter />}
       </Flex>
     </Fragment>
   )

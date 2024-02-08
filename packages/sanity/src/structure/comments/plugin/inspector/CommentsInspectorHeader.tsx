@@ -1,11 +1,11 @@
 import {CheckmarkIcon, ChevronDownIcon, DoubleChevronRightIcon} from '@sanity/icons'
 import {Card, Flex, Menu, Text} from '@sanity/ui'
-import {startCase} from 'lodash'
 import React, {forwardRef, useCallback} from 'react'
 import styled from 'styled-components'
 import {Button, MenuButton, MenuItem} from '../../../../ui-components'
-import {CommentStatus} from '../../src'
-import {BetaBadge} from 'sanity'
+import {commentsLocaleNamespace} from '../../i18n'
+import {BetaBadge, useTranslation} from 'sanity'
+import {CommentStatus, useCommentsEnabled, CommentsUIMode} from '../../src'
 
 const Root = styled(Card)({
   position: 'relative',
@@ -17,13 +17,15 @@ interface CommentsInspectorHeaderProps {
   onClose: () => void
   onViewChange: (view: CommentStatus) => void
   view: CommentStatus
+  mode: CommentsUIMode
 }
 
 export const CommentsInspectorHeader = forwardRef(function CommentsInspectorHeader(
   props: CommentsInspectorHeaderProps,
   ref: React.ForwardedRef<HTMLDivElement>,
 ) {
-  const {onClose, onViewChange, view} = props
+  const {t} = useTranslation(commentsLocaleNamespace)
+  const {onClose, onViewChange, view, mode} = props
 
   const handleSetOpenView = useCallback(() => onViewChange('open'), [onViewChange])
   const handleSetResolvedView = useCallback(() => onViewChange('resolved'), [onViewChange])
@@ -33,7 +35,7 @@ export const CommentsInspectorHeader = forwardRef(function CommentsInspectorHead
       <Flex padding={2}>
         <Flex align="center" flex={1} gap={2} paddingY={2} padding={3}>
           <Text as="h1" size={1} weight="medium">
-            Comments
+            {t('feature-name')}
           </Text>
 
           <BetaBadge />
@@ -42,18 +44,34 @@ export const CommentsInspectorHeader = forwardRef(function CommentsInspectorHead
         <Flex flex="none" padding={1} gap={2}>
           <MenuButton
             id="comment-status-menu-button"
-            button={<Button text={startCase(view)} mode="bleed" iconRight={ChevronDownIcon} />}
+            button={
+              <Button
+                text={
+                  view === 'open'
+                    ? t('status-filter.status-open')
+                    : t('status-filter.status-resolved')
+                }
+                mode="bleed"
+                iconRight={ChevronDownIcon}
+              />
+            }
             menu={
               <Menu style={{width: '180px'}}>
                 <MenuItem
                   iconRight={view === 'open' ? CheckmarkIcon : undefined}
                   onClick={handleSetOpenView}
-                  text="Open comments"
+                  text={t('status-filter.status-open-full')}
                 />
                 <MenuItem
                   iconRight={view === 'resolved' ? CheckmarkIcon : undefined}
                   onClick={handleSetResolvedView}
-                  text="Resolved comments"
+                  text={t('status-filter.status-resolved-full')}
+                  tooltipProps={
+                    mode === 'upsell'
+                      ? {content: t('status-filter.status-resolved-full-upsell')}
+                      : undefined
+                  }
+                  disabled={mode === 'upsell'}
                 />
               </Menu>
             }
@@ -61,11 +79,11 @@ export const CommentsInspectorHeader = forwardRef(function CommentsInspectorHead
           />
 
           <Button
-            aria-label="Close comments"
+            aria-label={t('close-pane-button-text-aria-label')}
             icon={DoubleChevronRightIcon}
             mode="bleed"
             onClick={onClose}
-            tooltipProps={{content: 'Close comments'}}
+            tooltipProps={{content: t('close-pane-button-text')}}
           />
         </Flex>
       </Flex>

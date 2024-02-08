@@ -1,18 +1,20 @@
-import React, {KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import {useClickOutside} from '@sanity/ui'
 import {
-  EditorSelection,
   PortableTextEditable,
   usePortableTextEditorSelection,
+  type EditorSelection,
 } from '@sanity/portable-text-editor'
-import styled, {css} from 'styled-components'
-import {isEqual} from 'lodash'
 import {isPortableTextSpan, isPortableTextTextBlock} from '@sanity/types'
-import {Popover, PopoverProps} from '../../../../../../ui-components'
-import {MentionsMenu, MentionsMenuHandle} from '../../mentions'
+import {useClickOutside} from '@sanity/ui'
+import {isEqual} from 'lodash'
+import React, {useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent} from 'react'
+import styled, {css} from 'styled-components'
+import {Popover, type PopoverProps} from '../../../../../../ui-components'
+import {commentsLocaleNamespace} from '../../../../i18n'
+import {MentionsMenu, type MentionsMenuHandle} from '../../mentions'
 import {renderBlock, renderChild} from '../render'
 import {useCommentInput} from './useCommentInput'
 import {useCursorElement} from './useCursorElement'
+import {useTranslation} from 'sanity'
 
 const POPOVER_FALLBACK_PLACEMENTS: PopoverProps['fallbackPlacements'] = ['bottom', 'top']
 const INLINE_STYLE: React.CSSProperties = {outline: 'none'}
@@ -65,9 +67,10 @@ export interface EditableHandle {
 }
 
 export function Editable(props: EditableProps) {
+  const {t} = useTranslation(commentsLocaleNamespace)
   const {
     focusLock,
-    placeholder = 'Create a new comment',
+    placeholder = t('compose.create-comment-placeholder'),
     onFocus,
     onBlur,
     onKeyDown,

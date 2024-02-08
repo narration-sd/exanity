@@ -1,5 +1,5 @@
 import React from 'react'
-import {Flex, Text} from '@sanity/ui'
+import {Flex, Text, TextSkeleton} from '@sanity/ui'
 import styled, {css} from 'styled-components'
 import {Tooltip} from '../../../../../../ui-components'
 import {CommentsAvatar} from '../../avatars'
@@ -34,7 +34,17 @@ export function MentionInlineBlock(props: MentionInlineBlockProps) {
   const [user, loading] = useUser(userId)
   const currentUser = useCurrentUser()
 
-  if (!user || loading) return <Span>@Loading</Span> // todo: improve
+  if (!user || loading)
+    return (
+      <TextSkeleton
+        data-testid="comment-mentions-loading-skeleton"
+        style={{width: '10ch'}}
+        size={0}
+        muted
+        radius={1}
+        animated
+      />
+    )
 
   return (
     <Tooltip

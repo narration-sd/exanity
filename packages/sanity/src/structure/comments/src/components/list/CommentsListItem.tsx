@@ -11,14 +11,17 @@ import {
   CommentMessage,
   CommentReactionOption,
   CommentStatus,
+  CommentsUIMode,
   MentionOptionsHookValue,
 } from '../../types'
 import {SpacerAvatar} from '../avatars'
 import {hasCommentMessageValue} from '../../helpers'
 import {CommentsSelectedPath} from '../../context'
 import {Button} from '../../../../../ui-components'
+import {commentsLocaleNamespace} from '../../../i18n'
 import {CommentsListItemLayout} from './CommentsListItemLayout'
 import {ThreadCard} from './styles'
+import {useTranslation} from 'sanity'
 
 const EMPTY_ARRAY: [] = []
 
@@ -80,6 +83,7 @@ interface CommentsListItemProps {
   currentUser: CurrentUser
   isSelected: boolean
   mentionOptions: MentionOptionsHookValue
+  mode: CommentsUIMode
   onCopyLink?: (id: string) => void
   onCreateRetry: (id: string) => void
   onDelete: (id: string) => void
@@ -112,7 +116,9 @@ export const CommentsListItem = React.memo(function CommentsListItem(props: Comm
     parentComment,
     readOnly,
     replies = EMPTY_ARRAY,
+    mode,
   } = props
+  const {t} = useTranslation(commentsLocaleNamespace)
   const [value, setValue] = useState<CommentMessage>(EMPTY_ARRAY)
   const [collapsed, setCollapsed] = useState<boolean>(true)
   const didExpand = useRef<boolean>(false)
@@ -242,6 +248,7 @@ export const CommentsListItem = React.memo(function CommentsListItem(props: Comm
             hasError={reply._state?.type === 'createError'}
             isRetrying={reply._state?.type === 'createRetrying'}
             mentionOptions={mentionOptions}
+            mode={mode}
             onCopyLink={onCopyLink}
             onCreateRetry={onCreateRetry}
             onDelete={onDelete}
@@ -263,6 +270,7 @@ export const CommentsListItem = React.memo(function CommentsListItem(props: Comm
       onReactionSelect,
       readOnly,
       splicedReplies,
+      mode,
     ],
   )
 
@@ -276,7 +284,10 @@ export const CommentsListItem = React.memo(function CommentsListItem(props: Comm
         onMouseLeave={handleMouseLeave}
         tone={isSelected ? 'caution' : undefined}
       >
-        <GhostButton data-ui="GhostButton" aria-label="Go to field" />
+        <GhostButton
+          data-ui="GhostButton"
+          aria-label={t('list-item.go-to-field-button.aria-label')}
+        />
 
         <Stack
           as="ul"
@@ -295,6 +306,7 @@ export const CommentsListItem = React.memo(function CommentsListItem(props: Comm
               isParent
               isRetrying={parentComment._state?.type === 'createRetrying'}
               mentionOptions={mentionOptions}
+              mode={mode}
               onCopyLink={onCopyLink}
               onCreateRetry={onCreateRetry}
               onDelete={onDelete}
@@ -331,8 +343,12 @@ export const CommentsListItem = React.memo(function CommentsListItem(props: Comm
               onDiscardConfirm={confirmDiscard}
               onKeyDown={handleInputKeyDown}
               onSubmit={handleReplySubmit}
-              placeholder="Reply"
-              readOnly={readOnly}
+              placeholder={
+                mode === 'upsell'
+                  ? t('compose.reply-placeholder-upsell')
+                  : t('compose.reply-placeholder')
+              }
+              readOnly={readOnly || mode === 'upsell'}
               ref={replyInputRef}
               value={value}
             />

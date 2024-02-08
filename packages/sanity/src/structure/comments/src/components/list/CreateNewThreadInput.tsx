@@ -1,14 +1,16 @@
-import {CurrentUser} from '@sanity/types'
-import {EMPTY_ARRAY} from '@sanity/ui-workshop'
+import type {CurrentUser} from '@sanity/types'
 import React, {useState, useCallback, useRef, useMemo} from 'react'
-import {CommentMessage, MentionOptionsHookValue} from '../../types'
+import type {CommentMessage, CommentsUIMode, MentionOptionsHookValue} from '../../types'
 import {CommentInput, CommentInputHandle, CommentInputProps} from '../pte'
+import {commentsLocaleNamespace} from '../../../i18n'
 import {hasCommentMessageValue} from '../../helpers'
+import {EMPTY_ARRAY, Translate, useTranslation} from 'sanity'
 
 interface CreateNewThreadInputProps {
   currentUser: CurrentUser
-  fieldName: string
+  fieldTitle: string
   mentionOptions: MentionOptionsHookValue
+  mode: CommentsUIMode
   onBlur?: CommentInputProps['onBlur']
   onFocus?: CommentInputProps['onFocus']
   onKeyDown?: (event: React.KeyboardEvent<Element>) => void
@@ -19,14 +21,16 @@ interface CreateNewThreadInputProps {
 export function CreateNewThreadInput(props: CreateNewThreadInputProps) {
   const {
     currentUser,
-    fieldName,
+    fieldTitle,
     mentionOptions,
+    mode,
     onBlur,
     onFocus,
     onKeyDown,
     onNewThreadCreate,
     readOnly,
   } = props
+  const {t} = useTranslation(commentsLocaleNamespace)
 
   const [value, setValue] = useState<CommentMessage>(EMPTY_ARRAY)
   const commentInputHandle = useRef<CommentInputHandle | null>(null)
@@ -73,11 +77,16 @@ export function CreateNewThreadInput(props: CreateNewThreadInputProps) {
     commentInputHandle.current?.discardDialogController.close()
   }, [])
 
-  const placeholder = (
-    <>
-      Add comment to <b>{fieldName}</b>
-    </>
-  )
+  const placeholder =
+    mode === 'upsell' ? (
+      t('compose.add-comment-input-placeholder-upsell')
+    ) : (
+      <Translate
+        t={t}
+        i18nKey="compose.add-comment-input-placeholder"
+        values={{field: fieldTitle}}
+      />
+    )
 
   return (
     <CommentInput
@@ -92,7 +101,7 @@ export function CreateNewThreadInput(props: CreateNewThreadInputProps) {
       onFocus={onFocus}
       onSubmit={handleSubmit}
       placeholder={placeholder}
-      readOnly={readOnly}
+      readOnly={readOnly || mode === 'upsell'}
       ref={commentInputHandle}
       value={value}
     />

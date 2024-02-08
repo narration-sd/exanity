@@ -13,11 +13,14 @@ import {
   CommentCreatePayload,
   MentionOptionsHookValue,
   CommentListBreadcrumbs,
+  CommentsUIMode,
 } from '../../types'
 import {CommentBreadcrumbs} from '../CommentBreadcrumbs'
 import {CommentsSelectedPath} from '../../context'
+import {commentsLocaleNamespace} from '../../../i18n'
 import {CreateNewThreadInput} from './CreateNewThreadInput'
 import {ThreadCard} from './styles'
+import {useTranslation} from 'sanity'
 
 const HeaderFlex = styled(Flex)`
   min-height: 25px;
@@ -42,6 +45,7 @@ interface CommentThreadLayoutProps {
   fieldPath: string
   isSelected: boolean
   mentionOptions: MentionOptionsHookValue
+  mode: CommentsUIMode
   onNewThreadCreate: (payload: CommentCreatePayload) => void
   onPathSelect?: (nextPath: CommentsSelectedPath) => void
   readOnly?: boolean
@@ -56,10 +60,13 @@ export function CommentThreadLayout(props: CommentThreadLayoutProps) {
     fieldPath,
     isSelected,
     mentionOptions,
+    mode,
     onNewThreadCreate,
     onPathSelect,
     readOnly,
   } = props
+
+  const {t} = useTranslation(commentsLocaleNamespace)
 
   const handleNewThreadCreate = useCallback(
     (payload: CommentMessage) => {
@@ -118,7 +125,9 @@ export function CommentThreadLayout(props: CommentThreadLayoutProps) {
         <Stack flex={1}>
           <Flex align="center">
             <BreadcrumbsButton
-              aria-label={`Go to ${lastCrumb} field`}
+              aria-label={t('list-item.breadcrumb-button-go-to-field-aria-label', {
+                field: lastCrumb,
+              })}
               mode="bleed"
               onClick={handleBreadcrumbsClick}
               padding={2}
@@ -134,8 +143,9 @@ export function CommentThreadLayout(props: CommentThreadLayoutProps) {
         <ThreadCard onClick={handleNewThreadClick} tone={isSelected ? 'caution' : undefined}>
           <CreateNewThreadInput
             currentUser={currentUser}
-            fieldName={lastCrumb}
+            fieldTitle={lastCrumb}
             mentionOptions={mentionOptions}
+            mode={mode}
             onNewThreadCreate={handleNewThreadCreate}
             readOnly={readOnly}
           />
