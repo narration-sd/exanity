@@ -1,29 +1,39 @@
 import {
-  ArraySchemaType,
-  InitialValueProperty,
-  InitialValueResolver,
-  InitialValueResolverContext,
+  type ArraySchemaType,
+  type InitialValueProperty,
+  type InitialValueResolver,
+  type InitialValueResolverContext,
   isArraySchemaType,
   isObjectSchemaType,
-  ObjectSchemaType,
-  Schema,
-  SchemaType,
+  type ObjectSchemaType,
+  type Schema,
+  type SchemaType,
 } from '@sanity/types'
 import {isDeepEmpty, randomKey, resolveTypeName} from '@sanity/util/content'
-import {isRecord} from './util/isRecord'
-import {Template} from './types'
-import {validateInitialObjectValue} from './validate'
+
+import {type Template} from './types'
 import deepAssign from './util/deepAssign'
+import {isRecord} from './util/isRecord'
+import {validateInitialObjectValue} from './validate'
 
 /** @internal */
 export type Serializeable<T> = {
   serialize(): T
 }
 
+interface Options {
+  useCache?: boolean
+}
+
 /** @internal */
 export function isBuilder(template: unknown): template is Serializeable<Template> {
   return isRecord(template) && typeof template.serialize === 'function'
 }
+
+const cache = new WeakMap<
+  InitialValueResolver<unknown, unknown>,
+  Record<string, unknown | Promise<unknown>>
+>()
 
 /** @internal */
 // returns the "resolved" value from an initial value property (e.g. type.initialValue)
@@ -32,10 +42,37 @@ export async function resolveValue<Params, InitialValue>(
   initialValueOpt: InitialValueProperty<Params, InitialValue>,
   params: Params | undefined,
   context: InitialValueResolverContext,
+  options?: Options,
 ): Promise<InitialValue | undefined> {
-  return typeof initialValueOpt === 'function'
-    ? (initialValueOpt as InitialValueResolver<Params, InitialValue>)(params, context)
-    : initialValueOpt
+  const useCache = options?.useCache
+
+  if (typeof initialValueOpt === 'function') {
+    const cached = cache.get(initialValueOpt as InitialValueResolver<unknown, unknown>)
+
+    const key = JSON.stringify([
+      params,
+      context.projectId,
+      context.dataset,
+      context.currentUser?.id,
+    ])
+
+    if (useCache && cached?.[key]) {
+      return cached[key] as InitialValue | Promise<InitialValue>
+    }
+
+    const value = (initialValueOpt as InitialValueResolver<Params, InitialValue>)(params, context)
+
+    if (useCache) {
+      cache.set(initialValueOpt as InitialValueResolver<unknown, unknown>, {
+        ...cached,
+        [key]: value,
+      })
+    }
+
+    return value
+  }
+
+  return initialValueOpt
 }
 
 /** @internal */
@@ -44,10 +81,11 @@ export async function resolveInitialValue(
   template: Template,
   params: {[key: string]: any} = {},
   context: InitialValueResolverContext,
+  options?: Options,
 ): Promise<{[key: string]: any}> {
   // Template builder?
   if (isBuilder(template)) {
-    return resolveInitialValue(schema, template.serialize(), params, context)
+    return resolveInitialValue(schema, template.serialize(), params, context, options)
   }
 
   const {id, schemaType: schemaTypeName, value} = template
@@ -55,7 +93,7 @@ export async function resolveInitialValue(
     throw new Error(`Template "${id}" has invalid "value" property`)
   }
 
-  let resolvedValue = await resolveValue(value, params, context)
+  let resolvedValue = await resolveValue(value, params, context, options)
 
   if (!isRecord(resolvedValue)) {
     throw new Error(
@@ -78,8 +116,13 @@ export async function resolveInitialValue(
   }
 
   const newValue = deepAssign(
-    (await resolveInitialValueForType(schemaType, params, DEFAULT_MAX_RECURSION_DEPTH, context)) ||
-      {},
+    (await resolveInitialValueForType(
+      schemaType,
+      params,
+      DEFAULT_MAX_RECURSION_DEPTH,
+      context,
+      options,
+    )) || {},
     resolvedValue as Record<string, unknown>,
   )
 
@@ -119,20 +162,21 @@ export function resolveInitialValueForType<Params extends Record<string, unknown
    */
   maxDepth = DEFAULT_MAX_RECURSION_DEPTH,
   context: InitialValueResolverContext,
+  options?: Options,
 ): Promise<any> {
   if (maxDepth <= 0) {
     return Promise.resolve(undefined)
   }
 
   if (isObjectSchemaType(type)) {
-    return resolveInitialObjectValue(type, params, maxDepth, context)
+    return resolveInitialObjectValue(type, params, maxDepth, context, options)
   }
 
   if (isArraySchemaType(type)) {
-    return resolveInitialArrayValue(type, params, maxDepth, context)
+    return resolveInitialArrayValue(type, params, maxDepth, context, options)
   }
 
-  return resolveValue(type.initialValue, params, context)
+  return resolveValue(type.initialValue, params, context, options)
 }
 
 async function resolveInitialArrayValue<Params extends Record<string, unknown>>(
@@ -140,8 +184,9 @@ async function resolveInitialArrayValue<Params extends Record<string, unknown>>(
   params: Params,
   maxDepth: number,
   context: InitialValueResolverContext,
+  options?: Options,
 ): Promise<any> {
-  const initialArray = await resolveValue(type.initialValue, undefined, context)
+  const initialArray = await resolveValue(type.initialValue, undefined, context, options)
 
   if (!Array.isArray(initialArray)) {
     return undefined
@@ -153,7 +198,7 @@ async function resolveInitialArrayValue<Params extends Record<string, unknown>>(
       return isObjectSchemaType(itemType)
         ? {
             ...initialItem,
-            ...(await resolveInitialValueForType(itemType, params, maxDepth - 1, context)),
+            ...(await resolveInitialValueForType(itemType, params, maxDepth - 1, context, options)),
             _key: randomKey(),
           }
         : initialItem
@@ -167,9 +212,10 @@ export async function resolveInitialObjectValue<Params extends Record<string, un
   params: Params,
   maxDepth: number,
   context: InitialValueResolverContext,
+  options?: Options,
 ): Promise<any> {
   const initialObject: Record<string, unknown> = {
-    ...((await resolveValue(type.initialValue, params, context)) || {}),
+    ...((await resolveValue(type.initialValue, params, context, options)) || {}),
   }
 
   const fieldValues: Record<string, any> = {}
@@ -180,6 +226,7 @@ export async function resolveInitialObjectValue<Params extends Record<string, un
         params,
         maxDepth - 1,
         context,
+        options,
       )
       if (initialFieldValue !== undefined && initialFieldValue !== null) {
         fieldValues[field.name] = initialFieldValue

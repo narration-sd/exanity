@@ -1,24 +1,27 @@
 import {
+  CodeIcon,
+  CogIcon,
   EarthGlobeIcon,
   ImagesIcon,
+  JoystickIcon,
   PlugIcon,
   RocketIcon,
   SyncIcon,
   TerminalIcon,
+  ThListIcon,
   UsersIcon,
-  JoystickIcon,
-  CodeIcon,
 } from '@sanity/icons'
 import {uuid} from '@sanity/uuid'
-import type {DocumentStore, SanityDocument, Schema} from 'sanity'
-import {ItemChild, StructureBuilder, StructureResolver} from 'sanity/structure'
-import {map} from 'rxjs/operators'
 import {type Observable, timer} from 'rxjs'
-import React from 'react'
+import {map} from 'rxjs/operators'
+import {type DocumentStore, type SanityDocument, type Schema} from 'sanity'
+import {type ItemChild, type StructureBuilder, type StructureResolver} from 'sanity/structure'
+
 import {DebugPane} from '../components/panes/debug'
 import {JsonDocumentDump} from '../components/panes/JsonDocumentDump'
 import {TranslateExample} from '../components/TranslateExample'
 import {_buildTypeGroup} from './_buildTypeGroup'
+import {delayValue} from './_helpers'
 import {
   CI_INPUT_TYPES,
   DEBUG_FIELD_GROUP_TYPES,
@@ -29,7 +32,6 @@ import {
   STANDARD_PORTABLE_TEXT_INPUT_TYPES,
   TS_DOC_TYPES,
 } from './constants'
-import {delayValue} from './_helpers'
 import {typesInOptionGroup} from './groupByOption'
 
 export const structure: StructureResolver = (S, {schema, documentStore, i18n}) => {
@@ -48,6 +50,19 @@ export const structure: StructureResolver = (S, {schema, documentStore, i18n}) =
         .child(
           S.list()
             .title('Untitled repro')
+            .menuItems([
+              S.menuItem()
+                .title('Edit GRRM')
+                .icon(CogIcon)
+                .showAsAction(true)
+                .intent({
+                  type: 'edit',
+                  params: {
+                    id: 'grrm',
+                    type: 'author',
+                  },
+                }),
+            ])
             .items([
               S.documentListItem().id('grrm').schemaType('author'),
               S.listItem()
@@ -215,7 +230,6 @@ export const structure: StructureResolver = (S, {schema, documentStore, i18n}) =
                     id: 'authors-and-books',
                     title: 'Authors & Books',
                     options: {
-                      apiVersion: '2023-07-28',
                       filter: '_type == "author" || _type == "book"',
                     },
                   }),
@@ -327,7 +341,6 @@ export const structure: StructureResolver = (S, {schema, documentStore, i18n}) =
                 child: () =>
                   S.documentTypeList('author')
                     .title('Developers')
-                    .apiVersion('2023-07-27')
                     .filter('_type == $type && role == $role')
                     .params({type: 'author', role: 'developer'})
                     .initialValueTemplates(S.initialValueTemplateItem('author-developer')),
@@ -364,6 +377,10 @@ export const structure: StructureResolver = (S, {schema, documentStore, i18n}) =
               S.divider(),
 
               S.documentTypeListItem('sanity.imageAsset').title('Images').icon(ImagesIcon),
+
+              S.divider(),
+
+              S.listItem().title('All document types').child(S.defaults()),
             ]),
         ),
 
@@ -403,23 +420,41 @@ export const structure: StructureResolver = (S, {schema, documentStore, i18n}) =
 
       S.divider(),
 
-      ...S.documentTypeListItems().filter((listItem) => {
-        const id = listItem.getId()
+      ...S.documentTypeListItems()
+        .filter((listItem) => {
+          const id = listItem.getId()
 
-        return (
-          id &&
-          !CI_INPUT_TYPES.includes(id) &&
-          !DEBUG_INPUT_TYPES.includes(id) &&
-          !STANDARD_INPUT_TYPES.includes(id) &&
-          !STANDARD_PORTABLE_TEXT_INPUT_TYPES.includes(id) &&
-          !PLUGIN_INPUT_TYPES.includes(id) &&
-          !EXTERNAL_PLUGIN_INPUT_TYPES.includes(id) &&
-          !DEBUG_FIELD_GROUP_TYPES.includes(id) &&
-          !typesInOptionGroup(S, schema, 'v3').includes(id) &&
-          !typesInOptionGroup(S, schema, '3d').includes(id) &&
-          !TS_DOC_TYPES.includes(id)
-        )
-      }),
+          return (
+            id &&
+            !CI_INPUT_TYPES.includes(id) &&
+            !DEBUG_INPUT_TYPES.includes(id) &&
+            !STANDARD_INPUT_TYPES.includes(id) &&
+            !STANDARD_PORTABLE_TEXT_INPUT_TYPES.includes(id) &&
+            !PLUGIN_INPUT_TYPES.includes(id) &&
+            !EXTERNAL_PLUGIN_INPUT_TYPES.includes(id) &&
+            !DEBUG_FIELD_GROUP_TYPES.includes(id) &&
+            !typesInOptionGroup(S, schema, 'v3').includes(id) &&
+            !typesInOptionGroup(S, schema, '3d').includes(id) &&
+            !TS_DOC_TYPES.includes(id)
+          )
+        })
+        .map((listItem) => {
+          // Create Sheet List menu option
+          const listItemId = listItem.getId()
+          if (!listItemId) return listItem
+
+          return listItem.child(
+            S.documentTypeList(listItemId).menuItems([
+              S.menuItem()
+                .title('Table view')
+                .group('layout')
+                .action('setLayout')
+                .params({layout: 'sheetList'})
+                .icon(ThListIcon),
+              ...(S.documentTypeList(listItemId).getMenuItems() || []),
+            ]),
+          )
+        }),
     ])
 }
 

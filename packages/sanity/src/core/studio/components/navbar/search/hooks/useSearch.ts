@@ -1,8 +1,8 @@
-import type {Schema} from '@sanity/types'
-import isEqual from 'lodash/isEqual'
+import {type Schema} from '@sanity/types'
+import {isEqual} from 'lodash'
 import {useCallback, useMemo, useState} from 'react'
-import {useObservableCallback} from 'react-rx'
-import {concat, EMPTY, iif, Observable, of, timer} from 'rxjs'
+import {useObservableEvent} from 'react-rx'
+import {concat, EMPTY, iif, type Observable, of, timer} from 'rxjs'
 import {
   catchError,
   debounce,
@@ -13,13 +13,19 @@ import {
   switchMap,
   tap,
 } from 'rxjs/operators'
+
 import {useClient} from '../../../../../hooks'
-import {createWeightedSearch, SearchOptions, SearchTerms, WeightedHit} from '../../../../../search'
+import {
+  createSearch,
+  type SearchHit,
+  type SearchOptions,
+  type SearchTerms,
+} from '../../../../../search'
 import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../../../studioClient'
-import type {SearchState} from '../types'
+import {useWorkspace} from '../../../../workspace'
+import {type SearchState} from '../types'
 import {hasSearchableTerms} from '../utils/hasSearchableTerms'
 import {getSearchableOmnisearchTypes} from '../utils/selectors'
-import {getSearchTypesWithMaxDepth} from '../../../../../search/weighted/getSearchTypesWithMaxDepth'
 import {useSearchMaxFieldDepth} from './useSearchMaxFieldDepth'
 
 interface SearchRequest {
@@ -65,7 +71,7 @@ export function useSearch({
 }: {
   allowEmptyQueries?: boolean
   initialState: SearchState
-  onComplete?: (hits: WeightedHit[]) => void
+  onComplete?: (result: {hits: SearchHit[]; nextCursor: string | undefined}) => void
   onError?: (error: Error) => void
   onStart?: () => void
   schema: Schema
@@ -76,80 +82,74 @@ export function useSearch({
   const [searchState, setSearchState] = useState(initialState)
   const client = useClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
   const maxFieldDepth = useSearchMaxFieldDepth()
+  const {enableLegacySearch = false} = useWorkspace().search
 
-  const searchWeighted = useMemo(
+  const search = useMemo(
     () =>
-      createWeightedSearch(
-        getSearchTypesWithMaxDepth(getSearchableOmnisearchTypes(schema), maxFieldDepth),
-        client,
-        {
-          tag: 'search.global',
-          unique: true,
-        },
-      ),
-    [client, schema, maxFieldDepth],
+      createSearch(getSearchableOmnisearchTypes(schema), client, {
+        tag: 'search.global',
+        unique: true,
+        enableLegacySearch,
+        maxDepth: maxFieldDepth,
+      }),
+    [client, maxFieldDepth, schema, enableLegacySearch],
   )
 
-  const handleQueryChange = useObservableCallback(
-    (inputValue$: Observable<SearchRequest | null>) => {
-      return inputValue$.pipe(
-        // Ignore null values
-        filter(nonNullable),
-        // Sanitize request (trim query and filter)
-        map(sanitizeRequest),
-        // Only emit when values have changed
-        distinctUntilChanged(isEqual),
-        // Debounce requests
-        debounce((request) => timer(request?.debounceTime || DEFAULT_DEBOUNCE_TIME)),
-        // Trigger `onStart` callback
-        tap(onStart),
-        switchMap((request) => {
-          return concat(
-            // Emit loading start
-            of({
-              ...INITIAL_SEARCH_STATE,
-              loading: true,
-              options: request.options,
-              terms: request.terms,
-            }),
-            // Conditionally trigger search ONLY if we have valid searchable terms.
-            // Typically, search terms are valid if either query, filter or selected types is non-empty.
-            // There are exceptions (e.g. searching within <AutoComplete> components) where empty queries are permitted,
-            // which is what `allowEmptyQueries` is used for.
-            iif(
-              () => hasSearchableTerms({allowEmptyQueries, terms: request.terms}),
-              // If we have a valid search, run async fetch, map results and trigger `onComplete` / `onError` callbacks
-              (searchWeighted(request.terms, request.options) as Observable<WeightedHit[]>).pipe(
-                map((hits) => ({hits})),
-                tap(({hits}) => onComplete?.(hits)),
-                catchError((error) => {
-                  onError?.(error)
-                  return of({
-                    ...INITIAL_SEARCH_STATE,
-                    error,
-                    loading: false,
-                    options: request.options,
-                    terms: request.terms,
-                  })
-                }),
-              ),
-              // If there is no valid search, emit an empty observable and trigger `onComplete` event
-              of(EMPTY).pipe(tap(() => onComplete?.([]))),
+  const handleQueryChange = useObservableEvent((inputValue$: Observable<SearchRequest | null>) => {
+    return inputValue$.pipe(
+      // Ignore null values
+      filter(nonNullable),
+      // Sanitize request (trim query and filter)
+      map(sanitizeRequest),
+      // Only emit when values have changed
+      distinctUntilChanged(isEqual),
+      // Debounce requests
+      debounce((request) => timer(request?.debounceTime || DEFAULT_DEBOUNCE_TIME)),
+      // Trigger `onStart` callback
+      tap(onStart),
+      switchMap((request) => {
+        return concat(
+          // Emit loading start
+          of({
+            ...INITIAL_SEARCH_STATE,
+            loading: true,
+            options: request.options,
+            terms: request.terms,
+          }),
+          // Conditionally trigger search ONLY if we have valid searchable terms.
+          // Typically, search terms are valid if either query, filter or selected types is non-empty.
+          // There are exceptions (e.g. searching within <AutoComplete> components) where empty queries are permitted,
+          // which is what `allowEmptyQueries` is used for.
+          iif(
+            () => hasSearchableTerms({allowEmptyQueries, terms: request.terms}),
+            // If we have a valid search, run async fetch, map results and trigger `onComplete` / `onError` callbacks
+            search(request.terms, request.options).pipe(
+              tap(({hits, nextCursor}) => onComplete?.({hits, nextCursor})),
+              catchError((error) => {
+                onError?.(error)
+                return of({
+                  ...INITIAL_SEARCH_STATE,
+                  error,
+                  loading: false,
+                  options: request.options,
+                  terms: request.terms,
+                })
+              }),
             ),
-            // Emit loading completed
-            of({loading: false}),
-          )
-        }),
-        scan((prevState, nextState): SearchState => {
-          return {...prevState, ...nextState}
-        }, INITIAL_SEARCH_STATE),
-        // Update local search state
-        tap(setSearchState),
-      )
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- @todo: add onComplete, onError and onStart to the deps list when it's verified that it's safe to do so
-    [allowEmptyQueries, searchWeighted],
-  )
+            // If there is no valid search, emit an empty observable and trigger `onComplete` event
+            of(EMPTY).pipe(tap(() => onComplete?.({hits: [], nextCursor: undefined}))),
+          ),
+          // Emit loading completed
+          of({loading: false}),
+        )
+      }),
+      scan((prevState, nextState): SearchState => {
+        return {...prevState, ...nextState}
+      }, INITIAL_SEARCH_STATE),
+      // Update local search state
+      tap(setSearchState),
+    )
+  })
 
   const handleSearch = useCallback(
     (searchRequest: SearchRequest) => handleQueryChange(searchRequest),

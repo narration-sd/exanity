@@ -1,10 +1,11 @@
 import {ChevronDownIcon} from '@sanity/icons'
 import {Card, Flex, Inline, Stack, useClickOutside, useGlobalKeyDown} from '@sanity/ui'
 import {useSelect} from '@sanity/ui-workshop'
-import React, {useCallback, useState} from 'react'
-import {CommandList} from '../CommandList'
-import {CommandListRenderItemCallback} from '../types'
+import {useCallback, useState} from 'react'
+
 import {Button, Popover} from '../../../../ui-components'
+import {CommandList} from '../CommandList'
+import {type CommandListRenderItemCallback} from '../types'
 
 const ITEMS = [...Array(50000).keys()]
 

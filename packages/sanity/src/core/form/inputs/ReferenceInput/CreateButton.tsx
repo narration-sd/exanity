@@ -1,8 +1,7 @@
-import React from 'react'
 import {AddIcon} from '@sanity/icons'
 import {Menu} from '@sanity/ui'
-import {useGetI18nText, useTranslation} from '../../../i18n'
-import {InsufficientPermissionsMessage} from '../../../components'
+import {type HTMLProps, type RefObject} from 'react'
+
 import {
   Button,
   MenuButton,
@@ -10,14 +9,16 @@ import {
   MenuItem,
   Tooltip,
 } from '../../../../ui-components'
+import {InsufficientPermissionsMessage} from '../../../components'
+import {useGetI18nText, useTranslation} from '../../../i18n'
 import {useCurrentUser} from '../../../store'
-import type {CreateReferenceOption} from './types'
+import {type CreateReferenceOption} from './types'
 
 interface Props
-  extends Omit<React.HTMLProps<HTMLButtonElement>, 'as' | 'size' | 'width' | 'type' | 'ref'> {
+  extends Omit<HTMLProps<HTMLButtonElement>, 'as' | 'size' | 'width' | 'type' | 'ref'> {
   id: string
   createOptions: CreateReferenceOption[]
-  menuRef?: React.RefObject<HTMLDivElement>
+  menuRef?: RefObject<HTMLDivElement>
   onCreate: (option: CreateReferenceOption) => void
   readOnly?: boolean
 }

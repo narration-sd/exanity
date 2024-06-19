@@ -1,5 +1,5 @@
 import {Schema as SchemaBuilder} from '@sanity/schema'
-import {Schema} from '@sanity/types'
+import {type Schema} from '@sanity/types'
 
 const Icon = () => null
 
@@ -19,6 +19,11 @@ export const schema = SchemaBuilder.compile({
         {
           name: 'role',
           type: 'string',
+        },
+        {
+          name: 'bestFriend',
+          type: 'reference',
+          to: [{type: 'author'}],
         },
       ],
       initialValue: () => ({

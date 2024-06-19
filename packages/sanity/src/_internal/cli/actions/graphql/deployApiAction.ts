@@ -1,22 +1,21 @@
 /* eslint-disable no-process-env, no-process-exit, max-statements */
+import {type CliCommandContext, type CliOutputter, type CliPrompter} from '@sanity/cli'
+import {type SanityClient} from '@sanity/client'
 import {get} from 'lodash'
-import yargs from 'yargs/yargs'
-import type {SanityClient} from '@sanity/client'
-import type {CliCommandContext, CliOutputter, CliPrompter} from '@sanity/cli'
-import {hideBin} from 'yargs/helpers'
 import oneline from 'oneline'
+import {hideBin} from 'yargs/helpers'
+import yargs from 'yargs/yargs'
 
 import {debug} from '../../debug'
 import {getClientUrl} from '../../util/getClientUrl'
 import {getUrlHeaders} from '../../util/getUrlHeaders'
 import {extractFromSanitySchema} from './extractFromSanitySchema'
-import {SchemaError} from './SchemaError'
-import {DeployResponse, GeneratedApiSpecification, ValidationResponse} from './types'
-import {getGraphQLAPIs} from './getGraphQLAPIs'
-
 import gen1 from './gen1'
 import gen2 from './gen2'
 import gen3 from './gen3'
+import {getGraphQLAPIs} from './getGraphQLAPIs'
+import {SchemaError} from './SchemaError'
+import {type DeployResponse, type GeneratedApiSpecification, type ValidationResponse} from './types'
 
 const latestGeneration = 'gen3'
 const generations = {
@@ -49,11 +48,11 @@ export default async function deployGraphQLApiAction(
   const {
     force,
     dryRun,
-    api: onlyApis,
-    dataset: datasetFlag,
-    tag: tagFlag,
-    playground: playgroundFlag,
-    generation: generationFlag,
+    'api': onlyApis,
+    'dataset': datasetFlag,
+    'tag': tagFlag,
+    'playground': playgroundFlag,
+    'generation': generationFlag,
     'non-null-document-fields': nonNullDocumentFieldsFlag,
     withUnionCache,
   } = flags
@@ -70,7 +69,12 @@ export default async function deployGraphQLApiAction(
   }).config({apiVersion: '2023-08-01'})
 
   const apiDefs = await getGraphQLAPIs(context)
-  const hasMultipleApis = apiDefs.length > 1 || (flags.api && flags.api.length > 1)
+
+  let hasMultipleApis = apiDefs.length > 1
+  if (flags.api) {
+    hasMultipleApis = flags.api.length > 1
+  }
+
   const usedFlags = [
     datasetFlag && '--dataset',
     tagFlag && '--tag',
@@ -98,9 +102,19 @@ export default async function deployGraphQLApiAction(
 
   const deployTasks: DeployTask[] = []
 
+  for (const apiId of onlyApis || []) {
+    if (!apiDefs.some((apiDef) => apiDef.id === apiId)) {
+      throw new Error(`GraphQL API with id "${apiId}" not found`)
+    }
+  }
+
   const apiNames = new Set<string>()
   const apiIds = new Set<string>()
   for (const apiDef of apiDefs) {
+    if (onlyApis && (!apiDef.id || !onlyApis.includes(apiDef.id))) {
+      continue
+    }
+
     const dataset = datasetFlag || apiDef.dataset
     const tag = tagFlag || apiDef.tag || 'default'
     const apiName = [dataset, tag].join('/')
@@ -123,12 +137,6 @@ export default async function deployGraphQLApiAction(
     }
 
     apiNames.add(apiName)
-  }
-
-  for (const apiId of onlyApis || []) {
-    if (!apiDefs.some((apiDef) => apiDef.id === apiId)) {
-      throw new Error(`GraphQL API with id "${apiId}" not found`)
-    }
   }
 
   if (onlyApis) {

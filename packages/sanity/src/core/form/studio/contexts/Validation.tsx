@@ -1,14 +1,11 @@
 /* eslint-disable react/no-unused-prop-types */
-import React, {createContext, useContext, useMemo} from 'react'
-import {FormNodeValidation, Path, ValidationMarker} from '@sanity/types'
+
+import {type FormNodeValidation, type Path, type ValidationMarker} from '@sanity/types'
 import {isEqual, startsWith} from '@sanity/util/paths'
+import {type ReactNode, useContext, useMemo} from 'react'
+import {ValidationContext} from 'sanity/_singletons'
 
-const ValidationContext = createContext<ValidationMarker[]>([])
-
-export function ValidationProvider(props: {
-  validation: ValidationMarker[]
-  children: React.ReactNode
-}) {
+export function ValidationProvider(props: {validation: ValidationMarker[]; children: ReactNode}) {
   return (
     <ValidationContext.Provider value={props.validation}>
       {props.children}

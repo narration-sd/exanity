@@ -1,10 +1,12 @@
-import path from 'path'
-import {readFile} from 'fs/promises'
+import {readFile} from 'node:fs/promises'
+import path from 'node:path'
+
+import {type CliCommandContext, type PackageJson} from '@sanity/cli'
 import execa from 'execa'
-import semver, {SemVer} from 'semver'
-import resolveFrom from 'resolve-from'
 import oneline from 'oneline'
-import type {CliCommandContext, PackageJson} from '@sanity/cli'
+import resolveFrom from 'resolve-from'
+import semver, {type SemVer} from 'semver'
+
 import {peerDependencies} from '../../../../package.json'
 
 const defaultStudioManifestProps: PartialPackageManifest = {
@@ -14,6 +16,7 @@ const defaultStudioManifestProps: PartialPackageManifest = {
 
 interface CheckResult {
   didInstall: boolean
+  installedSanityVersion: string
 }
 
 /**
@@ -24,15 +27,24 @@ interface CheckResult {
  *
  * If these dependencies are not installed/declared, we want to prompt the user
  * whether or not to add them to `package.json` and install them
+ *
+ * Additionally, returns the version of the 'sanity' dependency from the package.json.
  */
 export async function checkRequiredDependencies(context: CliCommandContext): Promise<CheckResult> {
   const {workDir: studioPath, output} = context
-  const [studioPackageManifest, installedStyledComponentsVersion] = await Promise.all([
-    await readPackageManifest(path.join(studioPath, 'package.json'), defaultStudioManifestProps),
-    await readModuleVersion(studioPath, 'styled-components'),
-  ])
+  const [studioPackageManifest, installedStyledComponentsVersion, installedSanityVersion] =
+    await Promise.all([
+      await readPackageManifest(path.join(studioPath, 'package.json'), defaultStudioManifestProps),
+      await readModuleVersion(studioPath, 'styled-components'),
+      await readModuleVersion(studioPath, 'sanity'),
+    ])
 
   const wantedStyledComponentsVersionRange = peerDependencies['styled-components']
+
+  // Retrieve the version of the 'sanity' dependency
+  if (!installedSanityVersion) {
+    throw new Error('Failed to read the installed sanity version.')
+  }
 
   // The studio _must_ now declare `styled-components` as a dependency. If it's not there,
   // we'll want to automatically _add it_ to the manifest and tell the user to reinstall
@@ -48,7 +60,7 @@ export async function checkRequiredDependencies(context: CliCommandContext): Pro
     // broken assumptions about installation paths. This is a hack, and should be
     // solved properly.
     await execa(file, args, {cwd: studioPath, stdio: 'inherit'})
-    return {didInstall: true}
+    return {didInstall: true, installedSanityVersion}
   }
 
   // Theoretically the version specified in package.json could be incorrect, eg `foo`
@@ -87,7 +99,7 @@ export async function checkRequiredDependencies(context: CliCommandContext): Pro
   if (!installedStyledComponentsVersion) {
     throw new Error(oneline`
       Declared dependency \`styled-components\` is not installed - run
-      \`npm install\` or \`yarn\` to install it before re-running this command.
+      \`npm install\`, \`yarn install\` or \`pnpm install\` to install it before re-running this command.
     `)
   }
 
@@ -101,7 +113,7 @@ export async function checkRequiredDependencies(context: CliCommandContext): Pro
     `)
   }
 
-  return {didInstall: false}
+  return {didInstall: false, installedSanityVersion}
 }
 
 /**
@@ -144,8 +156,8 @@ async function readPackageManifest(
 
 /**
  * Install the passed dependencies at the given version/version range,
- * prompting the user whether to use yarn or npm. If a `yarn.lock` file
- * is found in the working directory, we will default the choice to yarn
+ * prompting the user which package manager to use. We will try to detect
+ * a package manager from files in the directory and show that as the default
  *
  * @param dependencies - Object of dependencies `({[package name]: version})`
  * @param context - CLI context

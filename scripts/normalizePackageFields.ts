@@ -1,6 +1,6 @@
-import uniq from 'lodash/uniq'
-import {PackageManifest} from './types'
+import {uniq} from 'lodash'
 
+import {type PackageManifest} from './types'
 import transformPkgs from './utils/transformPkgs'
 
 const COMMON_KEYWORDS = ['sanity', 'cms', 'headless', 'realtime', 'content']

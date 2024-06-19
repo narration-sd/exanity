@@ -1,8 +1,9 @@
 import {pick, startCase} from 'lodash'
+
 import createPreviewGetter from '../preview/createPreviewGetter'
-import {lazyGetter} from './utils'
 import {DEFAULT_OVERRIDEABLE_FIELDS} from './constants'
 import {createFieldsets} from './object'
+import {lazyGetter} from './utils'
 
 export const ASSET_FIELD = {
   name: 'asset',
@@ -27,7 +28,7 @@ export const FileType = {
   get() {
     return FILE_CORE
   },
-  extend(rawSubTypeDef, createMemberType) {
+  extend(rawSubTypeDef: any, createMemberType: any) {
     const options = {...(rawSubTypeDef.options || DEFAULT_OPTIONS)}
 
     const fields = [ASSET_FIELD, ...(rawSubTypeDef.fields || [])]
@@ -36,9 +37,9 @@ export const FileType = {
 
     const parsed = Object.assign(pick(FILE_CORE, OVERRIDABLE_FIELDS), subTypeDef, {
       type: FILE_CORE,
-      title: subTypeDef.title || (subTypeDef.name ? startCase(subTypeDef.name) : ''),
+      title: subTypeDef.title || (subTypeDef.name ? startCase(subTypeDef.name) : FILE_CORE.title),
       options: options,
-      fields: subTypeDef.fields.map((fieldDef) => {
+      fields: subTypeDef.fields.map((fieldDef: any) => {
         const {name, fieldset, ...rest} = fieldDef
 
         const compiledField = {
@@ -64,12 +65,12 @@ export const FileType = {
 
     return subtype(parsed)
 
-    function subtype(parent) {
+    function subtype(parent: any) {
       return {
         get() {
           return parent
         },
-        extend: (extensionDef) => {
+        extend: (extensionDef: any) => {
           if (extensionDef.fields) {
             throw new Error('Cannot override `fields` of subtypes of "file"')
           }

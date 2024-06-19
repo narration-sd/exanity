@@ -1,10 +1,11 @@
-import {PreviewValue, SchemaType, SortOrdering} from '@sanity/types'
-
-import {catchError, map} from 'rxjs/operators'
+import {type PreviewValue, type SchemaType, type SortOrdering} from '@sanity/types'
+import {useMemo} from 'react'
+import {useObservable} from 'react-rx'
 import {of} from 'rxjs'
-import {useMemoObservable} from 'react-rx'
+import {catchError, map} from 'rxjs/operators'
+
 import {useDocumentPreviewStore} from '../store'
-import {Previewable} from './types'
+import {type Previewable} from './types'
 
 export {useDocumentPreview as unstable_useValuePreview}
 
@@ -31,16 +32,13 @@ function useDocumentPreview(props: {
 }): State {
   const {enabled = true, ordering, schemaType, value: previewValue} = props || {}
   const {observeForPreview} = useDocumentPreviewStore()
-  return useMemoObservable<State>(
-    () => {
-      if (!enabled || !previewValue || !schemaType) return of(PENDING_STATE)
+  const observable = useMemo(() => {
+    if (!enabled || !previewValue || !schemaType) return of(PENDING_STATE)
 
-      return observeForPreview(previewValue as Previewable, schemaType, {ordering}).pipe(
-        map((event) => ({isLoading: false, value: event.snapshot || undefined})),
-        catchError((error) => of({isLoading: false, error})),
-      )
-    },
-    [enabled, observeForPreview, ordering, schemaType, previewValue],
-    INITIAL_STATE,
-  )
+    return observeForPreview(previewValue as Previewable, schemaType, {ordering}).pipe(
+      map((event) => ({isLoading: false, value: event.snapshot || undefined})),
+      catchError((error) => of({isLoading: false, error})),
+    )
+  }, [enabled, observeForPreview, ordering, previewValue, schemaType])
+  return useObservable(observable, INITIAL_STATE)
 }

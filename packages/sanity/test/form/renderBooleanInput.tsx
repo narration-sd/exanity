@@ -1,19 +1,20 @@
-import React from 'react'
-import {BooleanSchemaType, FieldDefinition} from '@sanity/types'
-import {BooleanInputProps, PrimitiveInputElementProps} from '../../src/core'
-import {renderInput, TestRenderInputProps} from './renderInput'
-import {TestRenderProps} from './types'
+import {type BooleanSchemaType, type FieldDefinition} from '@sanity/types'
+import {type ReactElement} from 'react'
+
+import {type BooleanInputProps, type PrimitiveInputElementProps} from '../../src/core'
+import {renderInput, type RenderInputResult, type TestRenderInputProps} from './renderInput'
+import {type TestRenderProps} from './types'
 
 const noopRenderDefault = () => <></>
 
-export type TestRenderBooleanInputCallback = (inputProps: BooleanInputProps) => React.ReactElement
+export type TestRenderBooleanInputCallback = (inputProps: BooleanInputProps) => ReactElement
 
 export async function renderBooleanInput(options: {
   fieldDefinition: FieldDefinition<'boolean'>
   props?: TestRenderProps
   render: TestRenderBooleanInputCallback
-}) {
-  const {fieldDefinition, props, render: initialRender} = options
+}): Promise<RenderInputResult> {
+  const {fieldDefinition, props, render} = options
 
   function transformProps(
     inputProps: TestRenderInputProps<PrimitiveInputElementProps>,
@@ -29,15 +30,11 @@ export async function renderBooleanInput(options: {
     }
   }
 
-  const result = await renderInput({
+  const result = await renderInput<PrimitiveInputElementProps>({
     fieldDefinition,
     props,
-    render: (inputProps) => initialRender(transformProps(inputProps)),
+    render: (inputProps) => render(transformProps(inputProps)),
   })
 
-  function rerender(subsequentRender: TestRenderBooleanInputCallback) {
-    return result.rerender((inputProps) => subsequentRender(transformProps(inputProps)))
-  }
-
-  return {...result, rerender}
+  return result
 }

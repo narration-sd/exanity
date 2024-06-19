@@ -1,6 +1,7 @@
-import type {CliCommandAction} from '@sanity/cli'
+import {type CliCommandAction} from '@sanity/cli'
 import {hideBin} from 'yargs/helpers'
 import yargs from 'yargs/yargs'
+
 import {promptForDatasetAliasName} from '../../../actions/dataset/alias/promptForDatasetAliasName'
 import {validateDatasetAliasName} from '../../../actions/dataset/alias/validateDatasetAliasName'
 import * as aliasClient from './datasetAliasesClient'
@@ -31,7 +32,7 @@ export const unlinkAliasHandler: CliCommandAction<UnlinkFlags> = async (args, co
   let aliasOutputName = aliasName
 
   if (aliasName.startsWith(ALIAS_PREFIX)) {
-    aliasName = aliasName.substring(1)
+    aliasName = aliasName.slice(1)
   } else {
     aliasOutputName = `${ALIAS_PREFIX}${aliasName}`
   }

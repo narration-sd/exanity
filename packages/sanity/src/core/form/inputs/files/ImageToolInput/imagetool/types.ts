@@ -1,4 +1,4 @@
-import type {Rect} from './2d/shapes'
+import {type Rect} from './2d/shapes'
 
 export type CropMethod = 'full_width' | 'letterbox' | 'full_height'
 
@@ -62,12 +62,4 @@ export interface ToolCanvasProps {
   onChange: (value: {hotspot: Hotspot} | {crop: Crop}) => void
   onChangeEnd: (value: {hotspot: Hotspot} | {crop: Crop}) => void
   readOnly: boolean
-}
-
-export interface ToolCanvasState {
-  cropping: keyof CropHandles | false
-  resizing: boolean
-  moving: boolean
-  cropMoving: boolean
-  pointerPosition: Coordinate | null
 }

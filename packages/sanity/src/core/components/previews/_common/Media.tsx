@@ -1,7 +1,8 @@
 import {Text} from '@sanity/ui'
-import React, {createElement, isValidElement} from 'react'
+import {createElement, isValidElement, type ReactNode} from 'react'
 import {isValidElementType} from 'react-is'
-import {PreviewMediaDimensions, PreviewLayoutKey, PreviewProps} from '../types'
+
+import {type PreviewLayoutKey, type PreviewMediaDimensions, type PreviewProps} from '../types'
 import {MediaWrapper} from './Media.styled'
 
 export interface MediaProps {
@@ -43,7 +44,7 @@ function renderMedia(props: {
     media?: string
     mediaString?: string
   }
-}): React.ReactNode {
+}): ReactNode {
   const {dimensions, layout, media, styles} = props
 
   if (isValidElementType(media)) {

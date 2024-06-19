@@ -1,8 +1,9 @@
 import {TranslateIcon} from '@sanity/icons'
 import {Box, Button, Card, Checkbox, Flex, Popover, Stack, Text, useClickOutside} from '@sanity/ui'
-import React, {FormEvent, useCallback, useState} from 'react'
-import {ObjectSchemaType} from 'sanity'
-import {LanguageFilterPluginOptions} from './types'
+import {type FormEvent, useCallback, useState} from 'react'
+import {type ObjectSchemaType} from 'sanity'
+
+import {type LanguageFilterPluginOptions} from './types'
 import {usePaneLanguages} from './usePaneLanguages'
 
 export interface LanguageFilterMenuButtonProps {
@@ -14,8 +15,8 @@ export interface LanguageFilterMenuButtonProps {
 
 export function LanguageFilterMenuButton(props: LanguageFilterMenuButtonProps) {
   const {options} = props
-  const defaultLanguages = options.supportedLanguages.filter(
-    (l) => options.defaultLanguages?.includes(l.id),
+  const defaultLanguages = options.supportedLanguages.filter((l) =>
+    options.defaultLanguages?.includes(l.id),
   )
   const languageOptions = options.supportedLanguages.filter(
     (l) => !options.defaultLanguages?.includes(l.id),

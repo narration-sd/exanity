@@ -1,7 +1,8 @@
-import fs from 'fs'
-import path from 'path'
-import globby from 'globby'
+import fs from 'node:fs'
+import path from 'node:path'
+
 import chokidar from 'chokidar'
+import globby from 'globby'
 
 const ROOT_PATH = path.resolve(__dirname, '../../../..')
 const WORKSHOP_SRC_PATH = path.resolve(__dirname, '../../workshop')

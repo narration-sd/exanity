@@ -1,6 +1,7 @@
-import {PreviewValue, SanityDocument} from '@sanity/types'
+import {type PreviewValue, type SanityDocument} from '@sanity/types'
 import {Flex, Text} from '@sanity/ui'
-import styled from 'styled-components'
+import {styled} from 'styled-components'
+
 import {useDateTimeFormat, useRelativeTime} from '../../hooks'
 import {useTranslation} from '../../i18n'
 
@@ -54,6 +55,7 @@ export function DocumentStatus({absoluteDate, draft, published, singleLine}: Doc
   return (
     <Flex
       align={singleLine ? 'center' : 'flex-start'}
+      data-testid="pane-footer-document-status"
       direction={singleLine ? 'row' : 'column'}
       gap={2}
       wrap="nowrap"

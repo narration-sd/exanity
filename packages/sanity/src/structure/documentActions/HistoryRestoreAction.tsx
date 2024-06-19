@@ -1,14 +1,15 @@
 import {RestoreIcon} from '@sanity/icons'
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import {structureLocaleNamespace} from '../i18n'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {
-  DocumentActionComponent,
-  DocumentActionDialogProps,
+  type DocumentActionComponent,
+  type DocumentActionDialogProps,
   useDocumentOperation,
   useDocumentOperationEvent,
   useTranslation,
 } from 'sanity'
 import {useRouter} from 'sanity/router'
+
+import {structureLocaleNamespace} from '../i18n'
 
 /** @internal */
 export const HistoryRestoreAction: DocumentActionComponent = ({id, type, revision, onComplete}) => {
@@ -55,10 +56,10 @@ export const HistoryRestoreAction: DocumentActionComponent = ({id, type, revisio
     return null
   }, [handleConfirm, isConfirmDialogOpen, onComplete, t])
 
-  const isRevisionInitialVersion = revision === '@initial'
-  const isRevisionLatestVersion = revision === undefined // undefined means latest version
+  const isRevisionInitial = revision === '@initial'
+  const isRevisionLatest = revision === undefined // undefined means latest revision
 
-  if (isRevisionLatestVersion) {
+  if (isRevisionLatest) {
     return null
   }
 
@@ -67,13 +68,13 @@ export const HistoryRestoreAction: DocumentActionComponent = ({id, type, revisio
     color: 'primary',
     onHandle: handle,
     title: t(
-      isRevisionInitialVersion
+      isRevisionInitial
         ? 'action.restore.disabled.cannot-restore-initial'
         : 'action.restore.tooltip',
     ),
     icon: RestoreIcon,
     dialog,
-    disabled: isRevisionInitialVersion,
+    disabled: isRevisionInitial,
   }
 }
 

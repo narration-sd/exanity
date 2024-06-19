@@ -1,6 +1,13 @@
-import React, {useCallback, useMemo} from 'react'
-import {RouterContext} from './RouterContext'
-import {IntentParameters, RouterContextValue, NavigateOptions, Router, RouterState} from './types'
+import {type ReactElement, type ReactNode, useCallback, useMemo} from 'react'
+import {RouterContext} from 'sanity/_singletons'
+
+import {
+  type IntentParameters,
+  type NavigateOptions,
+  type Router,
+  type RouterContextValue,
+  type RouterState,
+} from './types'
 
 /**
  * The props for the {@link RouterProvider} component.
@@ -24,7 +31,7 @@ export interface RouterProviderProps {
   /**
    * The child elements to render.
    */
-  children: React.ReactNode
+  children: ReactNode
 }
 
 /**
@@ -69,7 +76,7 @@ export interface RouterProviderProps {
  *
  * @public
  */
-export function RouterProvider(props: RouterProviderProps): React.ReactElement {
+export function RouterProvider(props: RouterProviderProps): ReactElement {
   const {onNavigate, router: routerProp, state} = props
 
   const resolveIntentLink = useCallback(

@@ -1,45 +1,54 @@
 /* eslint-disable complexity */
 import {
+  type EditorSelection,
   PortableTextEditor,
-  EditorSelection,
   usePortableTextEditor,
 } from '@sanity/portable-text-editor'
-import {ObjectSchemaType, Path, PortableTextBlock, isImage} from '@sanity/types'
-import {Box, Flex, ResponsivePaddingProps} from '@sanity/ui'
-import React, {PropsWithChildren, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {isImage, type ObjectSchemaType, type Path, type PortableTextBlock} from '@sanity/types'
+import {Box, Flex, type ResponsivePaddingProps} from '@sanity/ui'
 import {isEqual} from '@sanity/util/paths'
-import {Tooltip} from '../../../../../ui-components'
 import {
-  BlockProps,
-  RenderAnnotationCallback,
-  RenderArrayOfObjectsItemCallback,
-  RenderBlockCallback,
-  RenderCustomMarkers,
-  RenderFieldCallback,
-  RenderInputCallback,
-  RenderPreviewCallback,
+  type MouseEvent,
+  type PropsWithChildren,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+
+import {Tooltip} from '../../../../../ui-components'
+import {pathToString} from '../../../../field'
+import {useTranslation} from '../../../../i18n'
+import {EMPTY_ARRAY} from '../../../../util'
+import {useFormCallbacks} from '../../../studio'
+import {useChildPresence} from '../../../studio/contexts/Presence'
+import {
+  type BlockProps,
+  type RenderAnnotationCallback,
+  type RenderArrayOfObjectsItemCallback,
+  type RenderBlockCallback,
+  type RenderCustomMarkers,
+  type RenderFieldCallback,
+  type RenderInputCallback,
+  type RenderPreviewCallback,
 } from '../../../types'
-import {RenderBlockActionsCallback} from '../../../types/_transitional'
-import {BlockActions} from '../BlockActions'
-import {ReviewChangesHighlightBlock, StyledChangeIndicatorWithProvidedFullPath} from '../_common'
+import {type RenderBlockActionsCallback} from '../../../types/_transitional'
 import {useFormBuilder} from '../../../useFormBuilder'
+import {ReviewChangesHighlightBlock, StyledChangeIndicatorWithProvidedFullPath} from '../_common'
+import {BlockActions} from '../BlockActions'
+import {debugRender} from '../debugRender'
 import {useMemberValidation} from '../hooks/useMemberValidation'
 import {usePortableTextMarkers} from '../hooks/usePortableTextMarkers'
 import {usePortableTextMemberItem} from '../hooks/usePortableTextMembers'
-import {pathToString} from '../../../../field'
-import {debugRender} from '../debugRender'
-import {EMPTY_ARRAY} from '../../../../util'
-import {useChildPresence} from '../../../studio/contexts/Presence'
-import {useFormCallbacks} from '../../../studio'
-import {useTranslation} from '../../../../i18n'
 import {
-  Root,
-  ChangeIndicatorWrapper,
-  InnerFlex,
-  BlockActionsOuter,
   BlockActionsInner,
-  TooltipBox,
+  BlockActionsOuter,
+  ChangeIndicatorWrapper,
   PreviewContainer,
+  Root,
+  TooltipBox,
 } from './BlockObject.styles'
 import {BlockObjectActionsMenu} from './BlockObjectActionsMenu'
 import {ObjectEditModal} from './modals/ObjectEditModal'
@@ -112,8 +121,8 @@ export function BlockObject(props: BlockObjectProps) {
     [relativePath],
   )
 
-  const handleMouseOver = useCallback(() => setReviewChangesHovered(true), [])
-  const handleMouseOut = useCallback(() => setReviewChangesHovered(false), [])
+  const handleChangeIndicatorMouseEnter = useCallback(() => setReviewChangesHovered(true), [])
+  const handleChangeIndicatorMouseLeave = useCallback(() => setReviewChangesHovered(false), [])
 
   const onOpen = useCallback(() => {
     if (memberItem) {
@@ -266,41 +275,57 @@ export function BlockObject(props: BlockObjectProps) {
     ],
   )
 
+  const blockActionsEnabled = renderBlockActions && value && !readOnly
+  const changeIndicatorVisible = isFullscreen && memberItem
+
   return useMemo(
     () => (
       <Box
-        ref={memberItem?.elementRef as React.RefObject<HTMLDivElement> | undefined}
+        ref={memberItem?.elementRef as RefObject<HTMLDivElement> | undefined}
         contentEditable={false}
       >
-        <Flex paddingBottom={1} marginY={3} style={debugRender()}>
-          <InnerFlex flex={1}>
-            <Tooltip
-              placement="top"
-              portal="editor"
-              disabled={!tooltipEnabled}
-              content={toolTipContent}
-            >
-              <PreviewContainer {...innerPaddingProps}>
-                {renderBlock && renderBlock(componentProps)}
-              </PreviewContainer>
-            </Tooltip>
-            <BlockActionsOuter marginRight={1}>
-              <BlockActionsInner>
-                {renderBlockActions && value && focused && !readOnly && (
-                  <BlockActions
-                    block={value}
-                    onChange={onChange}
-                    renderBlockActions={renderBlockActions}
-                  />
-                )}
-              </BlockActionsInner>
-            </BlockActionsOuter>
+        <Flex
+          data-object-block="" // used by create
+          paddingBottom={1}
+          marginY={3}
+          style={debugRender()}
+        >
+          <PreviewContainer
+            data-object-block-inner="" // used by create
+            {...innerPaddingProps}
+          >
+            <Box flex={1}>
+              <Tooltip
+                placement="top"
+                portal="editor"
+                // If the object modal is open, disable the tooltip to avoid it rerendering the inner items when the validation changes.
+                disabled={isOpen ? true : !tooltipEnabled}
+                content={toolTipContent}
+              >
+                <div>{renderBlock && renderBlock(componentProps)}</div>
+              </Tooltip>
+            </Box>
 
-            {isFullscreen && memberItem && (
+            {blockActionsEnabled && (
+              <BlockActionsOuter contentEditable={false} marginRight={3}>
+                <BlockActionsInner>
+                  {focused && (
+                    <BlockActions
+                      block={value}
+                      onChange={onChange}
+                      renderBlockActions={renderBlockActions}
+                    />
+                  )}
+                </BlockActionsInner>
+              </BlockActionsOuter>
+            )}
+
+            {changeIndicatorVisible && (
               <ChangeIndicatorWrapper
                 $hasChanges={memberItem.member.item.changed}
-                onMouseOut={handleMouseOut}
-                onMouseOver={handleMouseOver}
+                contentEditable={false}
+                onMouseEnter={handleChangeIndicatorMouseEnter}
+                onMouseLeave={handleChangeIndicatorMouseLeave}
               >
                 <StyledChangeIndicatorWithProvidedFullPath
                   hasFocus={focused}
@@ -310,28 +335,28 @@ export function BlockObject(props: BlockObjectProps) {
                 />
               </ChangeIndicatorWrapper>
             )}
-
             {reviewChangesHovered && <ReviewChangesHighlightBlock />}
-          </InnerFlex>
+          </PreviewContainer>
         </Flex>
       </Box>
     ),
     [
+      blockActionsEnabled,
+      changeIndicatorVisible,
       componentProps,
       focused,
-      handleMouseOut,
-      handleMouseOver,
+      handleChangeIndicatorMouseLeave,
+      handleChangeIndicatorMouseEnter,
       innerPaddingProps,
-      isFullscreen,
       memberItem,
       onChange,
-      readOnly,
       renderBlock,
       renderBlockActions,
       reviewChangesHovered,
       toolTipContent,
       tooltipEnabled,
       value,
+      isOpen,
     ],
   )
 }
@@ -364,7 +389,7 @@ export const DefaultBlockObjectComponent = (props: BlockProps) => {
   const tone = selected || focused ? 'primary' : 'default'
 
   const handleDoubleClickToOpen = useCallback(
-    (e: React.MouseEvent<Element, MouseEvent>) => {
+    (e: MouseEvent<Element, globalThis.MouseEvent>) => {
       e.preventDefault()
       e.stopPropagation()
       onOpen()

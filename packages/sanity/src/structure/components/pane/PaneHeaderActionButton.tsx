@@ -1,14 +1,19 @@
-import React, {MouseEvent, useCallback, useId} from 'react'
-import {Menu} from '@sanity/ui'
 import {UnknownIcon} from '@sanity/icons'
-import {Intent} from '../../structureBuilder'
-import {Button, MenuButton} from '../../../ui-components'
-import {_PaneMenuGroup, _PaneMenuItem} from './types'
-import {PaneMenuButtonItem} from './PaneMenuButtonItem'
-import {StatusButton, useI18nText} from 'sanity'
+import {Menu} from '@sanity/ui'
+import {type MouseEvent, useCallback, useId} from 'react'
+import {StatusButton, useI18nText, useTranslation} from 'sanity'
 import {useIntentLink} from 'sanity/router'
 
+import {Button, MenuButton} from '../../../ui-components'
+import {type Intent} from '../../structureBuilder'
+import {PaneMenuButtonItem} from './PaneMenuButtonItem'
+import {type _PaneMenuGroup, type _PaneMenuItem} from './types'
+
 function getDisabledReason(node: _PaneMenuItem) {
+  if (!node.disabled) {
+    return {disabledReason: undefined, ariaLabel: undefined, isDisabled: false}
+  }
+
   /**
    * This component supports receiving a `reason: string | react.ReactNode`.
    * We are casting it as string, to avoid the ts error, as content will be rendered into the tooltip which only accepts string, but it won't crash if it's a ReactNode.
@@ -50,6 +55,7 @@ export interface PaneHeaderMenuItemActionButtonProps {
 export function PaneHeaderMenuItemActionButton(props: PaneHeaderMenuItemActionButtonProps) {
   const {node} = props
   const {title} = useI18nText(node)
+  const {t} = useTranslation()
 
   if (node.intent) {
     return <PaneHeaderActionIntentButton {...props} intent={node.intent} />
@@ -59,13 +65,13 @@ export function PaneHeaderMenuItemActionButton(props: PaneHeaderMenuItemActionBu
 
   return (
     <StatusButton
-      disabled={Boolean(node.disabled)}
+      disabled={isDisabled}
       icon={node.icon}
       // eslint-disable-next-line react/jsx-handler-names
       onClick={node.onAction}
       selected={node.selected}
       tone={node.tone}
-      aria-label={ariaLabel}
+      aria-label={ariaLabel || title || t('status-button.aria-label')}
       tooltipProps={{
         hotkeys: !isDisabled && node.hotkey ? node.hotkey.split('+') : undefined,
         content: isDisabled ? disabledReason : title,
@@ -77,6 +83,7 @@ export function PaneHeaderMenuItemActionButton(props: PaneHeaderMenuItemActionBu
 function PaneHeaderActionIntentButton(props: {intent: Intent; node: _PaneMenuItem}) {
   const {intent, node} = props
   const intentLink = useIntentLink({intent: intent.type, params: intent.params})
+  const {t} = useTranslation()
 
   const handleClick = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -90,14 +97,14 @@ function PaneHeaderActionIntentButton(props: {intent: Intent; node: _PaneMenuIte
 
   return (
     <StatusButton
-      as="a"
+      forwardedAs="a"
       disabled={isDisabled}
       href={intentLink.href}
       icon={node.icon}
       onClick={handleClick}
       selected={node.selected}
       tone={node.tone}
-      aria-label={ariaLabel}
+      aria-label={ariaLabel || node.title || t('status-button.aria-label')}
       tooltipProps={{
         hotkeys: !isDisabled && node.hotkey ? node.hotkey.split('+') : undefined,
         content: isDisabled ? disabledReason : node.title,

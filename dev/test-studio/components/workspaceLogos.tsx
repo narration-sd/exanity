@@ -1,8 +1,7 @@
-import React from 'react'
-import {useColorScheme} from 'sanity'
+import {useColorSchemeValue} from 'sanity'
 
 export const VercelLogo = () => {
-  const {scheme} = useColorScheme()
+  const scheme = useColorSchemeValue()
   const fill = scheme === 'dark' ? '#fff' : '#000'
 
   return (

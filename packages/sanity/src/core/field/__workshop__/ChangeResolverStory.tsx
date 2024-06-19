@@ -1,9 +1,11 @@
-import {ObjectSchemaType} from '@sanity/types'
+import {type ObjectSchemaType} from '@sanity/types'
 import {Box, Card} from '@sanity/ui'
-import React, {useCallback, useMemo} from 'react'
+import {useCallback, useMemo} from 'react'
+import {DocumentChangeContext} from 'sanity/_singletons'
+
 import {useSchema} from '../../hooks'
-import {ChangeResolver, DocumentChangeContext, DocumentChangeContextInstance} from '../diff'
-import {FieldChangeNode, ObjectDiff, StringDiff} from '../types'
+import {ChangeResolver, type DocumentChangeContextInstance} from '../diff'
+import {type FieldChangeNode, type ObjectDiff, type StringDiff} from '../types'
 
 export default function ChangeResolverStory() {
   const documentId = 'test'

@@ -1,7 +1,8 @@
 import {Menu, MenuDivider} from '@sanity/ui'
-import React, {ForwardedRef, forwardRef} from 'react'
-import {MenuButton, MenuButtonProps, MenuItem} from '../../../ui-components'
-import {CollapseMenuProps} from './CollapseMenu'
+import {type ForwardedRef, forwardRef, Fragment, type ReactElement} from 'react'
+
+import {MenuButton, type MenuButtonProps, MenuItem} from '../../../ui-components'
+import {type CollapseMenuProps} from './CollapseMenu'
 
 const MENU_BUTTON_POPOVER_PROPS: MenuButtonProps['popover'] = {
   portal: true,
@@ -12,7 +13,7 @@ export const CollapseOverflowMenu = forwardRef(function CollapseOverflowMenu(
   props: Pick<
     CollapseMenuProps,
     'disableRestoreFocusOnClose' | 'menuButtonProps' | 'onMenuClose'
-  > & {menuOptions: React.ReactElement[]; menuButton: React.ReactElement},
+  > & {menuOptions: ReactElement[]; menuButton: ReactElement},
   forwardedRef: ForwardedRef<HTMLButtonElement>,
 ) {
   const {disableRestoreFocusOnClose, menuButton, menuButtonProps, menuOptions, onMenuClose} = props
@@ -51,10 +52,10 @@ export const CollapseOverflowMenu = forwardRef(function CollapseOverflowMenu(
             } = c.props
 
             return (
-              <React.Fragment key={c.key}>
+              <Fragment key={c.key}>
                 {dividerBefore && index !== 0 && <MenuDivider />}
                 <MenuItem text={text} icon={icon} pressed={selected} {...rest} />
-              </React.Fragment>
+              </Fragment>
             )
           })}
         </Menu>

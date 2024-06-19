@@ -1,24 +1,30 @@
-import type {AssetSource, SchemaTypeDefinition} from '@sanity/types'
+import {type AssetSource, type SchemaTypeDefinition} from '@sanity/types'
+import {type ReactNode} from 'react'
+
+import {type LocaleConfigContext, type LocaleDefinition, type LocaleResourceBundle} from '../i18n'
+import {type Template, type TemplateItem} from '../templates'
 import {getPrintableType} from '../util/getPrintableType'
-import type {Template, TemplateItem} from '../templates'
-import type {LocaleConfigContext, LocaleDefinition, LocaleResourceBundle} from '../i18n'
-import type {DocumentActionComponent, DocumentBadgeComponent, DocumentInspector} from './document'
-import type {
-  AsyncConfigPropertyReducer,
-  ConfigContext,
-  ConfigPropertyReducer,
-  DocumentActionsContext,
-  DocumentBadgesContext,
-  DocumentInspectorContext,
-  DocumentLanguageFilterComponent,
-  DocumentLanguageFilterContext,
-  NewDocumentOptionsContext,
-  ResolveProductionUrlContext,
-  Tool,
-  DocumentCommentsEnabledContext,
-  PluginOptions,
-} from './types'
+import {
+  type DocumentActionComponent,
+  type DocumentBadgeComponent,
+  type DocumentInspector,
+} from './document'
 import {flattenConfig} from './flattenConfig'
+import {
+  type AsyncConfigPropertyReducer,
+  type ConfigContext,
+  type ConfigPropertyReducer,
+  type DocumentActionsContext,
+  type DocumentBadgesContext,
+  type DocumentCommentsEnabledContext,
+  type DocumentInspectorContext,
+  type DocumentLanguageFilterComponent,
+  type DocumentLanguageFilterContext,
+  type NewDocumentOptionsContext,
+  type PluginOptions,
+  type ResolveProductionUrlContext,
+  type Tool,
+} from './types'
 
 export const initialDocumentBadges: DocumentBadgeComponent[] = []
 
@@ -287,18 +293,44 @@ export const documentCommentsEnabledReducer = (opts: {
   // That is, if a plugin returns true, but the next plugin returns false, the result will be false.
   // The last plugin 'wins'.
   const result = flattenedConfig.reduce((acc, {config: innerConfig}) => {
-    const resolver = innerConfig.document?.unstable_comments?.enabled
+    const resolver =
+      innerConfig.document?.comments?.enabled ?? innerConfig.document?.unstable_comments?.enabled
 
     if (!resolver && typeof resolver !== 'boolean') return acc
     if (typeof resolver === 'function') return resolver(context)
     if (typeof resolver === 'boolean') return resolver
 
     throw new Error(
-      `Expected \`document.unstable_comments.enabled\` to be a boolean or a function, but received ${getPrintableType(
+      `Expected \`document.comments.enabled\` to be a boolean or a function, but received ${getPrintableType(
         resolver,
       )}`,
     )
   }, initialValue)
+
+  return result
+}
+
+export const internalTasksReducer = (opts: {
+  config: PluginOptions
+}): {footerAction: ReactNode} | undefined => {
+  const {config} = opts
+  const flattenedConfig = flattenConfig(config, [])
+
+  const result = flattenedConfig.reduce(
+    (acc: {footerAction: ReactNode} | undefined, {config: innerConfig}) => {
+      const resolver = innerConfig.__internal_tasks
+
+      if (!resolver) return acc
+      if (typeof resolver === 'object' && resolver.footerAction) return resolver
+
+      throw new Error(
+        `Expected \`__internal__tasks\` to be an object with footerAction, but received ${getPrintableType(
+          resolver,
+        )}`,
+      )
+    },
+    undefined,
+  )
 
   return result
 }
@@ -324,4 +356,15 @@ export const partialIndexingEnabledReducer = (opts: {
   }, initialValue)
 
   return result
+}
+
+export const legacySearchEnabledReducer: ConfigPropertyReducer<boolean, ConfigContext> = (
+  prev,
+  {search},
+): boolean => {
+  if (typeof search?.enableLegacySearch !== 'undefined') {
+    return search.enableLegacySearch
+  }
+
+  return prev
 }

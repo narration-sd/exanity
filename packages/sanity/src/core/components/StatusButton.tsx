@@ -1,10 +1,13 @@
 import {useTheme} from '@sanity/ui'
-import {useMemo, HTMLProps, forwardRef, ForwardedRef, ReactNode} from 'react'
-import styled from 'styled-components'
-import {Button, ButtonProps} from '../../ui-components'
+import {type ForwardedRef, forwardRef, type HTMLProps, type ReactNode, useMemo} from 'react'
+import {styled} from 'styled-components'
+
+import {Button, type ButtonProps} from '../../ui-components'
 
 /** @hidden @beta */
 export type StatusButtonProps = ButtonProps & {
+  ['aria-label']: HTMLProps<HTMLButtonElement>['aria-label']
+  forwardedAs?: string
   disabled?: boolean | {reason: ReactNode}
   mode?: ButtonProps['mode']
   iconRight?: undefined
@@ -34,7 +37,15 @@ export const StatusButton = forwardRef(function StatusButton(
     Omit<HTMLProps<HTMLButtonElement>, 'disabled' | 'ref' | 'size' | 'title'>,
   ref: ForwardedRef<HTMLButtonElement>,
 ) {
-  const {disabled: disabledProp, icon, label, mode = 'bleed', text, tone, ...restProps} = props
+  const {
+    'disabled': disabledProp,
+    icon,
+    'aria-label': label,
+    mode = 'bleed',
+    text,
+    tone,
+    ...restProps
+  } = props
   const theme = useTheme()
   const toneColor = tone && theme.sanity.color.solid[tone]
   const dotStyle = useMemo(() => ({backgroundColor: toneColor?.enabled.bg}), [toneColor])

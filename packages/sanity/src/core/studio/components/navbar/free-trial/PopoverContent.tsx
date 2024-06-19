@@ -1,8 +1,10 @@
-import {Card, Heading, Flex, Box, Container} from '@sanity/ui'
-import styled from 'styled-components'
+import {Box, Card, Container, Flex, Heading} from '@sanity/ui'
+import {styled} from 'styled-components'
+
 import {Button} from '../../../../../ui-components'
 import {UpsellDescriptionSerializer} from '../../../upsell'
-import {FreeTrialDialog} from './types'
+import {type TrialDialogDismissedInfo} from './__telemetry__/trialDialogEvents.telemetry'
+import {type FreeTrialDialog} from './types'
 
 const Image = styled.img`
   object-fit: cover;
@@ -13,7 +15,7 @@ const Image = styled.img`
 
 interface PopoverContentProps {
   content: FreeTrialDialog
-  handleClose: () => void
+  handleClose: (action?: TrialDialogDismissedInfo['dialogDismissAction']) => void
   handleOpenNext: () => void
 }
 
@@ -38,7 +40,7 @@ export function PopoverContent({content, handleClose, handleOpenNext}: PopoverCo
               mode="bleed"
               text={content.secondaryButton.text}
               tone="default"
-              onClick={handleClose}
+              onClick={() => handleClose('xClick')}
             />
           )}
           <Button
@@ -55,7 +57,10 @@ export function PopoverContent({content, handleClose, handleOpenNext}: PopoverCo
                   as: 'a',
                 }
               : {
-                  onClick: content.ctaButton?.action === 'openNext' ? handleOpenNext : handleClose,
+                  onClick:
+                    content.ctaButton?.action === 'openNext'
+                      ? handleOpenNext
+                      : () => handleClose('ctaClicked'),
                 })}
           />
         </Flex>

@@ -1,7 +1,7 @@
 import {Box, Flex, Text} from '@sanity/ui'
-import React from 'react'
+
 import {DiffTooltip, FromToArrow, useDiffAnnotationColor} from '../../../diff'
-import {BooleanDiff, DiffComponent} from '../../../types'
+import {type BooleanDiff, type DiffComponent} from '../../../types'
 import {Checkbox, Switch} from '../preview'
 
 export const BooleanFieldDiff: DiffComponent<BooleanDiff> = ({diff, schemaType}) => {

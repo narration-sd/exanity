@@ -1,7 +1,10 @@
 {
   "name": "studio-e2e-testing",
+  "version": "3.47.0",
   "private": true,
-  "version": "3.28.0",
+  "keywords": [
+    "sanity"
+  ],
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
   "scripts": {
@@ -10,20 +13,16 @@
     "lint": "eslint .",
     "start": "sanity start --port 3339"
   },
-  "keywords": [
-    "sanity"
-  ],
   "dependencies": {
-    "@sanity/google-maps-input": "^3.0.1",
-    "@sanity/icons": "^2.8.0",
-    "@sanity/ui": "^2.0.1",
-    "@sanity/vision": "3.28.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-is": "^18.2.0",
-    "sanity": "3.28.0",
+    "@sanity/google-maps-input": "^4.0.0",
+    "@sanity/icons": "^3.0.0",
+    "@sanity/ui": "^2.4.0",
+    "@sanity/vision": "3.47.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sanity": "workspace:*",
     "sanity-plugin-mux-input": "^2.2.1",
-    "sanity-test-studio": "3.28.0",
+    "sanity-test-studio": "workspace:*",
     "styled-components": "^6.1.0"
   }
 }

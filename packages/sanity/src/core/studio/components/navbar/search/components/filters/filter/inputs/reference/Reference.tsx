@@ -1,14 +1,19 @@
-import {isArraySchemaType, isReferenceSchemaType, ReferenceValue} from '@sanity/types'
+import {
+  isArraySchemaType,
+  isReferenceSchemaType,
+  type ReferenceValue,
+  type SchemaType,
+} from '@sanity/types'
 import {Box, Card, Stack} from '@sanity/ui'
-import React, {useCallback, useMemo} from 'react'
+import {useCallback, useMemo} from 'react'
+
 import {Button} from '../../../../../../../../../../ui-components'
 import {useSchema} from '../../../../../../../../../hooks'
-import {SearchableType} from '../../../../../../../../../search'
+import {useTranslation} from '../../../../../../../../../i18n'
 import {useSearchState} from '../../../../../contexts/search/useSearchState'
-import {OperatorInputComponentProps} from '../../../../../definitions/operators/operatorTypes'
+import {type OperatorInputComponentProps} from '../../../../../definitions/operators/operatorTypes'
 import {getSchemaField} from '../../../../../utils/getSchemaField'
 import {SearchResultItem} from '../../../../searchResults/item/SearchResultItem'
-import {useTranslation} from '../../../../../../../../../i18n'
 import {ReferenceAutocomplete} from './ReferenceAutocomplete'
 
 export function SearchFilterReferenceInput({
@@ -49,9 +54,9 @@ export function SearchFilterReferenceInput({
         }
         return []
       })
-      .reduce<SearchableType[]>((acc, val) => {
+      .reduce<SchemaType[]>((acc, val) => {
         if (acc.findIndex((v) => v.name === val?.name) < 0) {
-          acc.push(val as SearchableType)
+          acc.push(val as SchemaType)
         }
         return acc
       }, [])

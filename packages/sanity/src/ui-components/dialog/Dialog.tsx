@@ -1,13 +1,13 @@
 /* eslint-disable no-restricted-imports */
 import {
-  Button as UIButton,
-  Flex,
-  Dialog as UIDialog,
-  DialogProps as UIDialogProps,
   Box,
-  BoxHeight,
+  type BoxHeight,
+  Button as UIButton,
+  Dialog as UIDialog,
+  type DialogProps as UIDialogProps,
+  Flex,
 } from '@sanity/ui'
-import React, {ComponentProps, forwardRef} from 'react'
+import {type ComponentProps, forwardRef, type HTMLProps, type ReactNode, type Ref} from 'react'
 import {useTranslation} from 'react-i18next'
 
 /** @internal */
@@ -32,7 +32,7 @@ export type DialogProps = Pick<
    * and not trigger dynamic border visibility.
    */
   bodyHeight?: BoxHeight
-  children?: React.ReactNode
+  children?: ReactNode
   footer?: {
     cancelButton?: Omit<ComponentProps<typeof UIButton>, 'fontSize' | 'padding'>
     confirmButton?: Omit<ComponentProps<typeof UIButton>, 'fontSize' | 'padding'>
@@ -55,8 +55,8 @@ export const Dialog = forwardRef(function Dialog(
     footer,
     padding = true,
     ...props
-  }: DialogProps & Pick<React.HTMLProps<HTMLDivElement>, 'onDragEnter'>,
-  ref: React.Ref<HTMLDivElement>,
+  }: DialogProps & Pick<HTMLProps<HTMLDivElement>, 'onDragEnter' | 'onDrop'>,
+  ref: Ref<HTMLDivElement>,
 ) {
   const {t} = useTranslation()
 

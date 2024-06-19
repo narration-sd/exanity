@@ -41,7 +41,7 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   /** Tooltip when publish button is disabled because the document is already published, and published time is unavailable.*/
   'action.publish.already-published.no-time-ago.tooltip': 'Already published',
   /** Tooltip when publish button is disabled because the document is already published.*/
-  'action.publish.already-published.tooltip': 'Published {{timeSincePublished}} ago',
+  'action.publish.already-published.tooltip': 'Published {{timeSincePublished}}',
 
   /** Tooltip when action is disabled because the studio is not ready.*/
   'action.publish.disabled.not-ready': 'Operation not ready',
@@ -346,18 +346,24 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   /** The text when an unpublish operation failed  */
   'panes.document-operation-results.operation-error_unpublish':
     'An error occurred while attempting to unpublish this document. This usually means that there are other documents that refers to it.',
-  /** The text when a generic operation succeded (fallback, generally not shown)  */
+  /** The text when a generic operation succeeded (fallback, generally not shown)  */
   'panes.document-operation-results.operation-success':
     'Successfully performed {{context}} on document',
-  /** The text when a delete operation succeded  */
+  /** The text when a delete operation succeeded  */
   'panes.document-operation-results.operation-success_delete':
     'The document was successfully deleted',
   /** The text when a discard changes operation succeeded  */
   'panes.document-operation-results.operation-success_discardChanges':
     'All changes since last publish has now been discarded. The discarded draft can still be recovered from history',
+  /** The text when a duplicate operation succeeded  */
+  'panes.document-operation-results.operation-success_duplicate':
+    'The document was successfully duplicated',
   /** The text when a publish operation succeeded  */
   'panes.document-operation-results.operation-success_publish':
     '<Strong>{{title}}</Strong> was published',
+  /** The text when a restore operation succeeded  */
+  'panes.document-operation-results.operation-success_restore':
+    '<Strong>{{title}}</Strong> was restored',
   /** The text when an unpublish operation succeeded  */
   'panes.document-operation-results.operation-success_unpublish':
     '<Strong>{{title}}</Strong> was unpublished. A draft has been created from the latest published version.',

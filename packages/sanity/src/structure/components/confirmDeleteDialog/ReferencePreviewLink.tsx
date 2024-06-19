@@ -1,14 +1,15 @@
-import React, {useCallback} from 'react'
-import type {SanityDocument, SchemaType} from '@sanity/types'
-import {PaneItemPreview} from '../paneItem/PaneItemPreview'
-import {usePaneRouter} from '../paneRouter'
+import {type SanityDocument, type SchemaType} from '@sanity/types'
+import {type ReactNode, useCallback} from 'react'
 import {
-  FIXME,
-  PreviewCard,
+  type FIXME,
   getPublishedId,
+  PreviewCard,
   useDocumentPresence,
   useDocumentPreviewStore,
 } from 'sanity'
+
+import {PaneItemPreview} from '../paneItem/PaneItemPreview'
+import {usePaneRouter} from '../paneRouter'
 
 const EMPTY_ARRAY: [] = []
 
@@ -26,7 +27,7 @@ export function ReferencePreviewLink(props: ReferencePreviewLinkProps) {
   const {ReferenceChildLink} = usePaneRouter()
 
   const Link = useCallback(
-    function LinkComponent(linkProps: {children: React.ReactNode}) {
+    function LinkComponent(linkProps: {children: ReactNode}) {
       return (
         <ReferenceChildLink
           documentId={value?._id}

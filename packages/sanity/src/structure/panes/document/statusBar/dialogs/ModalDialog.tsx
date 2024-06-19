@@ -2,9 +2,10 @@ import {
   Box,
   Dialog, // eslint-disable-line no-restricted-imports
 } from '@sanity/ui'
-import React, {useId} from 'react'
+import {useId} from 'react'
+import {type DocumentActionModalDialogProps, LegacyLayerProvider} from 'sanity'
+
 import {DIALOG_WIDTH_TO_UI_WIDTH} from './constants'
-import {DocumentActionModalDialogProps, LegacyLayerProvider} from 'sanity'
 
 /**
  * Dialog rendered by custom document actions of dialog type `dialog`.
@@ -23,6 +24,7 @@ export function ModalDialog(props: {dialog: DocumentActionModalDialogProps}) {
   return (
     <LegacyLayerProvider zOffset="fullscreen">
       <Dialog
+        animate
         __unstable_hideCloseButton={dialog.showCloseButton === false}
         footer={footer}
         header={dialog.header}

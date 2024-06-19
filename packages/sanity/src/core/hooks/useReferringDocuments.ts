@@ -1,6 +1,8 @@
+import {type SanityDocument} from '@sanity/types'
+import {useMemo} from 'react'
+import {useObservable} from 'react-rx'
 import {map, startWith} from 'rxjs/operators'
-import {useMemoObservable} from 'react-rx'
-import {SanityDocument} from '@sanity/types'
+
 import {useDocumentStore} from '../store'
 
 interface ReferringDocumentsState {
@@ -16,7 +18,7 @@ const INITIAL_STATE: ReferringDocumentsState = {referringDocuments: [], isLoadin
  */
 export function useReferringDocuments(id: string): ReferringDocumentsState {
   const documentStore = useDocumentStore()
-  return useMemoObservable(
+  const observable = useMemo(
     () =>
       documentStore
         .listenQuery(
@@ -34,6 +36,6 @@ export function useReferringDocuments(id: string): ReferringDocumentsState {
           startWith(INITIAL_STATE),
         ),
     [documentStore, id],
-    INITIAL_STATE,
   )
+  return useObservable(observable, INITIAL_STATE)
 }

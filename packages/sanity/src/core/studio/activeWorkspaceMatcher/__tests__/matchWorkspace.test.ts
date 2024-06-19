@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import assert from 'assert'
-import {WorkspaceLike} from '../../workspaces'
+import assert from 'node:assert'
+
+import {describe, expect, it} from '@jest/globals'
+
+import {type WorkspaceLike} from '../../workspaces'
 import {createCommonBasePathRegex} from '../createCommonBasePathRegex'
 import {matchWorkspace as actualMatchWorkspace} from '../matchWorkspace'
 import {normalizedWorkspaces} from '../useNormalizedWorkspaces'

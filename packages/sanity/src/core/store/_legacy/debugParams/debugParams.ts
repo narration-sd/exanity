@@ -1,4 +1,4 @@
-import {concat, of, fromEvent} from 'rxjs'
+import {concat, fromEvent, of} from 'rxjs'
 import {distinctUntilChanged, map} from 'rxjs/operators'
 
 const DEBUG_PREFIX = '_debug_'
@@ -10,10 +10,10 @@ export const debugParams$ = concat(of(0), hashchange$).pipe(
   distinctUntilChanged(),
   map((hash) =>
     hash
-      .substring(1)
+      .slice(1)
       .split(';')
       .filter((p) => p.toLowerCase().startsWith(DEBUG_PREFIX))
-      .map((param) => param.substring(DEBUG_PREFIX.length)),
+      .map((param) => param.slice(DEBUG_PREFIX.length)),
   ),
 )
 

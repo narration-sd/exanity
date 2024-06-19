@@ -1,17 +1,18 @@
-import React, {ComponentProps, useCallback, useEffect, useState} from 'react'
-
 import {AccessDeniedIcon, ImageIcon, ReadOnlyIcon} from '@sanity/icons'
-import {Box, Card, CardTone, Heading, Text, useElementRect} from '@sanity/ui'
+import {Box, Card, type CardTone, Heading, Text, useElementRect} from '@sanity/ui'
+import {type ComponentProps, type ReactNode, useCallback, useEffect, useState} from 'react'
+
 import {LoadingBlock} from '../../../../components/loadingBlock'
 import {useTranslation} from '../../../../i18n'
-import {MAX_DEFAULT_HEIGHT, RatioBox, Overlay, FlexOverlay} from './ImagePreview.styled'
+import {FlexOverlay, MAX_DEFAULT_HEIGHT, Overlay, RatioBox} from './ImagePreview.styled'
 
 interface Props {
-  readOnly?: boolean | null
-  drag: boolean
-  isRejected: boolean
-  src: string
   alt: string
+  drag: boolean
+  initialHeight: number | undefined
+  isRejected: boolean
+  readOnly?: boolean | null
+  src: string
 }
 
 /*
@@ -30,7 +31,7 @@ const getImageSize = (src: string): number[] => {
 }
 
 export function ImagePreview(props: ComponentProps<typeof Card> & Props) {
-  const {drag, readOnly, isRejected, src, ...rest} = props
+  const {drag, readOnly, isRejected, src, initialHeight, ...rest} = props
   const [isLoaded, setLoaded] = useState(false)
   const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null)
   const rootRect = useElementRect(rootElement)
@@ -65,7 +66,12 @@ export function ImagePreview(props: ComponentProps<typeof Card> & Props) {
 
   const {t} = useTranslation()
   return (
-    <RatioBox {...rest} ref={setRootElement} style={{height: rootHeight}} tone="transparent">
+    <RatioBox
+      {...rest}
+      ref={setRootElement}
+      style={{height: initialHeight && !isLoaded ? initialHeight : rootHeight}}
+      tone="transparent"
+    >
       <Card data-container tone="inherit">
         {!isLoaded && (
           <OverlayComponent cardTone="transparent" drag content={<LoadingBlock showText />} />
@@ -131,7 +137,7 @@ function OverlayComponent({
 }: {
   cardTone: Exclude<CardTone, 'inherit'>
   drag: boolean
-  content: React.ReactNode
+  content: ReactNode
 }) {
   return (
     <Overlay justify="flex-end" padding={3} $drag={drag} $tone={cardTone}>

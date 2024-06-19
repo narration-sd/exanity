@@ -1,6 +1,6 @@
 /* eslint-disable max-nested-callbacks */
 import {expect, test} from '@playwright/experimental-ct-react'
-import React from 'react'
+
 import {testHelpers} from '../../../utils/testHelpers'
 import {ToolbarStory} from './ToolbarStory'
 
@@ -90,6 +90,18 @@ test.describe('Portable Text Input', () => {
           await expect($actionMenuAutoCollapseMenu).toBeVisible()
           await expect($insertMenuAutoCollapseMenu).toBeVisible()
         })
+      })
+    })
+
+    test.describe('Hidden toolbar', () => {
+      test('Toolbar should be hidden after activation', async ({mount, page}) => {
+        const {getFocusedPortableTextInput} = testHelpers({page})
+        await mount(<ToolbarStory ptInputProps={{hideToolbar: true}} />)
+        const $portableTextInput = await getFocusedPortableTextInput('field-body')
+
+        const $toolbarCard = $portableTextInput.getByTestId('pt-editor__toolbar-card')
+        // Assertion: the toolbar should not be rendered in the DOM
+        await expect($toolbarCard).not.toBeAttached()
       })
     })
   })

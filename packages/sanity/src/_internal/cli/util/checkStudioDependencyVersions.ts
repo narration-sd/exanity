@@ -1,9 +1,10 @@
-import fs from 'fs'
-import path from 'path'
-import semver, {SemVer} from 'semver'
-import resolveFrom from 'resolve-from'
+import path from 'node:path'
+
 import {generateHelpUrl} from '@sanity/generate-help-url'
-import type {PackageJson} from '@sanity/cli'
+import resolveFrom from 'resolve-from'
+import semver, {type SemVer} from 'semver'
+
+import {readPackageJson} from './readPackageJson'
 
 interface PackageInfo {
   name: string
@@ -20,6 +21,8 @@ interface PackageInfo {
 const PACKAGES = [
   {name: 'react', supported: ['^18'], deprecatedBelow: null},
   {name: 'react-dom', supported: ['^18'], deprecatedBelow: null},
+  {name: 'styled-components', supported: ['^6'], deprecatedBelow: null},
+  {name: '@sanity/ui', supported: ['^2'], deprecatedBelow: null},
 ]
 
 export function checkStudioDependencyVersions(workDir: string): void {
@@ -134,11 +137,16 @@ function getUpgradeInstructions(pkgs: PackageInfo[]) {
 
   return `To upgrade, run either:
 
+  npm install ${inst}
+
+  or
+
   yarn add ${inst}
 
   or
 
-  npm install ${inst}
+  pnpm add ${inst}
+
 
 Read more at ${generateHelpUrl('upgrade-packages')}`
 }
@@ -160,14 +168,9 @@ function getDowngradeInstructions(pkgs: PackageInfo[]) {
 
   or
 
-  npm install ${inst}`
-}
+  npm install ${inst}
 
-function readPackageJson(filePath: string): PackageJson {
-  try {
-    // eslint-disable-next-line no-sync
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'))
-  } catch (err) {
-    throw new Error(`Failed to read "${filePath}": ${err.message}`)
-  }
+  or
+
+  pnpm install ${inst}`
 }

@@ -1,11 +1,11 @@
-import {useToast} from '@sanity/ui'
-import React from 'react'
+import {Flex, useToast} from '@sanity/ui'
 import {useTranslation} from 'sanity'
+
 import {DelayedSpinner} from '../components/DelayedSpinner'
 import {VisionGui} from '../components/VisionGui'
 import {useDatasets} from '../hooks/useDatasets'
-import type {VisionProps} from '../types'
 import {visionLocaleNamespace} from '../i18n'
+import {type VisionProps} from '../types'
 
 export function VisionContainer(props: VisionProps) {
   const toast = useToast()
@@ -13,7 +13,11 @@ export function VisionContainer(props: VisionProps) {
   const {t} = useTranslation(visionLocaleNamespace)
 
   if (!loadedDatasets) {
-    return <DelayedSpinner />
+    return (
+      <Flex align="center" height="fill" justify="center">
+        <DelayedSpinner />
+      </Flex>
+    )
   }
 
   const datasets =

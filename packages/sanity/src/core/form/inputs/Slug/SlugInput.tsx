@@ -1,23 +1,24 @@
-import React, {type FormEvent, useCallback, useMemo} from 'react'
-import type {
-  Path,
-  SanityDocument,
-  SlugParent,
-  SlugSchemaType,
-  SlugSourceContext,
-  SlugSourceFn,
-  SlugValue,
+import {
+  type Path,
+  type SanityDocument,
+  type SlugParent,
+  type SlugSchemaType,
+  type SlugSourceContext,
+  type SlugSourceFn,
+  type SlugValue,
 } from '@sanity/types'
-import * as PathUtils from '@sanity/util/paths'
 import {Box, Card, Flex, Stack, TextInput} from '@sanity/ui'
+import * as PathUtils from '@sanity/util/paths'
+import {type FormEvent, useCallback, useMemo} from 'react'
+
 import {Button} from '../../../../ui-components'
-import {PatchEvent, set, setIfMissing, unset} from '../../patch'
-import type {ObjectInputProps} from '../../types'
-import {useGetFormValue} from '../../contexts/GetFormValue'
 import {useTranslation} from '../../../i18n'
+import {useGetFormValue} from '../../contexts/GetFormValue'
+import {PatchEvent, set, setIfMissing, unset} from '../../patch'
+import {type ObjectInputProps} from '../../types'
 import {slugify} from './utils/slugify'
 import {useAsync} from './utils/useAsync'
-import {SlugContext, useSlugContext} from './utils/useSlugContext'
+import {type SlugContext, useSlugContext} from './utils/useSlugContext'
 
 /**
  *
@@ -76,7 +77,7 @@ export function SlugInput(props: SlugInputProps) {
     [onChange, schemaType.name],
   )
 
-  const [generateState, handleGenerateSlug] = useAsync(() => {
+  const handleAsyncGenerateSlug = useCallback(() => {
     if (!sourceField) {
       return Promise.reject(
         new Error(t('inputs.slug.error.missing-source', {schemaType: schemaType.name})),
@@ -89,10 +90,11 @@ export function SlugInput(props: SlugInputProps) {
       .then((newFromSource) => slugify(newFromSource || '', schemaType, sourceContext))
       .then((newSlug) => updateSlug(newSlug))
   }, [sourceField, getFormValue, schemaType, path, slugContext, updateSlug, t])
+  const [generateState, handleGenerateSlug] = useAsync(handleAsyncGenerateSlug)
 
   const isUpdating = generateState?.status === 'pending'
 
-  const handleChange = React.useCallback(
+  const handleChange = useCallback(
     (event: FormEvent<HTMLInputElement>) => updateSlug(event.currentTarget.value),
     [updateSlug],
   )

@@ -1,12 +1,13 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react'
-import styled, {css} from 'styled-components'
 import {Box, Card, Flex} from '@sanity/ui'
-import {FieldPresence, FormNodePresence} from '../../../presence'
-import {DocumentFieldActionNode} from '../../../config'
+import {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react'
+import {css, styled} from 'styled-components'
+
+import {TooltipDelayGroupProvider} from '../../../../ui-components'
+import {type DocumentFieldActionNode} from '../../../config'
+import {FieldPresence, type FormNodePresence} from '../../../presence'
 import {calcAvatarStackWidth} from '../../../presence/utils'
 import {FieldActionMenu} from '../../field'
-import {FieldCommentsProps} from '../../types'
-import {TooltipDelayGroupProvider} from '../../../../ui-components'
+import {type FieldCommentsProps} from '../../types'
 
 const Root = styled(Flex)<{
   $floatingCardWidth: number
@@ -131,9 +132,9 @@ const MAX_AVATARS = 4
 
 interface FormFieldBaseHeaderProps {
   __internal_comments?: FieldCommentsProps // DO NOT USE
-  __internal_slot?: React.ReactNode // ONLY USED BY AI ASSIST PLUGIN
+  __internal_slot?: ReactNode // ONLY USED BY AI ASSIST PLUGIN
   actions?: DocumentFieldActionNode[]
-  content: React.ReactNode
+  content: ReactNode
   fieldFocused: boolean
   fieldHovered: boolean
   presence?: FormNodePresence[]
@@ -236,7 +237,12 @@ export function FormFieldBaseHeader(props: FormFieldBaseHeaderProps) {
       $floatingCardWidth={floatingCardWidth}
       $slotWidth={slotWidth}
     >
-      <ContentBox flex={1} paddingY={2} $presenceMaxWidth={calcAvatarStackWidth(MAX_AVATARS)}>
+      <ContentBox
+        data-ui="fieldHeaderContentBox"
+        flex={1}
+        paddingY={2}
+        $presenceMaxWidth={calcAvatarStackWidth(MAX_AVATARS)}
+      >
         {content}
       </ContentBox>
 

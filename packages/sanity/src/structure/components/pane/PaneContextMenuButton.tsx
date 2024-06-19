@@ -1,12 +1,14 @@
-import {Menu} from '@sanity/ui'
-import React, {useId} from 'react'
-import {MenuButton, PopoverProps} from '../../../ui-components'
-import {_PaneMenuItem, _PaneMenuNode} from './types'
-import {PaneMenuButtonItem} from './PaneMenuButtonItem'
+import {Menu, MenuDivider} from '@sanity/ui'
+import {type ReactNode, useId} from 'react'
 import {ContextMenuButton} from 'sanity'
+
+import {MenuButton, type PopoverProps} from '../../../ui-components'
+import {PaneMenuButtonItem} from './PaneMenuButtonItem'
+import {type _PaneMenuItem, type _PaneMenuNode} from './types'
 
 interface PaneContextMenuButtonProps {
   nodes: _PaneMenuNode[]
+  actionsNodes?: ReactNode
 }
 
 const CONTEXT_MENU_POPOVER_PROPS: PopoverProps = {
@@ -30,7 +32,7 @@ function nodesHasTone(nodes: _PaneMenuNode[], tone: NonNullable<_PaneMenuItem['t
  * @beta This API will change. DO NOT USE IN PRODUCTION.
  */
 export function PaneContextMenuButton(props: PaneContextMenuButtonProps) {
-  const {nodes} = props
+  const {nodes, actionsNodes} = props
   const id = useId()
 
   const hasCritical = nodesHasTone(nodes, 'critical')
@@ -42,14 +44,20 @@ export function PaneContextMenuButton(props: PaneContextMenuButtonProps) {
         <ContextMenuButton
           // eslint-disable-next-line no-nested-ternary
           tone={hasCritical ? 'critical' : hasCaution ? 'caution' : undefined}
+          data-testid="pane-context-menu-button"
         />
       }
       id={id}
       menu={
         <Menu>
+          {actionsNodes && (
+            <>
+              {actionsNodes}
+              <MenuDivider />
+            </>
+          )}
           {nodes.map((node, nodeIndex) => {
             const isAfterGroup = nodes[nodeIndex - 1]?.type === 'group'
-
             return <PaneMenuButtonItem isAfterGroup={isAfterGroup} key={node.key} node={node} />
           })}
         </Menu>

@@ -1,11 +1,12 @@
-import React, {forwardRef, memo, useCallback, useEffect, useMemo, useState} from 'react'
-import {orderBy} from 'lodash'
 import * as PathUtils from '@sanity/util/paths'
-import {GlobalPresence} from '../../../../store'
-import {UserAvatar} from '../../../../components'
-import {MenuItem} from '../../../../../ui-components'
-import {useTranslation} from '../../../../i18n'
+import {orderBy} from 'lodash'
+import {type ForwardedRef, forwardRef, memo, useCallback, useEffect, useMemo, useState} from 'react'
 import {IntentLink} from 'sanity/router'
+
+import {MenuItem} from '../../../../../ui-components'
+import {UserAvatar} from '../../../../components'
+import {useTranslation} from '../../../../i18n'
+import {type GlobalPresence} from '../../../../store'
 
 interface PresenceListRowProps {
   focused: boolean
@@ -45,7 +46,7 @@ export const PresenceMenuItem = memo(function PresenceMenuItem(props: PresenceLi
   const LinkComponent = useMemo(
     () =>
       // eslint-disable-next-line @typescript-eslint/no-shadow
-      forwardRef(function LinkComponent(linkProps, ref: React.ForwardedRef<HTMLAnchorElement>) {
+      forwardRef(function LinkComponent(linkProps, ref: ForwardedRef<HTMLAnchorElement>) {
         if (!lastActiveLocation?.path) return null
 
         return (

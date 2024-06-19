@@ -1,6 +1,8 @@
-import React, {memo, useCallback, useMemo} from 'react'
-import {FormPatch, PatchEvent} from '../patch'
-import {FormCallbacksContext, useFormCallbacks} from '../studio'
+import {memo, type ReactNode, useCallback, useMemo} from 'react'
+import {FormCallbacksContext} from 'sanity/_singletons'
+
+import {type FormPatch, PatchEvent} from '../patch'
+import {useFormCallbacks} from '../studio'
 
 type PatchTransformer = (patches: FormPatch[]) => FormPatch[]
 
@@ -8,7 +10,7 @@ type PatchTransformer = (patches: FormPatch[]) => FormPatch[]
  * @hidden
  * @beta */
 export const TransformPatches = memo(function OnChangeProvider(
-  props: {transform: PatchTransformer} & {children: React.ReactNode},
+  props: {transform: PatchTransformer} & {children: ReactNode},
 ) {
   const {transform} = props
   const callbacks = useFormCallbacks()

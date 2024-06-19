@@ -1,13 +1,14 @@
 import {Card, Code, ErrorBoundary, Stack} from '@sanity/ui'
-import React, {useCallback, useState} from 'react'
-import {PreviewLoader} from '../../../preview'
+import {type ErrorInfo, useCallback, useState} from 'react'
+
 import {Button} from '../../../../ui-components'
+import {PreviewLoader} from '../../../preview'
 
 export const resolvePreviewComponent = () => TestPreview
 
 interface ErrorParams {
   error: Error
-  info: React.ErrorInfo
+  info: ErrorInfo
 }
 
 function TestPreview(props: any) {

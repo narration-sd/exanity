@@ -1,12 +1,12 @@
 import {ErrorOutlineIcon, WarningOutlineIcon} from '@sanity/icons'
 import {Box, Card, Flex, Text} from '@sanity/ui'
-import React, {ComponentProps} from 'react'
-import styled from 'styled-components'
+import {type ComponentProps, type ReactNode} from 'react'
+import {styled} from 'styled-components'
 
 interface AlertProps extends Omit<ComponentProps<typeof Card>, 'title'> {
-  title: React.ReactNode
+  title: ReactNode
   status?: 'warning' | 'error'
-  suffix?: React.ReactNode
+  suffix?: ReactNode
 }
 
 const STATUS_TONES = {

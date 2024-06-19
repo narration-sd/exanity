@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-nested-ternary */
-import {ContentSourceMap, ContentSourceMapDocuments, studioPath} from '@sanity/client/csm'
-import {Box, Button, Card, Code, Label, Stack} from '@sanity/ui'
-import {useMemo} from 'react'
-import {InputProps, isDocumentSchemaType} from 'sanity'
-import {useDocumentPane, usePaneRouter} from 'sanity/structure'
-import {vercelStegaDecodeAll} from '@vercel/stega'
+import {type ContentSourceMap, type ContentSourceMapDocuments, studioPath} from '@sanity/client/csm'
 import {stegaEncodeSourceMap} from '@sanity/client/stega'
-import styled from 'styled-components'
+import {Box, Button, Card, Code, Label, Stack} from '@sanity/ui'
+import {vercelStegaDecodeAll} from '@vercel/stega'
+import {useMemo} from 'react'
+import {type InputProps, isDocumentSchemaType} from 'sanity'
+import {useDocumentPane, usePaneRouter} from 'sanity/structure'
+import {styled} from 'styled-components'
 
 export function StegaDebugger(props: InputProps) {
   if (isDocumentSchemaType(props.schemaType)) {

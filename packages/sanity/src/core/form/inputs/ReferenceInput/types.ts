@@ -1,8 +1,15 @@
-import {Observable} from 'rxjs'
-import React, {ReactNode} from 'react'
-import {Path, PreviewValue, Reference, ReferenceSchemaType, I18nTextRecord} from '@sanity/types'
-import {ObjectInputProps} from '../../types'
-import {DocumentAvailability} from '../../../preview'
+import {
+  type I18nTextRecord,
+  type Path,
+  type PreviewValue,
+  type Reference,
+  type ReferenceSchemaType,
+} from '@sanity/types'
+import {type ComponentType, type ReactNode} from 'react'
+import {type Observable} from 'rxjs'
+
+import {type DocumentAvailability} from '../../../preview'
+import {type ObjectInputProps} from '../../types'
 
 export interface ReferenceInfo {
   id: string
@@ -29,7 +36,7 @@ export interface CreateReferenceOption {
   id: string
   title: string
   i18n?: I18nTextRecord<'title'>
-  icon?: React.ReactNode | React.ComponentType
+  icon?: ReactNode | ComponentType
   type: string
   template: ReferenceTemplate
   permission: {
@@ -60,8 +67,8 @@ export interface ReferenceInputProps<Value = Reference>
   onSearch: ReferenceSearchFunction
   selectedState?: 'selected' | 'pressed' | 'none'
   createOptions: CreateReferenceOption[]
-  editReferenceLinkComponent: React.ComponentType<{
-    children: React.ReactNode
+  editReferenceLinkComponent: ComponentType<{
+    children: ReactNode
     documentId: string
     documentType: string
     parentRefPath: Path

@@ -1,10 +1,11 @@
 /* eslint-disable no-sync */
-import fs from 'fs'
-import path from 'path'
-import isBuiltin from 'is-builtin-module'
-import {defineConfig} from '@sanity/pkg-utils'
+import fs from 'node:fs'
+import path from 'node:path'
+
+import baseConfig from '@repo/package.config'
 import {nodeResolve} from '@rollup/plugin-node-resolve'
-import baseConfig from '../../../package.config'
+import {defineConfig} from '@sanity/pkg-utils'
+import isBuiltin from 'is-builtin-module'
 
 const workersDir = path.join(__dirname, 'src', 'workers')
 
@@ -39,15 +40,18 @@ export default defineConfig({
     {
       source: './src/cli.ts',
       require: './lib/cli.js',
+      runtime: 'node',
     },
     {
       source: './src/run.ts',
       require: './lib/run.js',
+      runtime: 'node',
     },
 
     ...workerNames.map((name) => ({
       source: `./src/workers/${name}.ts`,
       require: `./lib/workers/${name}.js`,
+      runtime: 'node' as const,
     })),
   ],
 

@@ -1,11 +1,12 @@
-import React, {useEffect} from 'react'
-import {Flex, Text, Inline, Card} from '@sanity/ui'
-import {UploadState} from '@sanity/types'
-import {LinearProgress} from '../../../../components'
+import {type UploadState} from '@sanity/types'
+import {Card, Flex, Inline, Text} from '@sanity/ui'
+import {useEffect} from 'react'
+
 import {Button} from '../../../../../ui-components'
+import {LinearProgress} from '../../../../components'
 import {Translate, useTranslation} from '../../../../i18n'
 import {STALE_UPLOAD_MS} from '../constants'
-import {CardWrapper, FlexWrapper, LeftSection, CodeWrapper} from './UploadProgress.styled'
+import {CardWrapper, CodeWrapper, FlexWrapper, LeftSection} from './UploadProgress.styled'
 
 type Props = {
   uploadState: UploadState
@@ -26,7 +27,12 @@ export function UploadProgress({uploadState, onCancel, onStale, height}: Props) 
 
   const {t} = useTranslation()
   return (
-    <CardWrapper tone="primary" padding={4} border style={{height: `${height}px`}}>
+    <CardWrapper
+      tone="primary"
+      padding={4}
+      border
+      style={{height: height ? `${height}px` : undefined}}
+    >
       <FlexWrapper align="center" justify="space-between" height="fill" direction="row" gap={2}>
         <LeftSection>
           <Flex justify="center" gap={[3, 3, 2, 2]} direction={['column', 'column', 'row']}>

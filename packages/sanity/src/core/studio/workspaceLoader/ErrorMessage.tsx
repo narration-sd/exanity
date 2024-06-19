@@ -1,13 +1,16 @@
 /* eslint-disable i18next/no-literal-string,@sanity/i18n/no-attribute-string-literals */
-import React, {useEffect} from 'react'
-import {Flex, Box, Card, Code, Text} from '@sanity/ui'
+import {Box, Card, Code, Flex, Text} from '@sanity/ui'
 import {startCase} from 'lodash'
-import styled from 'styled-components'
+import {useEffect} from 'react'
+import {styled} from 'styled-components'
 
 const ListItem = styled(Flex)``
 
 const ErrorMessageRoot = styled(Box).attrs({padding: 4})``
 
+/**
+ * @internal
+ */
 export interface ErrorMessageProps {
   message: string
   stack?: string
@@ -15,6 +18,9 @@ export interface ErrorMessageProps {
   path: Array<{name: string; type: string}>
 }
 
+/**
+ * @internal
+ */
 export function ErrorMessage({error, message, path, stack}: ErrorMessageProps) {
   useEffect(() => {
     console.error(error)

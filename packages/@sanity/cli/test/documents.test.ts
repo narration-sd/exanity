@@ -1,5 +1,7 @@
+import {describe, expect} from '@jest/globals'
+
 import {describeCliTest, testConcurrent} from './shared/describe'
-import {runSanityCmdCommand, studioVersions, testClient, getTestRunArgs} from './shared/environment'
+import {getTestRunArgs, runSanityCmdCommand, studioVersions, testClient} from './shared/environment'
 
 describeCliTest('CLI: `sanity documents`', () => {
   describe.each(studioVersions)('%s', (version) => {

@@ -1,11 +1,12 @@
-import React, {useMemo} from 'react'
-import {Config, prepareConfig} from '../../config'
-import {WorkspacesContext} from './WorkspacesContext'
+import {type ReactNode, useMemo} from 'react'
+import {WorkspacesContext} from 'sanity/_singletons'
+
+import {type Config, prepareConfig} from '../../config'
 
 /** @internal */
 export interface WorkspacesProviderProps {
   config: Config
-  children: React.ReactNode
+  children: ReactNode
   basePath?: string
 }
 

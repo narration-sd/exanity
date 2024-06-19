@@ -1,5 +1,3 @@
-import {Box, CardTone, Menu, MenuDivider} from '@sanity/ui'
-import React, {ComponentProps, ForwardedRef, forwardRef, useCallback, useMemo, useRef} from 'react'
 import {
   CloseIcon,
   CopyIcon as DuplicateIcon,
@@ -7,31 +5,41 @@ import {
   SyncIcon as ReplaceIcon,
   TrashIcon,
 } from '@sanity/icons'
-import type {Reference, ReferenceSchemaType, SchemaType} from '@sanity/types'
-import type {ObjectItem, ObjectItemProps} from '../../types'
-import {useScrollIntoViewOnFocusWithin} from '../../hooks/useScrollIntoViewOnFocusWithin'
-import {useDidUpdate} from '../../hooks/useDidUpdate'
-import {randomKey} from '../../utils/randomKey'
-import {FormFieldSet, FormFieldValidationStatus} from '../../components/formField'
-import {FieldPresence} from '../../../presence'
-import {MenuButton, MenuItem} from '../../../../ui-components'
-import {LoadingBlock} from '../../../components/loadingBlock'
-import {ContextMenuButton} from '../../../components/contextMenuButton'
-import {useTranslation} from '../../../i18n'
-import {ChangeIndicator} from '../../../changeIndicators'
-import {RowLayout} from '../arrays/layouts/RowLayout'
-import {set, unset} from '../../patch'
-import {createProtoArrayValue} from '../arrays/ArrayOfObjectsInput/createProtoArrayValue'
-import {InsertMenu} from '../arrays/ArrayOfObjectsInput/InsertMenu'
-import {useReferenceInfo} from './useReferenceInfo'
-import {PreviewReferenceValue} from './PreviewReferenceValue'
-import {useReferenceInput} from './useReferenceInput'
-import {ReferenceLinkCard} from './ReferenceLinkCard'
-import {ReferenceItemRefProvider} from './ReferenceItemRefProvider'
-import {ReferenceFinalizeAlertStrip} from './ReferenceFinalizeAlertStrip'
-import {ReferenceStrengthMismatchAlertStrip} from './ReferenceStrengthMismatchAlertStrip'
-import {ReferenceMetadataLoadErrorAlertStrip} from './ReferenceMetadataLoadFailure'
+import {type Reference, type ReferenceSchemaType, type SchemaType} from '@sanity/types'
+import {Box, type CardTone, Menu, MenuDivider} from '@sanity/ui'
+import {
+  type ComponentProps,
+  type ForwardedRef,
+  forwardRef,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react'
 import {IntentLink} from 'sanity/router'
+
+import {MenuButton, MenuItem} from '../../../../ui-components'
+import {ChangeIndicator} from '../../../changeIndicators'
+import {ContextMenuButton} from '../../../components/contextMenuButton'
+import {LoadingBlock} from '../../../components/loadingBlock'
+import {useTranslation} from '../../../i18n'
+import {FieldPresence} from '../../../presence'
+import {FormFieldSet, FormFieldValidationStatus} from '../../components/formField'
+import {useDidUpdate} from '../../hooks/useDidUpdate'
+import {useScrollIntoViewOnFocusWithin} from '../../hooks/useScrollIntoViewOnFocusWithin'
+import {set, unset} from '../../patch'
+import {type ObjectItem, type ObjectItemProps} from '../../types'
+import {randomKey} from '../../utils/randomKey'
+import {createProtoArrayValue} from '../arrays/ArrayOfObjectsInput/createProtoArrayValue'
+import {InsertMenuGroups} from '../arrays/ArrayOfObjectsInput/InsertMenuGroups'
+import {RowLayout} from '../arrays/layouts/RowLayout'
+import {PreviewReferenceValue} from './PreviewReferenceValue'
+import {ReferenceFinalizeAlertStrip} from './ReferenceFinalizeAlertStrip'
+import {ReferenceItemRefProvider} from './ReferenceItemRefProvider'
+import {ReferenceLinkCard} from './ReferenceLinkCard'
+import {ReferenceMetadataLoadErrorAlertStrip} from './ReferenceMetadataLoadFailure'
+import {ReferenceStrengthMismatchAlertStrip} from './ReferenceStrengthMismatchAlertStrip'
+import {useReferenceInfo} from './useReferenceInfo'
+import {useReferenceInput} from './useReferenceInput'
 
 export interface ReferenceItemValue extends Omit<ObjectItem, '_type'>, Omit<Reference, '_key'> {}
 
@@ -81,7 +89,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
     inputProps: {onChange, focusPath, onPathFocus, renderPreview, elementProps},
   } = props
 
-  const sortable = !readOnly && parentSchemaType.options?.sortable !== false
+  const sortable = parentSchemaType.options?.sortable !== false
   const insertableTypes = parentSchemaType.of
 
   const elementRef = useRef<HTMLDivElement | null>(null)
@@ -182,7 +190,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
     () =>
       readOnly ? null : (
         <MenuButton
-          button={<ContextMenuButton paddingY={3} />}
+          button={<ContextMenuButton />}
           id={`${inputId}-menuButton`}
           menu={
             <Menu ref={menuRef}>
@@ -208,7 +216,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
                     icon={DuplicateIcon}
                     onClick={handleDuplicate}
                   />
-                  <InsertMenu onInsert={handleInsert} types={insertableTypes} />
+                  <InsertMenuGroups onInsert={handleInsert} types={insertableTypes} />
                 </>
               )}
 
@@ -288,6 +296,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
     <ReferenceItemRefProvider menuRef={menuRef} containerRef={containerRef}>
       <RowLayout
         dragHandle={sortable}
+        readOnly={!!readOnly}
         presence={
           !isEditing && presence.length > 0 && <FieldPresence presence={presence} maxAvatars={1} />
         }

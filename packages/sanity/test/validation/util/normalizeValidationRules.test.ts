@@ -1,4 +1,6 @@
-import type {NumberSchemaType, SchemaType, StringSchemaType} from '@sanity/types'
+import {describe, expect, it} from '@jest/globals'
+import {type NumberSchemaType, type SchemaType, type StringSchemaType} from '@sanity/types'
+
 import {Rule as RuleClass} from '../../../src/core/validation'
 import {normalizeValidationRules} from '../../../src/core/validation/util/normalizeValidationRules'
 

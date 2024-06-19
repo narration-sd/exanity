@@ -1,20 +1,20 @@
+import {describe, expect, it, jest} from '@jest/globals'
 /* eslint-disable max-nested-callbacks */
 import {render, waitFor} from '@testing-library/react'
+import {createRef, type RefObject} from 'react'
 
-import React from 'react'
-import {PortableTextEditor} from '../../PortableTextEditor'
+import {type EditorSelection} from '../../../types/editor'
 import {
   PortableTextEditorTester,
   schemaType,
   schemaTypeWithColorAndLink,
 } from '../../__tests__/PortableTextEditorTester'
-import {EditorSelection} from '../../../types/editor'
-import {defineType} from '@sanity/types'
+import {PortableTextEditor} from '../../PortableTextEditor'
 
 describe('plugin:withPortableTextMarksModel', () => {
   describe('normalization', () => {
     it('merges adjacent spans correctly when removing annotations', async () => {
-      const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+      const editorRef: RefObject<PortableTextEditor> = createRef()
       const initialValue = [
         {
           _key: '5fc57af23597',
@@ -153,7 +153,7 @@ describe('plugin:withPortableTextMarksModel', () => {
     })
 
     it('splits correctly when adding marks', async () => {
-      const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+      const editorRef: RefObject<PortableTextEditor> = createRef()
       const initialValue = [
         {
           _key: 'a',
@@ -203,7 +203,7 @@ describe('plugin:withPortableTextMarksModel', () => {
             focus: {path: [{_key: 'a'}, 'children', {_key: 'a1'}], offset: 0},
             anchor: {path: [{_key: 'b'}, 'children', {_key: 'b1'}], offset: 1},
           })
-          PortableTextEditor.toggleMark(editor, 'bold')
+          PortableTextEditor.toggleMark(editor, 'strong')
           const value = PortableTextEditor.getValue(editor)
           expect(value).toMatchInlineSnapshot(`
         Array [
@@ -215,7 +215,7 @@ describe('plugin:withPortableTextMarksModel', () => {
                 "_key": "a1",
                 "_type": "span",
                 "marks": Array [
-                  "bold",
+                  "strong",
                 ],
                 "text": "123",
               },
@@ -231,7 +231,7 @@ describe('plugin:withPortableTextMarksModel', () => {
                 "_key": "b1",
                 "_type": "span",
                 "marks": Array [
-                  "bold",
+                  "strong",
                 ],
                 "text": "1",
               },
@@ -251,7 +251,7 @@ describe('plugin:withPortableTextMarksModel', () => {
       })
     })
     it('merges children correctly when toggling marks in various ranges', async () => {
-      const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+      const editorRef: RefObject<PortableTextEditor> = createRef()
       const initialValue = [
         {
           _key: 'a',
@@ -287,7 +287,7 @@ describe('plugin:withPortableTextMarksModel', () => {
           focus: {path: [{_key: 'a'}, 'children', {_key: 'a1'}], offset: 0},
           anchor: {path: [{_key: 'a'}, 'children', {_key: 'a1'}], offset: 4},
         })
-        PortableTextEditor.toggleMark(editor, 'bold')
+        PortableTextEditor.toggleMark(editor, 'strong')
         expect(PortableTextEditor.getValue(editor)).toMatchInlineSnapshot(`
         Array [
           Object {
@@ -298,7 +298,7 @@ describe('plugin:withPortableTextMarksModel', () => {
                 "_key": "a1",
                 "_type": "span",
                 "marks": Array [
-                  "bold",
+                  "strong",
                 ],
                 "text": "1234",
               },
@@ -315,7 +315,7 @@ describe('plugin:withPortableTextMarksModel', () => {
             focus: {path: [{_key: 'a'}, 'children', {_key: 'a1'}], offset: 1},
             anchor: {path: [{_key: 'a'}, 'children', {_key: 'a1'}], offset: 3},
           })
-          PortableTextEditor.toggleMark(editorRef.current, 'bold')
+          PortableTextEditor.toggleMark(editorRef.current, 'strong')
           expect(PortableTextEditor.getValue(editorRef.current)).toMatchInlineSnapshot(`
         Array [
           Object {
@@ -326,7 +326,7 @@ describe('plugin:withPortableTextMarksModel', () => {
                 "_key": "a1",
                 "_type": "span",
                 "marks": Array [
-                  "bold",
+                  "strong",
                 ],
                 "text": "1",
               },
@@ -340,7 +340,7 @@ describe('plugin:withPortableTextMarksModel', () => {
                 "_key": "1",
                 "_type": "span",
                 "marks": Array [
-                  "bold",
+                  "strong",
                 ],
                 "text": "4",
               },
@@ -358,30 +358,32 @@ describe('plugin:withPortableTextMarksModel', () => {
             focus: {path: [{_key: 'a'}, 'children', {_key: 'a1'}], offset: 0},
             anchor: {path: [{_key: 'a'}, 'children', {_key: '1'}], offset: 1},
           })
-          PortableTextEditor.toggleMark(editor, 'bold')
+          PortableTextEditor.toggleMark(editor, 'strong')
           expect(PortableTextEditor.getValue(editor)).toMatchInlineSnapshot(`
-        Array [
-          Object {
-            "_key": "a",
-            "_type": "myTestBlockType",
-            "children": Array [
-              Object {
-                "_key": "a1",
-                "_type": "span",
-                "marks": Array [],
-                "text": "1234",
-              },
-            ],
-            "markDefs": Array [],
-            "style": "normal",
-          },
-        ]
-      `)
+Array [
+  Object {
+    "_key": "a",
+    "_type": "myTestBlockType",
+    "children": Array [
+      Object {
+        "_key": "a1",
+        "_type": "span",
+        "marks": Array [
+          "strong",
+        ],
+        "text": "1234",
+      },
+    ],
+    "markDefs": Array [],
+    "style": "normal",
+  },
+]
+`)
         }
       })
     })
     it('toggles marks on children with annotation marks correctly', async () => {
-      const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+      const editorRef: RefObject<PortableTextEditor> = createRef()
       const initialValue = [
         {
           _key: 'a',
@@ -430,7 +432,7 @@ describe('plugin:withPortableTextMarksModel', () => {
           focus: {path: [{_key: 'a'}, 'children', {_key: 'a1'}], offset: 0},
           anchor: {path: [{_key: 'a'}, 'children', {_key: 'b1'}], offset: 12},
         })
-        PortableTextEditor.toggleMark(editor, 'bold')
+        PortableTextEditor.toggleMark(editor, 'strong')
         expect(PortableTextEditor.getValue(editor)).toMatchInlineSnapshot(`
         Array [
           Object {
@@ -442,7 +444,7 @@ describe('plugin:withPortableTextMarksModel', () => {
                 "_type": "span",
                 "marks": Array [
                   "abc",
-                  "bold",
+                  "strong",
                 ],
                 "text": "A link",
               },
@@ -450,7 +452,7 @@ describe('plugin:withPortableTextMarksModel', () => {
                 "_key": "a2",
                 "_type": "span",
                 "marks": Array [
-                  "bold",
+                  "strong",
                 ],
                 "text": ", not a link",
               },
@@ -470,7 +472,7 @@ describe('plugin:withPortableTextMarksModel', () => {
     })
 
     it('merges blocks correctly when containing links', async () => {
-      const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+      const editorRef: RefObject<PortableTextEditor> = createRef()
       const initialValue = [
         {
           _key: '5fc57af23597',
@@ -600,7 +602,7 @@ describe('plugin:withPortableTextMarksModel', () => {
     })
 
     it('resets markDefs when splitting a block in the beginning', async () => {
-      const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+      const editorRef: RefObject<PortableTextEditor> = createRef()
       const initialValue = [
         {
           _key: '1987f99da4a2',
@@ -677,11 +679,11 @@ describe('plugin:withPortableTextMarksModel', () => {
             "style": "normal",
           },
           Object {
-            "_key": "2f55670a03bb",
+            "_key": "3",
             "_type": "myTestBlockType",
             "children": Array [
               Object {
-                "_key": "9f5ed7dee7ab",
+                "_key": "2",
                 "_type": "span",
                 "marks": Array [],
                 "text": "",
@@ -691,11 +693,11 @@ describe('plugin:withPortableTextMarksModel', () => {
             "style": "normal",
           },
           Object {
-            "_key": "2",
+            "_key": "2f55670a03bb",
             "_type": "myTestBlockType",
             "children": Array [
               Object {
-                "_key": "1",
+                "_key": "9f5ed7dee7ab",
                 "_type": "span",
                 "marks": Array [
                   "bab319ad3a9d",
@@ -719,7 +721,7 @@ describe('plugin:withPortableTextMarksModel', () => {
   })
   describe('selection', () => {
     it('should emit a new selection object when toggling marks, even though the value is the same', async () => {
-      const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+      const editorRef: RefObject<PortableTextEditor> = createRef()
       const initialValue = [
         {
           _key: '1987f99da4a2',
@@ -765,10 +767,113 @@ describe('plugin:withPortableTextMarksModel', () => {
       expect(currentSelectionObject === nextSelectionObject).toBe(false)
       expect(onChange).toHaveBeenCalledWith({type: 'selection', selection: nextSelectionObject})
     })
+
+    it('should return active marks that cover the whole selection', async () => {
+      const editorRef: RefObject<PortableTextEditor> = createRef()
+      const initialValue = [
+        {
+          _key: 'a',
+          _type: 'myTestBlockType',
+          children: [
+            {
+              _key: 'a1',
+              _type: 'span',
+              marks: ['strong'],
+              text: '12',
+            },
+            {
+              _key: '2',
+              _type: 'span',
+              marks: [],
+              text: '34',
+            },
+          ],
+          markDefs: [{_key: 'strong', _type: 'strong'}],
+          style: 'normal',
+        },
+      ]
+      const onChange = jest.fn()
+      await waitFor(() => {
+        render(
+          <PortableTextEditorTester
+            onChange={onChange}
+            ref={editorRef}
+            schemaType={schemaType}
+            value={initialValue}
+          />,
+        )
+      })
+      const editor = editorRef.current!
+      expect(editor).toBeDefined()
+      await waitFor(() => {
+        PortableTextEditor.focus(editor)
+        PortableTextEditor.select(editor, {
+          focus: {path: [{_key: 'a'}, 'children', {_key: 'a1'}], offset: 0},
+          anchor: {path: [{_key: 'a'}, 'children', {_key: '2'}], offset: 2},
+        })
+        expect(PortableTextEditor.isMarkActive(editor, 'strong')).toBe(false)
+        PortableTextEditor.toggleMark(editor, 'strong')
+        expect(PortableTextEditor.isMarkActive(editor, 'strong')).toBe(true)
+      })
+    })
+
+    it('should return active annotation types that cover the whole selection', async () => {
+      const editorRef: RefObject<PortableTextEditor> = createRef()
+      const initialValue = [
+        {
+          _key: 'a',
+          _type: 'myTestBlockType',
+          children: [
+            {
+              _key: 'a1',
+              _type: 'span',
+              marks: ['bab319ad3a9d'],
+              text: '12',
+            },
+            {
+              _key: '2',
+              _type: 'span',
+              marks: [],
+              text: '34',
+            },
+          ],
+          markDefs: [
+            {
+              _key: 'bab319ad3a9d',
+              _type: 'link',
+              href: 'http://www.123.com',
+            },
+          ],
+          style: 'normal',
+        },
+      ]
+      const onChange = jest.fn()
+      await waitFor(() => {
+        render(
+          <PortableTextEditorTester
+            onChange={onChange}
+            ref={editorRef}
+            schemaType={schemaType}
+            value={initialValue}
+          />,
+        )
+      })
+      const editor = editorRef.current!
+      expect(editor).toBeDefined()
+      await waitFor(() => {
+        PortableTextEditor.focus(editor)
+        PortableTextEditor.select(editor, {
+          focus: {path: [{_key: 'a'}, 'children', {_key: 'a1'}], offset: 0},
+          anchor: {path: [{_key: 'a'}, 'children', {_key: '2'}], offset: 2},
+        })
+        expect(PortableTextEditor.isAnnotationActive(editor, 'link')).toBe(false)
+      })
+    })
   })
+
   describe('removing annotations', () => {
     it('removes the markDefs if the annotation is no longer in use', async () => {
-      const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+      const editorRef: RefObject<PortableTextEditor> = createRef()
       const initialValue = [
         {
           _key: '5fc57af23597',
@@ -836,7 +941,7 @@ describe('plugin:withPortableTextMarksModel', () => {
       })
     })
     it('preserves the markDefs if the annotation will continue in use', async () => {
-      const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+      const editorRef: RefObject<PortableTextEditor> = createRef()
       const initialValue = [
         {
           _key: '5fc57af23597',
@@ -919,7 +1024,7 @@ describe('plugin:withPortableTextMarksModel', () => {
       })
     })
     it('removes the mark from the correct place', async () => {
-      const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+      const editorRef: RefObject<PortableTextEditor> = createRef()
       const initialValue = [
         {
           _key: '5fc57af23597',
@@ -1004,7 +1109,7 @@ describe('plugin:withPortableTextMarksModel', () => {
       })
     })
     it('preserves other marks that apply to the spans', async () => {
-      const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+      const editorRef: RefObject<PortableTextEditor> = createRef()
       const initialValue = [
         {
           _key: '5fc57af23597',
@@ -1139,6 +1244,130 @@ describe('plugin:withPortableTextMarksModel', () => {
                 },
               ],
               style: 'normal',
+            },
+          ])
+        }
+      })
+    })
+  })
+
+  describe('removing nodes', () => {
+    it("should insert an empty text block if it's removing the only block", async () => {
+      const editorRef: RefObject<PortableTextEditor> = createRef()
+      const initialValue = [
+        {
+          _key: '5fc57af23597',
+          _type: 'someObject',
+        },
+      ]
+      const onChange = jest.fn()
+      await waitFor(() => {
+        render(
+          <PortableTextEditorTester
+            onChange={onChange}
+            ref={editorRef}
+            schemaType={schemaType}
+            value={initialValue}
+          />,
+        )
+      })
+
+      await waitFor(() => {
+        if (editorRef.current) {
+          PortableTextEditor.focus(editorRef.current)
+
+          PortableTextEditor.delete(
+            editorRef.current,
+            {
+              focus: {path: [{_key: '5fc57af23597'}], offset: 0},
+              anchor: {path: [{_key: '5fc57af23597'}], offset: 0},
+            },
+            {mode: 'blocks'},
+          )
+
+          const value = PortableTextEditor.getValue(editorRef.current)
+
+          expect(value).toEqual([
+            {
+              _type: 'myTestBlockType',
+              _key: '3',
+              style: 'normal',
+              markDefs: [],
+              children: [
+                {
+                  _type: 'span',
+                  _key: '2',
+                  text: '',
+                  marks: [],
+                },
+              ],
+            },
+          ])
+        }
+      })
+    })
+    it('should not insert a new block if we have more blocks available', async () => {
+      const editorRef: RefObject<PortableTextEditor> = createRef()
+      const initialValue = [
+        {
+          _key: '5fc57af23597',
+          _type: 'someObject',
+        },
+        {
+          _type: 'myTestBlockType',
+          _key: 'existingBlock',
+          style: 'normal',
+          markDefs: [],
+          children: [
+            {
+              _type: 'span',
+              _key: '2',
+              text: '',
+              marks: [],
+            },
+          ],
+        },
+      ]
+      const onChange = jest.fn()
+      await waitFor(() => {
+        render(
+          <PortableTextEditorTester
+            onChange={onChange}
+            ref={editorRef}
+            schemaType={schemaType}
+            value={initialValue}
+          />,
+        )
+      })
+
+      await waitFor(() => {
+        if (editorRef.current) {
+          PortableTextEditor.focus(editorRef.current)
+
+          PortableTextEditor.delete(
+            editorRef.current,
+            {
+              focus: {path: [{_key: '5fc57af23597'}], offset: 0},
+              anchor: {path: [{_key: '5fc57af23597'}], offset: 0},
+            },
+            {mode: 'blocks'},
+          )
+
+          const value = PortableTextEditor.getValue(editorRef.current)
+          expect(value).toEqual([
+            {
+              _type: 'myTestBlockType',
+              _key: 'existingBlock',
+              style: 'normal',
+              markDefs: [],
+              children: [
+                {
+                  _type: 'span',
+                  _key: '2',
+                  text: '',
+                  marks: [],
+                },
+              ],
             },
           ])
         }

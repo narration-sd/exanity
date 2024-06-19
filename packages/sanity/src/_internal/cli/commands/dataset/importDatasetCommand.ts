@@ -1,12 +1,15 @@
-import path from 'path'
-import fs from 'fs/promises'
-import {createReadStream} from 'fs'
-import type {CliCommandContext, CliCommandDefinition, CliOutputter} from '@sanity/cli'
-import {getIt} from 'get-it'
-import {promise} from 'get-it/middleware'
+import {createReadStream} from 'node:fs'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+
+import {type CliCommandContext, type CliCommandDefinition, type CliOutputter} from '@sanity/cli'
 import sanityImport from '@sanity/import'
-import padStart from 'lodash/padStart'
+import {getIt} from 'get-it'
+// eslint-disable-next-line import/extensions
+import {promise} from 'get-it/middleware'
+import {padStart} from 'lodash'
 import prettyMs from 'pretty-ms'
+
 import {chooseDatasetPrompt} from '../../actions/dataset/chooseDatasetPrompt'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName'
 import {debug} from '../../debug'
@@ -23,6 +26,7 @@ Options
 
 Rarely used options (should generally not be used)
   --allow-assets-in-different-dataset Allow asset documents to reference different project/dataset
+  --allow-system-documents Allow system documents like dataset permissions and custom retention to be imported
 
 Examples
   # Import "moviedb.ndjson" from the current directory to the dataset called "moviedb"
@@ -47,8 +51,9 @@ interface ImportFlags {
   'asset-concurrency'?: boolean
   'replace-assets'?: boolean
   'skip-cross-dataset-references'?: boolean
-  replace?: boolean
-  missing?: boolean
+  'allow-system-documents'?: boolean
+  'replace'?: boolean
+  'missing'?: boolean
 }
 
 interface ParsedImportFlags {
@@ -56,6 +61,7 @@ interface ParsedImportFlags {
   allowFailingAssets?: boolean
   assetConcurrency?: boolean
   skipCrossDatasetReferences?: boolean
+  allowSystemDocuments?: boolean
   replaceAssets?: boolean
   replace?: boolean
   missing?: boolean
@@ -82,6 +88,7 @@ function parseFlags(rawFlags: ImportFlags): ParsedImportFlags {
   const assetConcurrency = toBoolIfSet(rawFlags['asset-concurrency'])
   const replaceAssets = toBoolIfSet(rawFlags['replace-assets'])
   const skipCrossDatasetReferences = toBoolIfSet(rawFlags['skip-cross-dataset-references'])
+  const allowSystemDocuments = toBoolIfSet(rawFlags['allow-system-documents'])
   const replace = toBoolIfSet(rawFlags.replace)
   const missing = toBoolIfSet(rawFlags.missing)
   return {
@@ -89,6 +96,7 @@ function parseFlags(rawFlags: ImportFlags): ParsedImportFlags {
     allowFailingAssets,
     assetConcurrency,
     skipCrossDatasetReferences,
+    allowSystemDocuments,
     replaceAssets,
     replace,
     missing,
@@ -110,6 +118,7 @@ const importDatasetCommand: CliCommandDefinition = {
       allowFailingAssets,
       assetConcurrency,
       skipCrossDatasetReferences,
+      allowSystemDocuments,
       replaceAssets,
     } = flags
 
@@ -248,6 +257,7 @@ const importDatasetCommand: CliCommandDefinition = {
         allowFailingAssets,
         allowAssetsInDifferentDataset,
         skipCrossDatasetReferences,
+        allowSystemDocuments,
         assetConcurrency,
         replaceAssets,
       })

@@ -1,17 +1,18 @@
-import React, {useCallback, useEffect, useState} from 'react'
-import type {Image, ImageSchemaType} from '@sanity/types'
-import {Box, Card, Flex, Text, Grid, Heading} from '@sanity/ui'
-import styled from 'styled-components'
-import {FormField} from '../../../components/formField'
-import {set} from '../../../patch'
-import {RatioBox} from '../common/RatioBox'
-import type {ObjectInputProps} from '../../../types'
-import {useDidUpdate} from '../../../hooks/useDidUpdate'
+import {type Image, type ImageSchemaType} from '@sanity/types'
+import {Box, Card, Flex, Grid, Heading, Text} from '@sanity/ui'
+import {type ReactNode, useCallback, useEffect, useState} from 'react'
+import {styled} from 'styled-components'
+
 import {ChangeIndicator} from '../../../../changeIndicators'
-import {EMPTY_ARRAY} from '../../../../util'
-import {useTranslation} from '../../../../i18n'
 import {LoadingBlock} from '../../../../components/loadingBlock'
-import {ImageTool, HotspotImage, DEFAULT_CROP, DEFAULT_HOTSPOT} from './imagetool'
+import {useTranslation} from '../../../../i18n'
+import {EMPTY_ARRAY} from '../../../../util'
+import {FormField} from '../../../components/formField'
+import {useDidUpdate} from '../../../hooks/useDidUpdate'
+import {set} from '../../../patch'
+import {type ObjectInputProps} from '../../../types'
+import {RatioBox} from '../common/RatioBox'
+import {DEFAULT_CROP, DEFAULT_HOTSPOT, HotspotImage, ImageTool} from './imagetool'
 import {useLoadImage} from './useLoadImage'
 
 export interface ImageToolInputProps
@@ -37,7 +38,7 @@ const Placeholder = styled.div`
   min-height: 6em;
 `
 
-function LoadStatus(props: {children: React.ReactNode}) {
+function LoadStatus(props: {children: ReactNode}) {
   return (
     <Flex align="center" justify="center" padding={4} style={{overflowWrap: 'break-word'}}>
       {props.children}

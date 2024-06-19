@@ -1,13 +1,15 @@
-import path from 'path'
-import fs from 'fs/promises'
-import {constants as fsConstants} from 'fs'
-import {build} from 'vite'
+import {constants as fsConstants} from 'node:fs'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+
+import {type UserViteConfig} from '@sanity/cli'
 import readPkgUp from 'read-pkg-up'
-import type {UserViteConfig} from '@sanity/cli'
-import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig'
-import {generateWebManifest} from './webManifest'
-import {writeSanityRuntime} from './runtime'
+import {build} from 'vite'
+
 import {debug as serverDebug} from './debug'
+import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig'
+import {writeSanityRuntime} from './runtime'
+import {generateWebManifest} from './webManifest'
 
 const debug = serverDebug.extend('static')
 
@@ -29,6 +31,7 @@ export interface StaticBuildOptions {
   minify?: boolean
   profile?: boolean
   sourceMap?: boolean
+  importMap?: {imports?: Record<string, string>}
 
   vite?: UserViteConfig
 }
@@ -43,6 +46,7 @@ export async function buildStaticFiles(
     minify = true,
     basePath,
     vite: extendViteConfig,
+    importMap,
   } = options
 
   debug('Writing Sanity runtime files')
@@ -57,6 +61,7 @@ export async function buildStaticFiles(
     minify,
     sourceMap,
     mode,
+    importMap,
   })
 
   // Extend Vite configuration with user-provided config

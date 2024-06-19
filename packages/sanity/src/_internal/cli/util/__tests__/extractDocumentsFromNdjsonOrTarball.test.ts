@@ -1,6 +1,9 @@
-import fs from 'fs'
-import path from 'path'
+import fs from 'node:fs'
+import path from 'node:path'
+
+import {describe, expect, it} from '@jest/globals'
 import {type SanityDocument} from '@sanity/types'
+
 import {extractDocumentsFromNdjsonOrTarball} from '../extractDocumentsFromNdjsonOrTarball'
 
 describe('extractDocumentsFromNdjsonOrTarball', () => {

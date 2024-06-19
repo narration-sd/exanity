@@ -1,27 +1,29 @@
 /* eslint-disable no-console, no-process-exit, no-sync */
-import os from 'os'
-import path from 'path'
-import {existsSync} from 'fs'
+import {existsSync} from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+
 import chalk from 'chalk'
 import dotenv from 'dotenv'
-import resolveFrom from 'resolve-from'
 import {machineId} from 'node-machine-id'
-import {runUpdateCheck} from './util/updateNotifier'
-import {parseArguments} from './util/parseArguments'
-import {mergeCommands} from './util/mergeCommands'
+import resolveFrom from 'resolve-from'
+
+import {CliCommand} from './__telemetry__/cli.telemetry'
 import {getCliRunner} from './CommandRunner'
 import {baseCommands} from './commands'
-import {neatStack} from './util/neatStack'
-import {loadEnv} from './util/loadEnv'
-import {resolveRootDir} from './util/resolveRootDir'
-import {CliConfigResult, getCliConfig} from './util/getCliConfig'
-import {getInstallCommand} from './packageManager'
-import {CommandRunnerOptions, TelemetryUserProperties} from './types'
 import {debug} from './debug'
+import {getInstallCommand} from './packageManager'
+import {type CommandRunnerOptions, type TelemetryUserProperties} from './types'
 import {createTelemetryStore} from './util/createTelemetryStore'
 import {detectRuntime} from './util/detectRuntime'
+import {type CliConfigResult, getCliConfig} from './util/getCliConfig'
+import {loadEnv} from './util/loadEnv'
+import {mergeCommands} from './util/mergeCommands'
+import {neatStack} from './util/neatStack'
+import {parseArguments} from './util/parseArguments'
+import {resolveRootDir} from './util/resolveRootDir'
 import {telemetryDisclosure} from './util/telemetryDisclosure'
-import {CliCommand} from './__telemetry__/cli.telemetry'
+import {runUpdateCheck} from './util/updateNotifier'
 
 const sanityEnv = process.env.SANITY_INTERNAL_ENV || 'production' // eslint-disable-line no-process-env
 const knownEnvs = ['development', 'staging', 'production']
@@ -87,7 +89,7 @@ export async function runCli(cliRoot: string, {cliVersion}: {cliVersion: string}
     runtimeVersion: process.version,
     runtime: detectRuntime(),
     cliVersion: pkg.version,
-    platform: process.platform,
+    machinePlatform: process.platform,
     cpuArchitecture: process.arch,
     projectId: cliConfig?.config?.api?.projectId,
     dataset: cliConfig?.config?.api?.dataset,
@@ -246,10 +248,10 @@ function installUnhandledRejectionsHandler() {
   })
 }
 
-function rejectionHasStack(
-  reason: Record<string, unknown> | null | undefined,
-): reason is {stack: string} {
-  return Boolean(reason && 'stack' in reason && typeof reason.stack === 'string')
+function rejectionHasStack(reason: unknown): reason is {stack: string} {
+  return Boolean(
+    reason && typeof reason === 'object' && 'stack' in reason && typeof reason.stack === 'string',
+  )
 }
 
 function warnOnInferredProjectDir(isInit: boolean, cwd: string, workDir: string): void {

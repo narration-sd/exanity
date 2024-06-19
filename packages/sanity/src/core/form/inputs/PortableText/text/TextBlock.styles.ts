@@ -1,9 +1,10 @@
 /* eslint-disable camelcase */
 
 import {hues} from '@sanity/color'
-import {Box, Flex, Theme} from '@sanity/ui'
-import styled, {css} from 'styled-components'
+import {Box, Flex, type Theme} from '@sanity/ui'
 import {getTheme_v2, rgba} from '@sanity/ui/theme'
+import {css, styled} from 'styled-components'
+
 import {TEXT_BULLET_MARKERS, TEXT_NUMBER_FORMATS} from './constants'
 import {createListName} from './helpers'
 
@@ -40,6 +41,7 @@ function textBlockStyle(props: TextBlockStyleProps & {theme: Theme}) {
       background-color: var(--marker-bg-color);
       // This is to make sure the marker is always behind the text
       z-index: -1;
+      pointer-events: none;
     }
 
     &[data-markers] {
@@ -114,10 +116,6 @@ export const ListPrefixWrapper = styled.div`
   white-space: nowrap;
 `
 
-export const BlockExtrasContainer = styled(Box)`
-  user-select: none;
-`
-
 export const BlockActionsOuter = styled(Box)`
   line-height: 0;
   width: 25px;
@@ -166,6 +164,7 @@ export const ChangeIndicatorWrapper = styled.div<{$hasChanges: boolean}>(
       top: 0;
       bottom: 0;
       padding-left: ${space[1]}px;
+      padding-right: ${space[2]}px;
       user-select: none;
 
       ${!$hasChanges &&

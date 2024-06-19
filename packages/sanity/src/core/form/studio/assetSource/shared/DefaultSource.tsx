@@ -1,16 +1,28 @@
-import type {Subscription} from 'rxjs'
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {DownloadIcon, InfoOutlineIcon} from '@sanity/icons'
+import {type Asset, type AssetFromSource, type AssetSourceComponentProps} from '@sanity/types'
 import {Card, Flex, Stack, Text} from '@sanity/ui'
-import {Asset, AssetFromSource, AssetSourceComponentProps} from '@sanity/types'
 import {uniqueId} from 'lodash'
-import styled from 'styled-components'
+import {
+  type ForwardedRef,
+  forwardRef,
+  type KeyboardEvent,
+  memo,
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import {type Subscription} from 'rxjs'
+import {styled} from 'styled-components'
+
+import {Button, Dialog} from '../../../../../ui-components'
 import {useClient, useListFormat} from '../../../../hooks'
-import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../../studioClient'
 import {Translate, useTranslation} from '../../../../i18n'
+import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../../studioClient'
 import {FileListView} from '../file/FileListView'
 import {ImageListView} from '../image/ImageListView'
-import {Button, Dialog} from '../../../../../ui-components'
 
 const PER_PAGE = 200
 const ASSET_TYPE_IMAGE = 'sanity.imageAsset'
@@ -89,7 +101,7 @@ const CardLoadMore = styled(Card)`
 
 const DefaultAssetSource = function DefaultAssetSource(
   props: AssetSourceComponentProps,
-  ref: React.ForwardedRef<HTMLDivElement>,
+  ref: ForwardedRef<HTMLDivElement>,
 ) {
   const client = useClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
   const versionedClient = useMemo(() => client.withConfig({apiVersion: '2023-02-14'}), [client])
@@ -149,7 +161,7 @@ const DefaultAssetSource = function DefaultAssetSource(
   )
 
   const handleItemClick = useCallback(
-    (event: React.MouseEvent) => {
+    (event: MouseEvent) => {
       event.preventDefault()
       const id = event.currentTarget.getAttribute('data-id')
       if (!id) {
@@ -161,7 +173,7 @@ const DefaultAssetSource = function DefaultAssetSource(
   )
 
   const handleItemKeyPress = useCallback(
-    (event: React.KeyboardEvent) => {
+    (event: KeyboardEvent) => {
       if (event.key === 'Enter') {
         event.preventDefault()
         const id = event.currentTarget.getAttribute('data-id')
@@ -181,7 +193,7 @@ const DefaultAssetSource = function DefaultAssetSource(
   }, [onClose])
 
   const handleFetchNextPage = useCallback(
-    (event: React.MouseEvent) => {
+    (event: MouseEvent) => {
       event.preventDefault()
       fetchPage(++currentPageNumber.current)
     },
@@ -282,4 +294,4 @@ const DefaultAssetSource = function DefaultAssetSource(
   )
 }
 
-export const DefaultSource = React.memo(React.forwardRef(DefaultAssetSource))
+export const DefaultSource = memo(forwardRef(DefaultAssetSource))

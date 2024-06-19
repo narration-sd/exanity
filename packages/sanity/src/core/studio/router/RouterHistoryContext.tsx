@@ -1,18 +1,14 @@
-import React, {createContext, useContext} from 'react'
-import type {RouterHistory} from './types'
+import {type ReactNode, useContext} from 'react'
+import {RouterHistoryContext} from 'sanity/_singletons'
 
-/**
- * Internal use only. Userland should leverage the public `useRouter` APIs.
- * @internal
- */
-const RouterHistoryContext = createContext<RouterHistory | null>(null)
+import {type RouterHistory} from './types'
 
 /** @internal */
 export function RouterHistoryProvider({
   children,
   history,
 }: {
-  children: React.ReactNode
+  children: ReactNode
   history: RouterHistory
 }) {
   return <RouterHistoryContext.Provider value={history}>{children}</RouterHistoryContext.Provider>

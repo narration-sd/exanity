@@ -1,5 +1,5 @@
 import {Stack, Text} from '@sanity/ui'
-import React from 'react'
+
 import {useTranslation} from '../../../i18n'
 
 /** @internal */

@@ -1,6 +1,11 @@
 /* eslint-disable complexity */
 import SplitPane from '@rexxars/react-split-pane'
-import type {ClientPerspective, ListenEvent, MutationEvent, SanityClient} from '@sanity/client'
+import {
+  type ClientPerspective,
+  type ListenEvent,
+  type MutationEvent,
+  type SanityClient,
+} from '@sanity/client'
 import {CopyIcon, ErrorOutlineIcon, PlayIcon, StopIcon} from '@sanity/icons'
 import {
   Box,
@@ -14,17 +19,19 @@ import {
   Stack,
   Text,
   TextInput,
-  ToastContextValue,
+  type ToastContextValue,
   Tooltip,
 } from '@sanity/ui'
-import isHotkey from 'is-hotkey'
-import React, {ChangeEvent, type RefObject} from 'react'
-import {TFunction} from 'sanity'
+import {isHotkey} from 'is-hotkey-esm'
+import {type ChangeEvent, createRef, PureComponent, type RefObject} from 'react'
+import {type TFunction, Translate} from 'sanity'
+
 import {API_VERSIONS, DEFAULT_API_VERSION} from '../apiVersions'
 import {VisionCodeMirror} from '../codemirror/VisionCodeMirror'
-import {DEFAULT_PERSPECTIVE, PERSPECTIVES, isPerspective} from '../perspectives'
-import type {VisionProps} from '../types'
+import {DEFAULT_PERSPECTIVE, isPerspective, PERSPECTIVES} from '../perspectives'
+import {type VisionProps} from '../types'
 import {encodeQueryString} from '../util/encodeQueryString'
+import {getCsvBlobUrl, getJsonBlobUrl} from '../util/getBlobUrl'
 import {getLocalStorage, type LocalStorageish} from '../util/localStorage'
 import {parseApiQueryString, type ParsedApiQueryString} from '../util/parseApiQueryString'
 import {prefixApiVersion} from '../util/prefixApiVersion'
@@ -36,8 +43,10 @@ import {ParamsEditor, type ParamsEditorChangeEvent} from './ParamsEditor'
 import {PerspectivePopover} from './PerspectivePopover'
 import {QueryErrorDialog} from './QueryErrorDialog'
 import {ResultView} from './ResultView'
+import {SaveCsvButton, SaveJsonButton} from './SaveResultButtons'
 import {
   ControlsContainer,
+  DownloadsCard,
   Header,
   InputBackgroundContainer,
   InputBackgroundContainerLeft,
@@ -45,13 +54,14 @@ import {
   QueryCopyLink,
   Result,
   ResultContainer,
+  ResultFooter,
   ResultInnerContainer,
   ResultOuterContainer,
   Root,
+  SaveResultLabel,
   SplitpaneContainer,
   StyledLabel,
   TimingsCard,
-  TimingsFooter,
   TimingsTextContainer,
 } from './VisionGui.styled'
 
@@ -140,7 +150,7 @@ interface VisionGuiState {
   paneSizeOptions: PaneSizeOptions
 }
 
-export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiState> {
+export class VisionGui extends PureComponent<VisionGuiProps, VisionGuiState> {
   _visionRoot: RefObject<HTMLDivElement>
   _queryEditorContainer: RefObject<HTMLDivElement>
   _paramsEditorContainer: RefObject<HTMLDivElement>
@@ -189,11 +199,11 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
       lastParams = '{\n  \n}'
     }
 
-    this._visionRoot = React.createRef()
-    this._operationUrlElement = React.createRef()
-    this._queryEditorContainer = React.createRef()
-    this._paramsEditorContainer = React.createRef()
-    this._customApiVersionElement = React.createRef()
+    this._visionRoot = createRef()
+    this._operationUrlElement = createRef()
+    this._queryEditorContainer = createRef()
+    this._paramsEditorContainer = createRef()
+    this._customApiVersionElement = createRef()
 
     this._client = props.client.withConfig({
       apiVersion: customApiVersion || apiVersion,
@@ -663,6 +673,8 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
       url,
     } = this.state
     const hasResult = !error && !queryInProgress && typeof queryResult !== 'undefined'
+    const jsonUrl = hasResult ? getJsonBlobUrl(queryResult) : ''
+    const csvUrl = hasResult ? getCsvBlobUrl(queryResult) : ''
 
     return (
       <Root
@@ -942,7 +954,7 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                 </ResultContainer>
               </ResultInnerContainer>
               {/* Execution time */}
-              <TimingsFooter>
+              <ResultFooter justify="space-between" direction={['column', 'column', 'row']}>
                 <TimingsCard paddingX={4} paddingY={3} sizing="border">
                   <TimingsTextContainer align="center">
                     <Box>
@@ -963,7 +975,26 @@ export class VisionGui extends React.PureComponent<VisionGuiProps, VisionGuiStat
                     </Box>
                   </TimingsTextContainer>
                 </TimingsCard>
-              </TimingsFooter>
+
+                {hasResult && (
+                  <DownloadsCard paddingX={4} paddingY={3} sizing="border">
+                    <SaveResultLabel muted>
+                      <Translate
+                        components={{
+                          SaveResultButtons: () => (
+                            <>
+                              <SaveJsonButton blobUrl={jsonUrl} />
+                              <SaveCsvButton blobUrl={csvUrl} />
+                            </>
+                          ),
+                        }}
+                        i18nKey="result.save-result-as-format"
+                        t={t}
+                      />
+                    </SaveResultLabel>
+                  </DownloadsCard>
+                )}
+              </ResultFooter>
             </ResultOuterContainer>
           </SplitPane>
         </SplitpaneContainer>

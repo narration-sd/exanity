@@ -1,10 +1,17 @@
-import {chromium, Browser, Page, ElementHandle, BrowserContext} from '@playwright/test'
+import {
+  type Browser,
+  type BrowserContext,
+  chromium,
+  type ElementHandle,
+  type Page,
+} from '@playwright/test'
+import {type PortableTextBlock} from '@sanity/types'
 import NodeEnvironment from 'jest-environment-node'
 import {isEqual} from 'lodash'
 import ipc from 'node-ipc'
-import {PortableTextBlock} from '@sanity/types'
+
+import {type EditorSelection} from '../../src'
 import {normalizeSelection} from '../../src/utils/selection'
-import type {EditorSelection} from '../../src'
 
 ipc.config.id = 'collaborative-jest-environment-ipc-client'
 ipc.config.retry = 5000
@@ -82,7 +89,7 @@ export default class CollaborationEnvironment extends NodeEnvironment {
     }
 
     // This will identify this test throughout the web environment
-    const testId = (Math.random() + 1).toString(36).substring(7)
+    const testId = (Math.random() + 1).toString(36).slice(7)
 
     // Hook up page console and npm debug in the PTE
     if (DEBUG) {
@@ -94,11 +101,11 @@ export default class CollaborationEnvironment extends NodeEnvironment {
       }, DEBUG)
       this._pageA.on('console', (message) =>
         // eslint-disable-next-line no-console
-        console.log(`A:${message.type().substring(0, 3).toUpperCase()} ${message.text()}`),
+        console.log(`A:${message.type().slice(0, 3).toUpperCase()} ${message.text()}`),
       )
       this._pageB.on('console', (message) =>
         // eslint-disable-next-line no-console
-        console.log(`B:${message.type().substring(0, 3).toUpperCase()} ${message.text()}`),
+        console.log(`B:${message.type().slice(0, 3).toUpperCase()} ${message.text()}`),
       )
     }
     this._pageA.on('pageerror', (err) => {
@@ -113,7 +120,7 @@ export default class CollaborationEnvironment extends NodeEnvironment {
     this.global.setDocumentValue = async (
       value: PortableTextBlock[] | undefined,
     ): Promise<void> => {
-      const revId = (Math.random() + 1).toString(36).substring(7)
+      const revId = (Math.random() + 1).toString(36).slice(7)
       ipc.of.socketServer.emit('payload', JSON.stringify({type: 'value', value, testId, revId}))
       await this._pageA?.waitForSelector(`code[data-rev-id="${revId}"]`, {
         timeout: REVISION_TIMEOUT_MS,
@@ -176,6 +183,9 @@ export default class CollaborationEnvironment extends NodeEnvironment {
           }
 
           const waitForSelection = async (selection: EditorSelection) => {
+            if (selection && typeof selection.backward === 'undefined') {
+              selection.backward = false
+            }
             const value = await valueHandle.evaluate((node): PortableTextBlock[] | undefined =>
               node instanceof HTMLElement && node.innerText
                 ? JSON.parse(node.innerText)
@@ -299,6 +309,9 @@ export default class CollaborationEnvironment extends NodeEnvironment {
               await editableHandle.focus()
             },
             setSelection: async (selection: EditorSelection | null) => {
+              if (selection && typeof selection.backward === 'undefined') {
+                selection.backward = false
+              }
               ipc.of.socketServer.emit(
                 'payload',
                 JSON.stringify({

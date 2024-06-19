@@ -1,3 +1,4 @@
+/* eslint-disable max-statements */
 /* eslint-disable complexity */
 /**
  *
@@ -5,17 +6,18 @@
  *
  */
 
-import {isEqual, flatten, uniq} from 'lodash'
-import {Editor, Range, Transforms, Text, Path, NodeEntry, Element, Descendant} from 'slate'
+import {isEqual, uniq} from 'lodash'
+import {type Subject} from 'rxjs'
+import {type Descendant, Editor, Element, Path, Range, Text, Transforms} from 'slate'
 
-import {Subject} from 'rxjs'
-import {debugWithName} from '../../utils/debug'
 import {
-  EditorChange,
-  PortableTextMemberSchemaTypes,
-  PortableTextSlateEditor,
+  type EditorChange,
+  type PortableTextMemberSchemaTypes,
+  type PortableTextSlateEditor,
 } from '../../types/editor'
+import {debugWithName} from '../../utils/debug'
 import {toPortableTextRange} from '../../utils/ranges'
+import {EMPTY_MARKS} from '../../utils/values'
 
 const debug = debugWithName('plugin:withPortableTextMarkModel')
 
@@ -71,6 +73,32 @@ export function createWithPortableTextMarkModel(
           debug('Adding .marks to span node')
           Transforms.setNodes(editor, {marks: []}, {at: path})
           editor.onChange()
+        }
+        const hasSpanMarks = isSpan && (node.marks || []).length > 0
+        if (hasSpanMarks) {
+          const spanMarks = node.marks || EMPTY_MARKS
+          // Test that every annotation mark used has a definition in markDefs
+          const annotationMarks = spanMarks.filter(
+            (mark) => !types.decorators.map((dec) => dec.value).includes(mark),
+          )
+          if (annotationMarks.length > 0) {
+            const [block] = Editor.node(editor, Path.parent(path))
+            const orphanedMarks =
+              (editor.isTextBlock(block) &&
+                annotationMarks.filter(
+                  (mark) => !block.markDefs?.find((def) => def._key === mark),
+                )) ||
+              []
+            if (orphanedMarks.length > 0) {
+              debug('Removing orphaned .marks from span node')
+              Transforms.setNodes(
+                editor,
+                {marks: spanMarks.filter((mark) => !orphanedMarks.includes(mark))},
+                {at: path},
+              )
+              editor.onChange()
+            }
+          }
         }
         for (const op of editor.operations) {
           // Make sure markDefs are copied over when merging two blocks.
@@ -174,14 +202,31 @@ export function createWithPortableTextMarkModel(
           editor.onChange()
         }
       }
-      // Check consistency of markDefs
+      // Check consistency of markDefs (unless we are merging two nodes)
       if (
-        isTextBlock &&
-        editor.operations.some((op) =>
-          ['split_node', 'remove_node', 'remove_text', 'merge_node'].includes(op.type),
+        editor.isTextBlock(node) &&
+        !editor.operations.some(
+          (op) => op.type === 'merge_node' && 'markDefs' in op.properties && op.path.length === 1,
         )
       ) {
-        normalizeMarkDefs(editor, types)
+        const newMarkDefs = (node.markDefs || []).filter((def) => {
+          return node.children.find((child) => {
+            return (
+              Text.isText(child) && Array.isArray(child.marks) && child.marks.includes(def._key)
+            )
+          })
+        })
+        if (node.markDefs && !isEqual(newMarkDefs, node.markDefs)) {
+          debug('Removing markDef not in use')
+          Transforms.setNodes(
+            editor,
+            {
+              markDefs: newMarkDefs,
+            },
+            {at: path},
+          )
+          editor.onChange()
+        }
       }
     }
 
@@ -241,9 +286,8 @@ export function createWithPortableTextMarkModel(
           const splitTextNodes = [
             ...Editor.nodes(editor, {at: editor.selection, match: Text.isText}),
           ]
-          const shouldRemoveMark = flatten(
-            splitTextNodes.map((item) => item[0]).map((node) => node.marks),
-          ).includes(mark)
+          const shouldRemoveMark = splitTextNodes.every((node) => node[0].marks?.includes(mark))
+
           if (shouldRemoveMark) {
             editor.removeMark(mark)
             return editor
@@ -336,19 +380,24 @@ export function createWithPortableTextMarkModel(
       if (!editor.selection) {
         return false
       }
-      let existingMarks =
+
+      const selectedNodes = Array.from(
+        Editor.nodes(editor, {match: Text.isText, at: editor.selection}),
+      )
+
+      if (Range.isExpanded(editor.selection)) {
+        return selectedNodes.every((n) => {
+          const [node] = n
+
+          return node.marks?.includes(mark)
+        })
+      }
+
+      return (
         {
           ...(Editor.marks(editor) || {}),
         }.marks || []
-      if (Range.isExpanded(editor.selection)) {
-        Array.from(Editor.nodes(editor, {match: Text.isText, at: editor.selection})).forEach(
-          (n) => {
-            const [node] = n as NodeEntry<Text>
-            existingMarks = uniq([...existingMarks, ...((node.marks as string[]) || [])])
-          },
-        )
-      }
-      return existingMarks.includes(mark)
+      ).includes(mark)
     }
 
     // Custom editor function to toggle a mark
@@ -385,44 +434,6 @@ export function createWithPortableTextMarkModel(
             Transforms.mergeNodes(editor, {at: nextPath, voids: true})
             editor.onChange()
           }
-        }
-      }
-    }
-  }
-}
-/**
- * Normalize markDefs, removing those not in use.
- * @internal
- */
-export function normalizeMarkDefs(
-  editor: PortableTextSlateEditor,
-  types: PortableTextMemberSchemaTypes,
-): void {
-  const {selection} = editor
-  if (selection) {
-    const blocks = Editor.nodes(editor, {
-      at: selection,
-      match: (n) => n._type === types.block.name,
-    })
-    for (const [block, path] of blocks) {
-      if (editor.isTextBlock(block)) {
-        const newMarkDefs = (block.markDefs || []).filter((def) => {
-          return block.children.find((child) => {
-            return (
-              Text.isText(child) && Array.isArray(child.marks) && child.marks.includes(def._key)
-            )
-          })
-        })
-        if (!isEqual(newMarkDefs, block.markDefs)) {
-          debug('Removing markDef not in use')
-          Transforms.setNodes(
-            editor,
-            {
-              markDefs: newMarkDefs,
-            },
-            {at: path},
-          )
-          editor.onChange()
         }
       }
     }

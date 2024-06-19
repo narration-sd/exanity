@@ -1,11 +1,12 @@
-import type {SanityClient} from '@sanity/client'
-import type {CurrentUser} from '@sanity/types'
+import {type SanityClient} from '@sanity/client'
+import {type CurrentUser} from '@sanity/types'
+
 import {
   createWorkspaceFromConfig,
-  SchemaPluginOptions,
-  SingleWorkspace,
-  Source,
-  Workspace,
+  type SchemaPluginOptions,
+  type SingleWorkspace,
+  type Source,
+  type Workspace,
 } from '../../src/core/config'
 import {createMockSanityClient} from '../mocks/mockSanityClient'
 
@@ -39,6 +40,7 @@ const defaultMockConfig: SingleWorkspace = {
   projectId: 'mock-project-id',
   dataset: 'mock-data-set',
   schema: defaultMockSchema,
+  scheduledPublishing: {enabled: false},
 }
 
 export interface MockWorkspaceOptions {

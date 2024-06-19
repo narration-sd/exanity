@@ -1,0 +1,21 @@
+{
+  "ignores": [
+    "@repo/tsconfig",
+    "@sanity/pkg-utils",
+    "sanity",
+    "@sanity/icons",
+    "pluralize-esm",
+    "vite",
+    "@portabletext/toolkit",
+    "react",
+    "@sanity/ui",
+    "lodash.get",
+    "@portabletext/types",
+    "slug",
+    "@sanity/asset-utils",
+    "styled-components",
+    "sanity-plugin-hotspot-array",
+    "react-icons",
+    "react-barcode"
+  ]
+}

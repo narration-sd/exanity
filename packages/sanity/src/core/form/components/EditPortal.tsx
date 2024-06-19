@@ -1,8 +1,9 @@
-import React, {type ReactNode, useState, useRef} from 'react'
-import {Box, ResponsiveWidthProps} from '@sanity/ui'
+import {Box, type ResponsiveWidthProps} from '@sanity/ui'
+import {type DragEvent, type ReactElement, type ReactNode, useRef, useState} from 'react'
+
 import {Dialog} from '../../../ui-components'
-import {PresenceOverlay} from '../../presence'
 import {PopoverDialog} from '../../components'
+import {PresenceOverlay} from '../../presence'
 import {VirtualizerScrollInstanceProvider} from '../inputs/arrays/ArrayOfObjectsInput/List/VirtualizerScrollInstanceProvider'
 
 const PRESENCE_MARGINS: [number, number, number, number] = [0, 0, 1, 0]
@@ -19,11 +20,15 @@ interface Props {
   autofocus?: boolean
 }
 
-function onDragEnter(event: React.DragEvent<HTMLDivElement>) {
+function onDragEnter(event: DragEvent<HTMLDivElement>) {
   return event.stopPropagation()
 }
 
-export function EditPortal(props: Props): React.ReactElement {
+function onDrop(event: DragEvent<HTMLDivElement>) {
+  return event.stopPropagation()
+}
+
+export function EditPortal(props: Props): ReactElement {
   const {
     children,
     header,
@@ -55,6 +60,7 @@ export function EditPortal(props: Props): React.ReactElement {
           onClickOutside={onClose}
           onClose={onClose}
           onDragEnter={onDragEnter}
+          onDrop={onDrop}
           width={width}
           contentRef={setDocumentScrollElement}
           __unstable_autoFocus={autofocus}

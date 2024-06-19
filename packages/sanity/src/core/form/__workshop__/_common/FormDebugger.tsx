@@ -1,6 +1,5 @@
-import React from 'react'
+import {type Path} from '@sanity/types'
 import {Box, Card, Code, Stack, Text} from '@sanity/ui'
-import type {Path} from '@sanity/types'
 
 export interface FormDebuggerOptions {
   value: any | null

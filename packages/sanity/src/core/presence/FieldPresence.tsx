@@ -1,6 +1,8 @@
-import React, {memo, useContext, useId, useMemo, useRef} from 'react'
+import {AvatarCounter, type AvatarPosition} from '@sanity/ui'
 import {sortBy, uniqBy} from 'lodash'
-import {AvatarCounter, AvatarPosition} from '@sanity/ui'
+import {memo, useContext, useId, useMemo, useRef} from 'react'
+import {FormFieldPresenceContext} from 'sanity/_singletons'
+
 import {UserAvatar} from '../components/userAvatar'
 import {
   AVATAR_DISTANCE,
@@ -8,12 +10,11 @@ import {
   DEFAULT_MAX_AVATARS_FIELDS,
   DISABLE_OVERLAY,
 } from './constants'
-import {splitRight} from './utils'
 import {FlexWrapper, InnerBox} from './FieldPresence.styled'
-import {FormFieldPresenceContext} from './context'
-import {PresenceTooltip} from './PresenceTooltip'
 import {useReporter} from './overlay/tracker'
-import {FormNodePresence} from './types'
+import {PresenceTooltip} from './PresenceTooltip'
+import {type FormNodePresence} from './types'
+import {splitRight} from './utils'
 
 /** @internal */
 export interface FieldPresenceInnerProps {

@@ -9,10 +9,11 @@ import {
   useGlobalKeyDown,
   useLayer,
 } from '@sanity/ui'
-import React, {useCallback, useState} from 'react'
+import {useCallback, useState} from 'react'
+import {type DocumentActionConfirmDialogProps, useTranslation} from 'sanity'
+
 import {structureLocaleNamespace} from '../../../../i18n'
 import {POPOVER_FALLBACK_PLACEMENTS} from './constants'
-import {DocumentActionConfirmDialogProps, useTranslation} from 'sanity'
 
 export function ConfirmDialog(props: {
   dialog: DocumentActionConfirmDialogProps
@@ -76,12 +77,14 @@ function ConfirmDialogContent(props: {dialog: DocumentActionConfirmDialogProps})
       <Box paddingX={4} paddingY={3} style={{borderTop: '1px solid var(--card-border-color)'}}>
         <Grid columns={2} gap={2}>
           <Button
+            data-testid="confirm-dialog-cancel-button"
             icon={cancelButtonIcon}
             onClick={onCancel}
             mode="ghost"
             text={cancelButtonText || t('confirm-dialog.cancel-button.fallback-text')}
           />
           <Button
+            data-testid="confirm-dialog-confirm-button"
             icon={confirmButtonIcon}
             onClick={onConfirm}
             text={confirmButtonText || t('confirm-dialog.confirm-button.fallback-text')}

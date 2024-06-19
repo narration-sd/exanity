@@ -1,15 +1,7 @@
+import {type Path} from '@sanity/types'
 import {Stack, Text} from '@sanity/ui'
-import {memo, useMemo} from 'react'
 import {fromString as pathFromString} from '@sanity/util/paths'
-import {Path} from '@sanity/types'
-import {DocumentPaneNode} from '../../types'
-import {usePaneRouter} from '../../components'
-import {ErrorPane} from '../error'
-import {LoadingPane} from '../loading'
-import {structureLocaleNamespace} from '../../i18n'
-import {DocumentPaneProviderProps} from './types'
-import {DocumentPaneProvider} from './DocumentPaneProvider'
-import {useDocumentLayoutComponent} from './document-layout'
+import {memo, useMemo} from 'react'
 import {
   ReferenceInputOptionsProvider,
   SourceProvider,
@@ -20,6 +12,16 @@ import {
   useTemplates,
   useTranslation,
 } from 'sanity'
+
+import {usePaneRouter} from '../../components'
+import {structureLocaleNamespace} from '../../i18n'
+import {type DocumentPaneNode} from '../../types'
+import {ErrorPane} from '../error'
+import {LoadingPane} from '../loading'
+import {CommentsWrapper} from './comments'
+import {useDocumentLayoutComponent} from './document-layout'
+import {DocumentPaneProvider} from './DocumentPaneProvider'
+import {type DocumentPaneProviderProps} from './types'
 
 type DocumentPaneOptions = DocumentPaneNode['options']
 
@@ -113,6 +115,7 @@ function DocumentPaneInner(props: DocumentPaneProviderProps) {
               t={t}
               i18nKey="panes.document-pane.document-not-found.text"
               values={{id: options.id}}
+              components={{Code: ({children}) => <code>{children}</code>}}
             />
           </Text>
         </Stack>
@@ -136,7 +139,9 @@ function DocumentPaneInner(props: DocumentPaneProviderProps) {
         initialValueTemplateItems={templatePermissions}
         activePath={activePath}
       >
-        <DocumentLayout documentId={options.id} documentType={options.type} />
+        <CommentsWrapper documentId={options.id} documentType={options.type}>
+          <DocumentLayout documentId={options.id} documentType={options.type} />
+        </CommentsWrapper>
       </ReferenceInputOptionsProvider>
     </DocumentPaneProvider>
   )

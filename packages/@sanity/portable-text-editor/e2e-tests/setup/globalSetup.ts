@@ -1,4 +1,5 @@
-import path from 'path'
+import path from 'node:path'
+
 import {setup as setupDevServer} from 'jest-dev-server'
 
 const testFolderPath = path.resolve(__dirname, '..')

@@ -1,11 +1,12 @@
-import React, {PropsWithChildren, useEffect, useMemo} from 'react'
-import {Slate, withReact} from 'slate-react'
+import {type PropsWithChildren, useEffect, useMemo, useState} from 'react'
 import {createEditor} from 'slate'
-import {KEY_TO_SLATE_ELEMENT, KEY_TO_VALUE_ELEMENT} from '../../utils/weakMaps'
+import {Slate, withReact} from 'slate-react'
+
+import {type PatchObservable} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
-import {PatchObservable} from '../../types/editor'
-import {PortableTextEditor} from '../PortableTextEditor'
+import {KEY_TO_SLATE_ELEMENT, KEY_TO_VALUE_ELEMENT} from '../../utils/weakMaps'
 import {withPlugins} from '../plugins'
+import {type PortableTextEditor} from '../PortableTextEditor'
 
 const debug = debugWithName('component:PortableTextEditor:SlateContainer')
 
@@ -27,8 +28,8 @@ export interface SlateContainerProps extends PropsWithChildren {
 export function SlateContainer(props: SlateContainerProps) {
   const {patches$, portableTextEditor, readOnly, maxBlocks, keyGenerator} = props
 
-  // Create the slate instance
-  const [slateEditor, subscribe] = useMemo(() => {
+  // Create the slate instance, using `useState` ensures setup is only run once, initially
+  const [[slateEditor, subscribe]] = useState(() => {
     debug('Creating new Slate editor instance')
     const {editor, subscribe: _sub} = withPlugins(withReact(createEditor()), {
       keyGenerator,
@@ -39,9 +40,8 @@ export function SlateContainer(props: SlateContainerProps) {
     })
     KEY_TO_VALUE_ELEMENT.set(editor, {})
     KEY_TO_SLATE_ELEMENT.set(editor, {})
-    return [editor, _sub]
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only initial - empty deps here
+    return [editor, _sub] as const
+  })
 
   useEffect(() => {
     const unsubscribe = subscribe()
@@ -63,7 +63,7 @@ export function SlateContainer(props: SlateContainerProps) {
   }, [keyGenerator, portableTextEditor, maxBlocks, readOnly, patches$, slateEditor])
 
   const initialValue = useMemo(() => {
-    return [slateEditor.createPlaceholderBlock()]
+    return [slateEditor.pteCreateEmptyBlock()]
   }, [slateEditor])
 
   useEffect(() => {

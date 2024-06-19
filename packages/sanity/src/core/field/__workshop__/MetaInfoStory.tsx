@@ -1,6 +1,6 @@
 import {ImageIcon} from '@sanity/icons'
 import {Box, Card} from '@sanity/ui'
-import React from 'react'
+
 import {MetaInfo} from '../diff'
 
 export default function MetaInfoStory() {

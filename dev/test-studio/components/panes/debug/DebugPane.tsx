@@ -1,7 +1,8 @@
-import {UserComponent, usePaneRouter} from 'sanity/structure'
 import {ChevronDownIcon, ChevronRightIcon, ControlsIcon, LinkIcon} from '@sanity/icons'
 import {Box, Card, Code, Flex, Stack, Text} from '@sanity/ui'
-import React, {useMemo} from 'react'
+import type * as React from 'react'
+import {useMemo} from 'react'
+import {usePaneRouter, type UserComponent} from 'sanity/structure'
 
 function usePaneChildLinkComponent(props: {
   id: string

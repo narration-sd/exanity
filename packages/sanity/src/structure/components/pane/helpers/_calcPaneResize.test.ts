@@ -1,4 +1,6 @@
-import {PaneConfigOpts, PaneResizeCache} from '../types'
+import {describe, expect, it} from '@jest/globals'
+
+import {type PaneConfigOpts, type PaneResizeCache} from '../types'
 import {_calcPaneResize} from './_calcPaneResize'
 
 describe('sanity/structure/components/pane', () => {

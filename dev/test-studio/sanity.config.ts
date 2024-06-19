@@ -1,34 +1,22 @@
-import {BookIcon} from '@sanity/icons'
-import {SanityMonogram} from '@sanity/logos'
-import {visionTool} from '@sanity/vision'
-import {defineConfig, definePlugin} from 'sanity'
-import {structureTool} from 'sanity/structure'
-import {presentationTool} from 'sanity/presentation'
-import {muxInput} from 'sanity-plugin-mux-input'
 import {assist} from '@sanity/assist'
 import {googleMapsInput} from '@sanity/google-maps-input'
-import {tsdoc} from '@sanity/tsdoc/studio'
+import {BookIcon} from '@sanity/icons'
 import {koKRLocale} from '@sanity/locale-ko-kr'
 import {nbNOLocale} from '@sanity/locale-nb-no'
 import {nnNOLocale} from '@sanity/locale-nn-no'
 import {ptPTLocale} from '@sanity/locale-pt-pt'
 import {svSELocale} from '@sanity/locale-sv-se'
-import {theme as tailwindTheme} from './sanity.theme.mjs'
+import {SanityMonogram} from '@sanity/logos'
+import {debugSecrets} from '@sanity/preview-url-secret/sanity-plugin-debug-secrets'
+import {tsdoc} from '@sanity/tsdoc/studio'
+import {visionTool} from '@sanity/vision'
+import {defineConfig, definePlugin, type WorkspaceOptions} from 'sanity'
+import {presentationTool} from 'sanity/presentation'
+import {structureTool} from 'sanity/structure'
+import {imageHotspotArrayPlugin} from 'sanity-plugin-hotspot-array'
+import {muxInput} from 'sanity-plugin-mux-input'
+
 import {imageAssetSource} from './assetSources'
-import {resolveDocumentActions as documentActions} from './documentActions'
-import {resolveInitialValueTemplates} from './initialValueTemplates'
-import {languageFilter} from './plugins/language-filter'
-import {schemaTypes} from './schema'
-import {defaultDocumentNode, newDocumentOptions, structure} from './structure'
-import {workshopTool} from './workshop'
-import {presenceTool} from './plugins/presence'
-import {
-  CustomLayout,
-  CustomLogo,
-  CustomNavbar,
-  CustomToolMenu,
-  studioComponentsPlugin,
-} from './components/studioComponents'
 import {
   Annotation,
   Block,
@@ -40,16 +28,32 @@ import {
   Item,
   Preview,
 } from './components/formComponents'
+import {
+  CustomLayout,
+  CustomLogo,
+  CustomNavbar,
+  CustomToolMenu,
+  studioComponentsPlugin,
+} from './components/studioComponents'
+import {GoogleLogo, TailwindLogo, VercelLogo} from './components/workspaceLogos'
+import {resolveDocumentActions as documentActions} from './documentActions'
+import {assistFieldActionGroup} from './fieldActions/assistFieldActionGroup'
+import {copyAction} from './fieldActions/copyAction'
+import {pasteAction} from './fieldActions/pasteAction'
+import {resolveInitialValueTemplates} from './initialValueTemplates'
+import {customInspector} from './inspectors/custom'
+import {testStudioLocaleBundles} from './locales'
+import {errorReportingTestPlugin} from './plugins/error-reporting-test'
+import {languageFilter} from './plugins/language-filter'
+import {presenceTool} from './plugins/presence'
+import {routerDebugTool} from './plugins/router-debug'
+import {theme as tailwindTheme} from './sanity.theme.mjs'
+import {schemaTypes} from './schema'
+import {StegaDebugger} from './schema/debug/components/DebugStega'
+import {defaultDocumentNode, newDocumentOptions, structure} from './structure'
 import {googleTheme} from './themes/google'
 import {vercelTheme} from './themes/vercel'
-import {GoogleLogo, TailwindLogo, VercelLogo} from './components/workspaceLogos'
-import {copyAction} from './fieldActions/copyAction'
-import {assistFieldActionGroup} from './fieldActions/assistFieldActionGroup'
-import {customInspector} from './inspectors/custom'
-import {pasteAction} from './fieldActions/pasteAction'
-import {routerDebugTool} from './plugins/router-debug'
-import {StegaDebugger} from './schema/debug/components/DebugStega'
-import {testStudioLocaleBundles} from './locales'
+import {workshopTool} from './workshop'
 
 const localePlugins = [koKRLocale(), nbNOLocale(), nnNOLocale(), ptPTLocale(), svSELocale()]
 
@@ -86,8 +90,7 @@ const sharedSettings = definePlugin({
       return prev
     },
     newDocumentOptions,
-
-    unstable_comments: {
+    comments: {
       enabled: true,
     },
     badges: (prev, context) => (context.schemaType === 'author' ? [CustomBadge, ...prev] : prev),
@@ -130,8 +133,10 @@ const sharedSettings = definePlugin({
     }),
     // eslint-disable-next-line camelcase
     muxInput({mp4_support: 'standard'}),
+    imageHotspotArrayPlugin(),
     presenceTool(),
     routerDebugTool(),
+    errorReportingTestPlugin(),
     tsdoc(),
   ],
 })
@@ -145,6 +150,17 @@ export default defineConfig([
     plugins: [sharedSettings()],
     basePath: '/test',
     icon: SanityMonogram,
+    // eslint-disable-next-line camelcase
+    __internal_serverDocumentActions: {
+      enabled: true,
+    },
+    scheduledPublishing: {
+      enabled: true,
+      inputDateTimeFormat: 'MM/dd/yy h:mm a',
+    },
+    tasks: {
+      enabled: true,
+    },
   },
   {
     name: 'partialIndexing',
@@ -157,6 +173,12 @@ export default defineConfig([
       unstable_partialIndexing: {
         enabled: true,
       },
+    },
+    scheduledPublishing: {
+      enabled: false,
+    },
+    unstable_tasks: {
+      enabled: false,
     },
   },
   {
@@ -196,6 +218,9 @@ export default defineConfig([
     apiHost: 'https://api.sanity.work',
     auth: {
       loginMethod: 'token',
+    },
+    unstable_tasks: {
+      enabled: true,
     },
   },
   {
@@ -283,11 +308,17 @@ export default defineConfig([
     projectId: 'ppsg7ml5',
     dataset: 'playground',
     plugins: [
+      debugSecrets(),
       presentationTool({
-        previewUrl: '/preview/index.html',
+        name: 'presentation',
+        title: 'Presentation',
+        previewUrl: {
+          preview: '/preview/index.html',
+        },
       }),
+      assist(),
       sharedSettings(),
     ],
     basePath: '/presentation',
   },
-])
+]) as WorkspaceOptions[]

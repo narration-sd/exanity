@@ -1,20 +1,27 @@
+import {type SanityClient} from '@sanity/client'
+import {useMemo} from 'react'
+import {useObservable} from 'react-rx'
+import {type Observable, of} from 'rxjs'
 import {catchError, map, shareReplay, startWith} from 'rxjs/operators'
-import {Observable, of} from 'rxjs'
-import {SanityClient} from '@sanity/client'
-import {useMemoObservable} from 'react-rx'
+
+import {useSource} from '../studio'
 import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../studioClient'
 import {useClient} from './useClient'
 
+const EMPTY_ARRAY: [] = []
+
 interface Features {
-  isLoading: boolean
   enabled: boolean
+  error: Error | null
   features: string[]
+  isLoading: boolean
 }
 
 const INITIAL_LOADING_STATE: Features = {
-  isLoading: true,
   enabled: true,
-  features: [],
+  error: null,
+  features: EMPTY_ARRAY,
+  isLoading: true,
 }
 
 /**
@@ -27,40 +34,35 @@ function fetchFeatures({versionedClient}: {versionedClient: SanityClient}): Obse
   })
 }
 
-let cachedFeatureRequest: Observable<string[]>
+const cachedFeatureRequest = new Map<string, Observable<string[]>>()
 
 /** @internal */
 export function useFeatureEnabled(featureKey: string): Features {
   const versionedClient = useClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
+  const {projectId} = useSource()
 
-  if (!cachedFeatureRequest) {
-    cachedFeatureRequest = fetchFeatures({versionedClient}).pipe(
-      shareReplay(),
-      catchError((error) => {
-        console.error(error)
-        // Return an empty list of features if the request fails
-        return of([])
-      }),
-    )
+  if (!cachedFeatureRequest.get(projectId)) {
+    const features = fetchFeatures({versionedClient}).pipe(shareReplay())
+    cachedFeatureRequest.set(projectId, features)
   }
 
-  const featureInfo = useMemoObservable(
+  const featureInfoObservable = useMemo(
     () =>
-      cachedFeatureRequest.pipe(
+      (cachedFeatureRequest.get(projectId) || of(EMPTY_ARRAY)).pipe(
         map((features = []) => ({
           isLoading: false,
           enabled: Boolean(features?.includes(featureKey)),
           features,
+          error: null,
         })),
         startWith(INITIAL_LOADING_STATE),
-        catchError((err: Error) => {
-          console.error(err)
-          return of({isLoading: false, enabled: true, features: []})
+        catchError((error: Error) => {
+          return of({isLoading: false, enabled: false, features: EMPTY_ARRAY, error})
         }),
       ),
-    [featureKey],
-    INITIAL_LOADING_STATE,
+    [featureKey, projectId],
   )
+  const featureInfo = useObservable(featureInfoObservable, INITIAL_LOADING_STATE)
 
   return featureInfo
 }

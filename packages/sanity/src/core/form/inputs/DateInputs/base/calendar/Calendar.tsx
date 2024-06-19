@@ -1,17 +1,28 @@
-import {Box, Flex, Grid, Select, Text, useForwardedRef} from '@sanity/ui'
 import {ChevronLeftIcon, ChevronRightIcon} from '@sanity/icons'
+import {Box, Flex, Grid, Select, Text} from '@sanity/ui'
 import {addDays, addMonths, setDate, setHours, setMinutes, setMonth, setYear} from 'date-fns'
 import {range} from 'lodash'
-import React, {KeyboardEvent, forwardRef, useCallback, useEffect} from 'react'
+import {
+  type ComponentProps,
+  type FormEvent,
+  type ForwardedRef,
+  forwardRef,
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react'
+
 import {Button} from '../../../../../../ui-components'
 import {CalendarMonth} from './CalendarMonth'
 import {ARROW_KEYS, DEFAULT_TIME_PRESETS, HOURS_24} from './constants'
 import {features} from './features'
+import {type CalendarLabels, type MonthNames} from './types'
 import {formatTime} from './utils'
 import {YearInput} from './YearInput'
-import {CalendarLabels, MonthNames} from './types'
 
-type CalendarProps = Omit<React.ComponentProps<'div'>, 'onSelect'> & {
+type CalendarProps = Omit<ComponentProps<'div'>, 'onSelect'> & {
   selectTime?: boolean
   selectedDate?: Date
   timeStep?: number
@@ -43,7 +54,7 @@ const CALENDAR_ICON_BUTTON_PROPS = {
 
 export const Calendar = forwardRef(function Calendar(
   props: CalendarProps,
-  forwardedRef: React.ForwardedRef<HTMLDivElement>,
+  forwardedRef: ForwardedRef<HTMLDivElement>,
 ) {
   const {
     selectTime,
@@ -67,7 +78,7 @@ export const Calendar = forwardRef(function Calendar(
   )
 
   const handleFocusedMonthChange = useCallback(
-    (e: React.FormEvent<HTMLSelectElement>) => setFocusedDateMonth(Number(e.currentTarget.value)),
+    (e: FormEvent<HTMLSelectElement>) => setFocusedDateMonth(Number(e.currentTarget.value)),
     [setFocusedDateMonth],
   )
 
@@ -89,7 +100,7 @@ export const Calendar = forwardRef(function Calendar(
   )
 
   const handleMinutesChange = useCallback(
-    (event: React.FormEvent<HTMLSelectElement>) => {
+    (event: FormEvent<HTMLSelectElement>) => {
       const m = Number(event.currentTarget.value)
       onSelect(setMinutes(selectedDate, m))
     },
@@ -97,7 +108,7 @@ export const Calendar = forwardRef(function Calendar(
   )
 
   const handleHoursChange = useCallback(
-    (event: React.FormEvent<HTMLSelectElement>) => {
+    (event: FormEvent<HTMLSelectElement>) => {
       const m = Number(event.currentTarget.value)
       onSelect(setHours(selectedDate, m))
     },
@@ -111,7 +122,9 @@ export const Calendar = forwardRef(function Calendar(
     [onSelect, selectedDate],
   )
 
-  const ref = useForwardedRef(forwardedRef)
+  const ref = useRef<HTMLDivElement | null>(null)
+
+  useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(forwardedRef, () => ref.current)
 
   const focusCurrentWeekDay = useCallback(() => {
     ref.current?.querySelector<HTMLElement>(`[data-focused="true"]`)?.focus()
@@ -193,12 +206,7 @@ export const Calendar = forwardRef(function Calendar(
         <Flex>
           <Box flex={1}>
             <CalendarMonthSelect
-              moveFocusedDate={moveFocusedDate}
               onChange={handleFocusedMonthChange}
-              labels={{
-                goToPreviousMonth: labels.goToPreviousMonth,
-                goToNextMonth: labels.goToNextMonth,
-              }}
               monthNames={labels.monthNames}
               value={focusedDate?.getMonth()}
             />
@@ -308,11 +316,11 @@ export const Calendar = forwardRef(function Calendar(
 })
 
 function CalendarTimePresetButton(props: {
-  hours: number
-  minutes: number
-  onTimeChange: (hours: number, minutes: number) => void
+  'hours': number
+  'minutes': number
+  'onTimeChange': (hours: number, minutes: number) => void
   'aria-label': string
-  text: string
+  'text': string
 }) {
   const {hours, minutes, text, onTimeChange} = props
 
@@ -324,34 +332,14 @@ function CalendarTimePresetButton(props: {
 }
 
 function CalendarMonthSelect(props: {
-  moveFocusedDate: (by: number) => void
-  onChange: (e: React.FormEvent<HTMLSelectElement>) => void
+  onChange: (e: FormEvent<HTMLSelectElement>) => void
   value?: number
   monthNames: MonthNames
-  labels: {
-    goToPreviousMonth: string
-    goToNextMonth: string
-  }
 }) {
-  const {moveFocusedDate, onChange, value, labels, monthNames} = props
-
-  const handlePrevMonthClick = useCallback(() => moveFocusedDate(-1), [moveFocusedDate])
-
-  const handleNextMonthClick = useCallback(() => moveFocusedDate(1), [moveFocusedDate])
+  const {onChange, value, monthNames} = props
 
   return (
     <Flex flex={1} gap={1}>
-      <Button
-        aria-label={labels.goToPreviousMonth}
-        onClick={handlePrevMonthClick}
-        mode="bleed"
-        icon={ChevronLeftIcon}
-        tooltipProps={{content: 'Previous month'}}
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore - Button with specific styling requirements
-        {...CALENDAR_ICON_BUTTON_PROPS}
-      />
-
       <Box flex={1}>
         <Select fontSize={1} radius={2} value={value} onChange={onChange} padding={2}>
           {monthNames.map((monthName, i) => (
@@ -362,16 +350,6 @@ function CalendarMonthSelect(props: {
           ))}
         </Select>
       </Box>
-      <Button
-        aria-label={labels.goToNextMonth}
-        mode="bleed"
-        icon={ChevronRightIcon}
-        onClick={handleNextMonthClick}
-        tooltipProps={{content: 'Next month'}}
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore - Button with specific styling requirements
-        {...CALENDAR_ICON_BUTTON_PROPS}
-      />
     </Flex>
   )
 }

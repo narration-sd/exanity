@@ -1,6 +1,6 @@
-import path from 'path'
-import os from 'os'
-import fs from 'fs/promises'
+import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 
 export async function pathIsEmpty(dir: string): Promise<boolean> {
   try {

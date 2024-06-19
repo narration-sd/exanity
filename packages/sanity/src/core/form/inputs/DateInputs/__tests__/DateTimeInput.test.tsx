@@ -1,7 +1,8 @@
+import {expect, test} from '@jest/globals'
 import {defineField} from '@sanity/types'
 import {fireEvent} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import React from 'react'
+
 import {renderStringInput} from '../../../../../../test/form'
 import {DateTimeInput} from '../DateTimeInput'
 

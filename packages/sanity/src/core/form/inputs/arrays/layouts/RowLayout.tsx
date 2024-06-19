@@ -1,6 +1,7 @@
-import {Box, Card, CardTone, Flex, Stack} from '@sanity/ui'
-import React, {ReactNode, useRef} from 'react'
-import styled from 'styled-components'
+import {Box, Card, type CardTone, Flex, Stack} from '@sanity/ui'
+import {type ReactNode, useRef} from 'react'
+import {styled} from 'styled-components'
+
 import {useDidUpdate} from '../../../hooks/useDidUpdate'
 import {DragHandle} from '../common/DragHandle'
 import {MOVING_ITEM_CLASS_NAME} from '../common/list'
@@ -15,6 +16,7 @@ interface RowLayoutProps {
   footer?: ReactNode
   selected?: boolean
   children?: ReactNode
+  readOnly: boolean
 }
 
 const Root = styled(Card)`
@@ -41,7 +43,18 @@ const Root = styled(Card)`
 `
 
 export function RowLayout(props: RowLayoutProps) {
-  const {validation, selected, tone, presence, focused, children, dragHandle, menu, footer} = props
+  const {
+    validation,
+    selected,
+    tone,
+    presence,
+    focused,
+    children,
+    dragHandle,
+    menu,
+    footer,
+    readOnly,
+  } = props
 
   const elementRef = useRef<HTMLDivElement | null>(null)
 
@@ -62,7 +75,7 @@ export function RowLayout(props: RowLayoutProps) {
     >
       <Stack space={1}>
         <Flex align="center" gap={1}>
-          {dragHandle && <DragHandle paddingY={3} />}
+          {dragHandle && <DragHandle paddingY={3} readOnly={readOnly} />}
 
           <Box flex={1}>{children}</Box>
 

@@ -1,18 +1,19 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 import {TrashIcon} from '@sanity/icons'
-import React, {useCallback, useState} from 'react'
-import {ConfirmDeleteDialog} from '../components'
-import {useDocumentPane} from '../panes/document/useDocumentPane'
-import {structureLocaleNamespace} from '../i18n'
+import {useCallback, useState} from 'react'
 import {
-  DocumentActionComponent,
+  type DocumentActionComponent,
   InsufficientPermissionsMessage,
   useCurrentUser,
   useDocumentOperation,
   useDocumentPairPermissions,
   useTranslation,
 } from 'sanity'
+
+import {ConfirmDeleteDialog} from '../components'
+import {structureLocaleNamespace} from '../i18n'
+import {useDocumentPane} from '../panes/document/useDocumentPane'
 
 const DISABLED_REASON_TITLE_KEY = {
   NOTHING_TO_DELETE: 'action.delete.disabled.nothing-to-delete',

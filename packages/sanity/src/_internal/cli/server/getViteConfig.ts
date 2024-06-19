@@ -1,17 +1,20 @@
-import path from 'path'
-import {ConfigEnv, InlineConfig, mergeConfig} from 'vite'
+import path from 'node:path'
+
+import {type UserViteConfig} from '@sanity/cli'
 import viteReact from '@vitejs/plugin-react'
-import readPkgUp from 'read-pkg-up'
 import debug from 'debug'
-import {UserViteConfig} from '@sanity/cli'
+import readPkgUp from 'read-pkg-up'
+import {type ConfigEnv, type InlineConfig, mergeConfig} from 'vite'
+
 import {getAliases} from './aliases'
+import {createExternalFromImportMap} from './createExternalFromImportMap'
+import {getStudioEnvironmentVariables} from './getStudioEnvironmentVariables'
 import {normalizeBasePath} from './helpers'
 import {loadSanityMonorepo} from './sanityMonorepo'
 import {sanityBuildEntries} from './vite/plugin-sanity-build-entries'
 import {sanityDotWorkaroundPlugin} from './vite/plugin-sanity-dot-workaround'
-import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite'
 import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons'
-import {getStudioEnvironmentVariables} from './getStudioEnvironmentVariables'
+import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite'
 
 export interface ViteOptions {
   /**
@@ -49,6 +52,8 @@ export interface ViteOptions {
    * Mode to run vite in - eg development or production
    */
   mode: 'development' | 'production'
+
+  importMap?: {imports?: Record<string, string>}
 }
 
 /**
@@ -66,6 +71,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server,
     minify,
     basePath: rawBasePath = '/',
+    importMap,
   } = options
 
   const monorepo = await loadSanityMonorepo(cwd)
@@ -102,7 +108,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       sanityFaviconsPlugin({defaultFaviconsPath, customFaviconsPath, staticUrlPath: staticPath}),
       sanityDotWorkaroundPlugin(),
       sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({basePath, cwd, monorepo}),
+      sanityBuildEntries({basePath, cwd, monorepo, importMap}),
     ],
     envPrefix: 'SANITY_STUDIO_',
     logLevel: mode === 'production' ? 'silent' : 'info',
@@ -111,7 +117,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     },
     define: {
       // eslint-disable-next-line no-process-env
-      __SANITY_STAGING__: process.env.SANITY_INTERNAL_ENV === 'staging',
+      '__SANITY_STAGING__': process.env.SANITY_INTERNAL_ENV === 'staging',
       'process.env.MODE': JSON.stringify(mode),
       ...getStudioEnvironmentVariables({prefix: 'process.env.', jsonEncode: true}),
     },
@@ -126,6 +132,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       emptyOutDir: false, // Rely on CLI to do this
 
       rollupOptions: {
+        external: createExternalFromImportMap(importMap),
         input: {
           sanity: path.join(cwd, '.sanity', 'runtime', 'app.js'),
         },

@@ -8,15 +8,17 @@ import {
 } from '@sanity/types'
 import {Card, Flex, Text, useClickOutside} from '@sanity/ui'
 import {FOCUS_TERMINATOR, toString} from '@sanity/util/paths'
-import React, {useCallback, useContext, useState, useEffect, useMemo} from 'react'
-import styled from 'styled-components'
+import {type MouseEvent, useCallback, useContext, useEffect, useMemo, useState} from 'react'
+import {ConnectorContext, DiffContext} from 'sanity/_singletons'
+import {styled} from 'styled-components'
+
 import {Popover} from '../../../../../../ui-components'
+import {useReportedValues} from '../../../../../changeIndicators'
 import {useTranslation} from '../../../../../i18n'
-import {ChangeList, DiffContext, DiffTooltip, useDiffAnnotationColor} from '../../../../diff'
-import type {ObjectDiff} from '../../../../types'
-import {isEmptyObject} from '../helpers'
-import {ConnectorContext, useReportedValues} from '../../../../../changeIndicators'
 import {Preview} from '../../../../../preview/components/Preview'
+import {ChangeList, DiffTooltip, useDiffAnnotationColor} from '../../../../diff'
+import {type ObjectDiff} from '../../../../types'
+import {isEmptyObject} from '../helpers'
 import {InlineBox, InlineText, PopoverContainer, PreviewContainer} from './styledComponents'
 
 interface InlineObjectProps {
@@ -110,7 +112,7 @@ function InlineObjectWithDiff({
   }, [focusPath, isEditing, onSetFocus])
 
   const handleOpenPopup = useCallback(
-    (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    (event: MouseEvent<HTMLDivElement, globalThis.MouseEvent>) => {
       event.stopPropagation()
       setOpen(true)
       if (!isRemoved) {

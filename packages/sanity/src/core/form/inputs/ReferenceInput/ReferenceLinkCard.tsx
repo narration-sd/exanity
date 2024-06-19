@@ -1,6 +1,6 @@
-import React, {forwardRef} from 'react'
-import styled from 'styled-components'
-import {Card, CardProps} from '@sanity/ui'
+import {Card, type CardProps} from '@sanity/ui'
+import {type ForwardedRef, forwardRef, type HTMLProps} from 'react'
+import {styled} from 'styled-components'
 
 export const StyledCard = styled(Card)`
   /* this is a hack to avoid layout jumps while previews are loading
@@ -26,8 +26,8 @@ interface ReferenceLinkCardProps extends CardProps {
 }
 
 export const ReferenceLinkCard = forwardRef(function ReferenceLinkCard(
-  props: ReferenceLinkCardProps & React.HTMLProps<HTMLElement>,
-  ref: React.ForwardedRef<HTMLElement>,
+  props: ReferenceLinkCardProps & HTMLProps<HTMLElement>,
+  ref: ForwardedRef<HTMLElement>,
 ) {
   const {as, documentId, documentType, ...cardProps} = props
 
@@ -38,10 +38,10 @@ export const ReferenceLinkCard = forwardRef(function ReferenceLinkCard(
     documentType && {
       // this will make @sanity/ui style it as a link
       'data-as': 'a',
-      // this determines the actual tag inserted into the DOM (either a React.HTML element or a component)
-      forwardedAs: as,
-      documentId: documentId,
-      documentType: documentType,
+      // this determines the actual tag inserted into the DOM (either a HTML element or a component)
+      'forwardedAs': as,
+      'documentId': documentId,
+      'documentType': documentType,
     }
 
   return (
@@ -49,7 +49,7 @@ export const ReferenceLinkCard = forwardRef(function ReferenceLinkCard(
       {...cardProps}
       {...linkProps}
       data-ui="ReferenceLinkCard"
-      ref={ref as unknown as React.ForwardedRef<HTMLDivElement>}
+      ref={ref as unknown as ForwardedRef<HTMLDivElement>}
     />
   )
 })

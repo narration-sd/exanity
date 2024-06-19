@@ -1,6 +1,8 @@
-import React, {Profiler, memo, useDeferredValue} from 'react'
+import {describe, expect, it, jest} from '@jest/globals'
 import {render, renderHook, waitFor} from '@testing-library/react'
+import {Component, memo, Profiler, type PropsWithChildren, useDeferredValue} from 'react'
 import * as Rx from 'rxjs'
+
 import {createHookFromObservableFactory} from '../createHookFromObservableFactory'
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
@@ -199,7 +201,7 @@ describe('createHookFromObservableFactory', () => {
     let error: Error | undefined
     const useHook = createHookFromObservableFactory(observableFactory, 'factory initial')
     renderHook(useHook, {
-      wrapper: class Wrapper extends React.Component<React.PropsWithChildren<unknown>> {
+      wrapper: class Wrapper extends Component<PropsWithChildren<unknown>> {
         static getDerivedStateFromError(err: Error) {
           error = err
           return {hasError: true}

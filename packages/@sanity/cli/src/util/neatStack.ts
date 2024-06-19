@@ -3,7 +3,8 @@
  * ISC License (ISC)
  * Copyright 2017 - 2019 Shinnosuke Watanabe
  */
-import {inspect} from 'util'
+import {inspect} from 'node:util'
+
 import {dim, red} from 'chalk'
 import cleanStack from 'clean-stack'
 

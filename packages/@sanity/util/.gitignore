@@ -10,8 +10,11 @@
 
 # Compiled code
 /lib
+/dist
 
 # Exports
+/client.js
+/concurrency-limiter.js
 /content.js
 /createSafeJsonParser.js
 /fs.js

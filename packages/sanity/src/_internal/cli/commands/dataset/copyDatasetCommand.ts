@@ -1,13 +1,14 @@
-import type {SanityClient} from '@sanity/client'
-import type {CliCommandDefinition, CliOutputter} from '@sanity/cli'
-import yargs from 'yargs/yargs'
-import {hideBin} from 'yargs/helpers'
+import {type CliCommandDefinition, type CliOutputter} from '@sanity/cli'
+import {type SanityClient} from '@sanity/client'
 import EventSource from '@sanity/eventsource'
 import {Observable} from 'rxjs'
+import {hideBin} from 'yargs/helpers'
+import yargs from 'yargs/yargs'
+
 import {promptForDatasetName} from '../../actions/dataset/datasetNamePrompt'
+import {listDatasetCopyJobs} from '../../actions/dataset/listDatasetCopyJobs'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName'
 import {debug} from '../../debug'
-import {listDatasetCopyJobs} from '../../actions/dataset/listDatasetCopyJobs'
 import {getClientUrl} from '../../util/getClientUrl'
 
 const helpText = `
@@ -37,11 +38,11 @@ interface CopyProgressStreamEvent {
 }
 
 interface CopyDatasetFlags {
-  list?: boolean
-  attach?: string
-  detach?: boolean
-  offset?: number
-  limit?: number
+  'list'?: boolean
+  'attach'?: string
+  'detach'?: boolean
+  'offset'?: number
+  'limit'?: number
   'skip-history'?: boolean
 }
 

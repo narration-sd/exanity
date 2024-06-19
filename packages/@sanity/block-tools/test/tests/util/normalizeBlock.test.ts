@@ -1,4 +1,7 @@
-import * as assert from 'assert'
+import assert from 'node:assert'
+
+import {describe, it} from '@jest/globals'
+
 import {normalizeBlock} from '../../../src/util/normalizeBlock'
 
 describe('normalizeBlock', () => {

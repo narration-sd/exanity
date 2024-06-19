@@ -1,12 +1,18 @@
 import {useCallback, useEffect, useMemo, useState} from 'react'
 import {concat, fromEvent, merge, of, Subject, throwError} from 'rxjs'
 import {catchError, map, mergeMap, scan, startWith, take} from 'rxjs/operators'
-import {DocumentListPaneItem, QueryResult, SortOrder} from './types'
-import {getTypeNameFromSingleTypeFilter, removePublishedWithDrafts} from './helpers'
+import {
+  DEFAULT_STUDIO_CLIENT_OPTIONS,
+  useClient,
+  useSchema,
+  useSearchMaxFieldDepth,
+  useWorkspace,
+} from 'sanity'
+
 import {DEFAULT_ORDERING, FULL_LIST_LIMIT, PARTIAL_PAGE_LIMIT} from './constants'
+import {findStaticTypesInFilter, removePublishedWithDrafts} from './helpers'
 import {listenSearchQuery} from './listenSearchQuery'
-import {DEFAULT_STUDIO_CLIENT_OPTIONS, useClient, useSchema} from 'sanity'
-import {useSearchMaxFieldDepth} from 'sanity/_internalBrowser'
+import {type DocumentListPaneItem, type QueryResult, type SortOrder} from './types'
 
 const EMPTY_ARRAY: [] = []
 
@@ -49,6 +55,7 @@ export function useDocumentList(opts: UseDocumentListOpts): DocumentListState {
     ...DEFAULT_STUDIO_CLIENT_OPTIONS,
     apiVersion: apiVersion || DEFAULT_STUDIO_CLIENT_OPTIONS.apiVersion,
   })
+  const {enableLegacySearch = false} = useWorkspace().search
   const schema = useSchema()
   const maxFieldDepth = useSearchMaxFieldDepth()
 
@@ -75,7 +82,7 @@ export function useDocumentList(opts: UseDocumentListOpts): DocumentListState {
 
   // Get the type name from the filter, if it is a simple type filter.
   const typeNameFromFilter = useMemo(
-    () => getTypeNameFromSingleTypeFilter(filter, paramsProp),
+    () => findStaticTypesInFilter(filter, paramsProp),
     [filter, paramsProp],
   )
 
@@ -151,8 +158,9 @@ export function useDocumentList(opts: UseDocumentListOpts): DocumentListState {
       schema,
       searchQuery: searchQuery || '',
       sort,
-      staticTypeNames: typeNameFromFilter ? [typeNameFromFilter] : undefined,
+      staticTypeNames: typeNameFromFilter,
       maxFieldDepth,
+      enableLegacySearch,
     }).pipe(
       map((results) => ({
         result: {documents: results},
@@ -178,15 +186,16 @@ export function useDocumentList(opts: UseDocumentListOpts): DocumentListState {
       scan((prev, next) => ({...prev, ...next, onRetry: _onRetry})),
     )
   }, [
+    shouldFetchFullList,
+    sortOrder,
     client,
     filter,
     paramsProp,
     schema,
     searchQuery,
-    shouldFetchFullList,
-    sortOrder,
     typeNameFromFilter,
     maxFieldDepth,
+    enableLegacySearch,
   ])
 
   useEffect(() => {

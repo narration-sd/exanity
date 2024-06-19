@@ -1,18 +1,19 @@
-import type {Path} from '@sanity/types'
-import {Text, Stack, Flex, Inline} from '@sanity/ui'
-import React from 'react'
-import {Tooltip, TooltipProps} from '../../../../ui-components'
+import {type Path} from '@sanity/types'
+import {Flex, Inline, Stack, Text} from '@sanity/ui'
+import {type ReactElement, type ReactNode} from 'react'
+
+import {Tooltip, type TooltipProps} from '../../../../ui-components'
 import {LegacyLayerProvider, UserAvatar} from '../../../components'
 import {useRelativeTime} from '../../../hooks'
-import {useUser} from '../../../store'
 import {useTranslation} from '../../../i18n'
-import type {AnnotationDetails, Diff} from '../../types'
+import {useUser} from '../../../store'
+import {type AnnotationDetails, type Diff} from '../../types'
 import {getAnnotationAtPath, useAnnotationColor} from '../annotations'
 
 /** @internal */
 export interface DiffTooltipProps extends TooltipProps {
-  children: React.ReactElement
-  description?: React.ReactNode
+  children: ReactElement
+  description?: ReactNode
   diff: Diff
   path?: Path | string
 }
@@ -20,8 +21,8 @@ export interface DiffTooltipProps extends TooltipProps {
 /** @internal */
 export interface DiffTooltipWithAnnotationsProps extends TooltipProps {
   annotations: AnnotationDetails[]
-  children: React.ReactElement
-  description?: React.ReactNode
+  children: ReactElement
+  description?: ReactNode
 }
 
 /** @internal */

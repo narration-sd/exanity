@@ -1,6 +1,8 @@
-import {VOID_CHILD_KEY, fromSlateValue, toSlateValue} from '../values'
+import {describe, expect, it} from '@jest/globals'
+
 import {schemaType} from '../../editor/__tests__/PortableTextEditorTester'
 import {getPortableTextMemberSchemaTypes} from '../getPortableTextMemberSchemaTypes'
+import {fromSlateValue, toSlateValue} from '../values'
 
 const schemaTypes = getPortableTextMemberSchemaTypes(schemaType)
 
@@ -66,11 +68,9 @@ Array [
       Object {
         "_key": "1231",
         "_type": "span",
-        "marks": Array [],
         "text": "123",
       },
     ],
-    "markDefs": Array [],
     "style": "normal",
   },
 ]
@@ -110,7 +110,6 @@ Array [
       Object {
         "_key": "1231",
         "_type": "span",
-        "marks": Array [],
         "text": "123",
       },
       Object {
@@ -132,7 +131,6 @@ Array [
         },
       },
     ],
-    "markDefs": Array [],
     "style": "normal",
   },
 ]

@@ -1,9 +1,11 @@
 /* eslint-disable no-sync */
-import fs from 'fs'
-import path from 'path'
+import fs from 'node:fs'
+import path from 'node:path'
+
 import {firstValueFrom} from 'rxjs'
+import {type Config, resolveConfig, type Workspace, type WorkspaceOptions} from 'sanity'
+
 import {mockBrowserEnvironment} from './mockBrowserEnvironment'
-import {resolveConfig, Config, Workspace, WorkspaceOptions} from 'sanity'
 
 const candidates = [
   'sanity.config.js',

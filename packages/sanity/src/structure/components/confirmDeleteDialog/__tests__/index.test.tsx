@@ -1,10 +1,9 @@
-import {ConfirmDeleteDialog} from '../index'
+import {describe, it} from '@jest/globals'
 
 describe('confirmDeleteDialog', () => {
   it.todo('works')
 })
 // // eslint-disable-next-line import/no-unassigned-import
-// import '@testing-library/jest-dom/extend-expect'
 // import React from 'react'
 // import {render, act} from '@testing-library/react'
 // import {ThemeProvider, ToastProvider, studioTheme} from '@sanity/ui'

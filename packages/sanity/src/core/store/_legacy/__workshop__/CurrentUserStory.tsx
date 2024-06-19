@@ -1,5 +1,5 @@
-import React from 'react'
 import {Box, Code, Text} from '@sanity/ui'
+
 import {Button} from '../../../../ui-components'
 import {useSource} from '../../../studio'
 

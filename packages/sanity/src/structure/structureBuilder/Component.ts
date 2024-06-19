@@ -1,11 +1,22 @@
-import {SerializeOptions, StructureNode, Serializable, Child} from './StructureNodes'
-import {SerializeError, HELP_URL} from './SerializeError'
-import {MenuItem, MenuItemBuilder, maybeSerializeMenuItem} from './MenuItem'
-import {MenuItemGroup, MenuItemGroupBuilder, maybeSerializeMenuItemGroup} from './MenuItemGroup'
-import {validateId} from './util/validateId'
-import {UserComponent} from './types'
+import {type I18nTextRecord} from 'sanity'
+
+import {type IntentChecker} from './Intent'
+import {maybeSerializeMenuItem, type MenuItem, type MenuItemBuilder} from './MenuItem'
+import {
+  maybeSerializeMenuItemGroup,
+  type MenuItemGroup,
+  type MenuItemGroupBuilder,
+} from './MenuItemGroup'
+import {HELP_URL, SerializeError} from './SerializeError'
+import {
+  type Child,
+  type Serializable,
+  type SerializeOptions,
+  type StructureNode,
+} from './StructureNodes'
+import {type UserComponent} from './types'
 import {getStructureNodeId} from './util/getStructureNodeId'
-import {I18nTextRecord} from 'sanity'
+import {validateId} from './util/validateId'
 
 /**
  * Interface for component
@@ -24,6 +35,7 @@ export interface Component extends StructureNode {
   menuItemGroups: MenuItemGroup[]
   /** Component options */
   options: {[key: string]: unknown}
+  canHandleIntent?: IntentChecker
 }
 
 /**
@@ -60,6 +72,7 @@ export interface BuildableComponent extends Partial<StructureNode> {
   menuItems?: (MenuItem | MenuItemBuilder)[]
   /** Component menu item groups. See {@link MenuItemGroup} and {@link MenuItemGroupBuilder} */
   menuItemGroups?: (MenuItemGroup | MenuItemGroupBuilder)[]
+  canHandleIntent?: IntentChecker
 }
 
 /**
@@ -195,6 +208,10 @@ export class ComponentBuilder implements Serializable<Component> {
     return this.spec.menuItemGroups
   }
 
+  canHandleIntent(canHandleIntent: IntentChecker): ComponentBuilder {
+    return this.clone({canHandleIntent})
+  }
+
   /** Serialize component
    * @param options - serialization options
    * @returns component object based on path provided in options
@@ -224,6 +241,7 @@ export class ComponentBuilder implements Serializable<Component> {
       type: 'component',
       child,
       component,
+      canHandleIntent: this.spec.canHandleIntent,
       options: componentOptions || {},
       menuItems: (this.spec.menuItems || []).map((item, i) =>
         maybeSerializeMenuItem(item, i, options.path),

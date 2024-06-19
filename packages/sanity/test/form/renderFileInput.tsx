@@ -1,11 +1,17 @@
-import {SchemaTypeDefinition, FileSchemaType, AssetSource, FieldDefinition} from '@sanity/types'
-import React from 'react'
+import {
+  type AssetSource,
+  type FieldDefinition,
+  type FileSchemaType,
+  type SchemaTypeDefinition,
+} from '@sanity/types'
+import {type ReactElement} from 'react'
 import {EMPTY} from 'rxjs'
-import {ObjectInputProps} from '../../src/core'
-import {BaseFileInputProps} from '../../src/core/form/inputs/files/FileInput'
+
+import {type ObjectInputProps} from '../../src/core'
+import {type BaseFileInputProps} from '../../src/core/form/inputs/files/FileInput'
+import {type TestRenderInputContext} from './renderInput'
 import {renderObjectInput} from './renderObjectInput'
-import {TestRenderProps} from './types'
-import {TestRenderInputContext} from './renderInput'
+import {type TestRenderProps} from './types'
 
 const STUB_ASSET_SOURCES: AssetSource[] = [{} as any] // @todo
 
@@ -21,7 +27,7 @@ const STUB_RESOLVE_UPLOADER = () => ({
 export type TestRenderFileInputCallback = (
   inputProps: BaseFileInputProps,
   context: TestRenderInputContext,
-) => React.ReactElement
+) => ReactElement
 
 export async function renderFileInput(options: {
   assetSources?: BaseFileInputProps['assetSources']
@@ -66,11 +72,5 @@ export async function renderFileInput(options: {
     render: (inputProps, context) => initialRender(transformProps(inputProps, context), context),
   })
 
-  function rerender(subsequentRender: TestRenderFileInputCallback) {
-    result.rerender((inputProps, context) =>
-      subsequentRender(transformProps(inputProps, context), context),
-    )
-  }
-
-  return {...result, rerender}
+  return result
 }

@@ -1,33 +1,39 @@
 import {
-  EditorSelection,
+  type EditorSelection,
   PortableTextEditor,
   usePortableTextEditor,
 } from '@sanity/portable-text-editor'
-import {ObjectSchemaType, Path, PortableTextBlock, PortableTextChild} from '@sanity/types'
-import React, {useCallback, useEffect, useMemo, useState} from 'react'
-import {isEqual} from '@sanity/util/paths'
-import {Tooltip} from '../../../../../ui-components'
 import {
-  BlockProps,
-  RenderAnnotationCallback,
-  RenderArrayOfObjectsItemCallback,
-  RenderBlockCallback,
-  RenderCustomMarkers,
-  RenderFieldCallback,
-  RenderInputCallback,
-  RenderPreviewCallback,
-} from '../../../types'
-import {useFormBuilder} from '../../../useFormBuilder'
-import {usePortableTextMarkers} from '../hooks/usePortableTextMarkers'
-import {useMemberValidation} from '../hooks/useMemberValidation'
-import {usePortableTextMemberItem} from '../hooks/usePortableTextMembers'
+  type ObjectSchemaType,
+  type Path,
+  type PortableTextBlock,
+  type PortableTextChild,
+} from '@sanity/types'
+import {isEqual} from '@sanity/util/paths'
+import {useCallback, useEffect, useMemo, useState} from 'react'
+
+import {Tooltip} from '../../../../../ui-components'
 import {pathToString} from '../../../../field/paths'
+import {useTranslation} from '../../../../i18n'
 import {EMPTY_ARRAY} from '../../../../util'
 import {useChildPresence} from '../../../studio/contexts/Presence'
-import {useTranslation} from '../../../../i18n'
+import {
+  type BlockProps,
+  type RenderAnnotationCallback,
+  type RenderArrayOfObjectsItemCallback,
+  type RenderBlockCallback,
+  type RenderCustomMarkers,
+  type RenderFieldCallback,
+  type RenderInputCallback,
+  type RenderPreviewCallback,
+} from '../../../types'
+import {useFormBuilder} from '../../../useFormBuilder'
+import {useMemberValidation} from '../hooks/useMemberValidation'
+import {usePortableTextMarkers} from '../hooks/usePortableTextMarkers'
+import {usePortableTextMemberItem} from '../hooks/usePortableTextMembers'
+import {PreviewSpan, Root, TooltipBox} from './InlineObject.styles'
 import {InlineObjectToolbarPopover} from './InlineObjectToolbarPopover'
 import {ObjectEditModal} from './modals/ObjectEditModal'
-import {PreviewSpan, Root, TooltipBox} from './InlineObject.styles'
 
 interface InlineObjectProps {
   floatingBoundary: HTMLElement | null
@@ -205,7 +211,8 @@ export const InlineObject = (props: InlineObjectProps) => {
         <Tooltip
           placement="bottom"
           portal="editor"
-          disabled={!tooltipEnabled}
+          // If the object modal is open, disable the tooltip to avoid it rerendering the inner items when the validation changes.
+          disabled={isOpen ? true : !tooltipEnabled}
           content={toolTipContent}
         >
           {/* This relative span must be here for the ToolTip to properly show */}
@@ -215,7 +222,14 @@ export const InlineObject = (props: InlineObjectProps) => {
         </Tooltip>
       </span>
     ),
-    [componentProps, memberItem?.elementRef, renderInlineBlock, toolTipContent, tooltipEnabled],
+    [
+      componentProps,
+      memberItem?.elementRef,
+      renderInlineBlock,
+      toolTipContent,
+      tooltipEnabled,
+      isOpen,
+    ],
   )
 }
 

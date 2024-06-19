@@ -1,5 +1,5 @@
 import {Box} from '@sanity/ui'
-import React from 'react'
+
 import {NoChanges} from '../diff'
 
 export default function NoChangesStory() {

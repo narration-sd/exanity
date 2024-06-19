@@ -1,8 +1,8 @@
-import React from 'react'
-import {definePlugin, ObjectInputProps, _DocumentLanguageFilterComponent} from 'sanity'
+import {type _DocumentLanguageFilterComponent, definePlugin, type ObjectInputProps} from 'sanity'
+
 import {LanguageFilterMenuButton} from './LanguageFilterMenuButton'
 import {LanguageFilterObjectInput} from './LanguageFilterObjectInput'
-import {LanguageFilterPluginOptions} from './types'
+import {type LanguageFilterPluginOptions} from './types'
 
 /**
  * Language filter plugin for Sanity

@@ -1,6 +1,9 @@
-import path from 'path'
-import {stat} from 'fs/promises'
+import {stat} from 'node:fs/promises'
+import path from 'node:path'
+
+import {describe, expect} from '@jest/globals'
 import tar from 'tar'
+
 import {describeCliTest, testConcurrent} from './shared/describe'
 import {
   getTestRunArgs,

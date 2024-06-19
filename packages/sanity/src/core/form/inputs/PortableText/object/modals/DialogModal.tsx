@@ -1,14 +1,15 @@
-import React, {useId, useRef, useState} from 'react'
 import {Box} from '@sanity/ui'
+import {type ReactNode, useId, useRef, useState} from 'react'
+
+import {Dialog} from '../../../../../../ui-components'
 import {PresenceOverlay} from '../../../../../presence'
 import {VirtualizerScrollInstanceProvider} from '../../../arrays/ArrayOfObjectsInput/List/VirtualizerScrollInstanceProvider'
-import {Dialog} from '../../../../../../ui-components'
-import {ModalWidth} from './types'
+import {type ModalWidth} from './types'
 
 interface DefaultEditDialogProps {
-  children: React.ReactNode
+  children: ReactNode
   onClose: () => void
-  title: string | React.ReactNode
+  title: string | ReactNode
   width?: ModalWidth
   autoFocus?: boolean
 }

@@ -1,11 +1,12 @@
-import React, {useId} from 'react'
 import {TrashIcon} from '@sanity/icons'
 import {Box, Menu} from '@sanity/ui'
-import {ArrayItemError} from '../../../../store'
-import {RowLayout} from '../../layouts/RowLayout'
+import {useId} from 'react'
+
 import {MenuButton, MenuItem} from '../../../../../../ui-components'
 import {ContextMenuButton} from '../../../../../components/contextMenuButton'
 import {useTranslation} from '../../../../../i18n'
+import {type ArrayItemError} from '../../../../store'
+import {RowLayout} from '../../layouts/RowLayout'
 import {IncompatibleItemType} from './IncompatibleItemType'
 
 const MENU_POPOVER_PROPS = {portal: true, tone: 'default'} as const
@@ -14,8 +15,9 @@ export function ErrorItem(props: {
   member: ArrayItemError
   sortable?: boolean
   onRemove: () => void
+  readOnly?: boolean
 }) {
-  const {member, sortable, onRemove} = props
+  const {member, sortable, onRemove, readOnly} = props
   const id = useId()
 
   const {t} = useTranslation()
@@ -24,10 +26,11 @@ export function ErrorItem(props: {
     <Box paddingX={1}>
       <RowLayout
         dragHandle={sortable}
+        readOnly={!!readOnly}
         tone="caution"
         menu={
           <MenuButton
-            button={<ContextMenuButton paddingY={3} />}
+            button={<ContextMenuButton />}
             id={`${id}-menuButton`}
             menu={
               <Menu>

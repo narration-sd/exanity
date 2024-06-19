@@ -1,5 +1,7 @@
-import {ConditionalProperty} from '@sanity/types'
+import {expect, test} from '@jest/globals'
 import {Schema} from '@sanity/schema'
+import {type ConditionalProperty} from '@sanity/types'
+
 import {prepareFormState} from '../formState'
 import {DEFAULT_PROPS} from './shared'
 

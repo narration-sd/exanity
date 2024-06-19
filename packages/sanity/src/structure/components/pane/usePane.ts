@@ -1,6 +1,7 @@
 import {useContext} from 'react'
-import {PaneContext} from './PaneContext'
-import {PaneContextValue} from './types'
+import {PaneContext} from 'sanity/_singletons'
+
+import {type PaneContextValue} from './types'
 
 /**
  *

@@ -1,24 +1,25 @@
-import React, {useCallback, useEffect, useMemo, useRef} from 'react'
-import {Path} from '@sanity/types'
+import {type Path} from '@sanity/types'
 import {isShallowEmptyObject} from '@sanity/util/content'
+import {useCallback, useEffect, useMemo, useRef} from 'react'
+
 import {useDidUpdate} from '../../../hooks/useDidUpdate'
-import {FieldMember, ObjectFormNode} from '../../../store'
-import {
-  ArrayOfObjectsInputProps,
-  ObjectFieldProps,
-  ObjectInputProps,
-  RenderAnnotationCallback,
-  RenderArrayOfObjectsItemCallback,
-  RenderBlockCallback,
-  RenderFieldCallback,
-  RenderInputCallback,
-  RenderPreviewCallback,
-} from '../../../types'
-import {PatchArg, PatchEvent, setIfMissing, unset} from '../../../patch'
-import {FormCallbacksProvider, useFormCallbacks} from '../../../studio/contexts/FormCallbacks'
-import {createProtoValue} from '../../../utils/createProtoValue'
+import {type PatchArg, PatchEvent, setIfMissing, unset} from '../../../patch'
 import {applyAll} from '../../../patch/applyPatch'
+import {type FieldMember, type ObjectFormNode} from '../../../store'
 import {useDocumentFieldActions} from '../../../studio/contexts/DocumentFieldActions'
+import {FormCallbacksProvider, useFormCallbacks} from '../../../studio/contexts/FormCallbacks'
+import {
+  type ArrayOfObjectsInputProps,
+  type ObjectFieldProps,
+  type ObjectInputProps,
+  type RenderAnnotationCallback,
+  type RenderArrayOfObjectsItemCallback,
+  type RenderBlockCallback,
+  type RenderFieldCallback,
+  type RenderInputCallback,
+  type RenderPreviewCallback,
+} from '../../../types'
+import {createProtoValue} from '../../../utils/createProtoValue'
 import {createDescriptionId} from '../../common/createDescriptionId'
 
 /**
@@ -176,10 +177,10 @@ export const ObjectField = function ObjectField(props: {
 
   const elementProps = useMemo(
     (): ArrayOfObjectsInputProps['elementProps'] => ({
-      onBlur: handleBlur,
-      onFocus: handleFocus,
-      id: member.field.id,
-      ref: focusRef,
+      'onBlur': handleBlur,
+      'onFocus': handleFocus,
+      'id': member.field.id,
+      'ref': focusRef,
       'aria-describedby': createDescriptionId(member.field.id, member.field.schemaType.description),
     }),
     [handleBlur, handleFocus, member.field.id, member.field.schemaType.description],

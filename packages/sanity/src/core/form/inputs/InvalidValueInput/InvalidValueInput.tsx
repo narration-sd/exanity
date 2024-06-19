@@ -1,13 +1,14 @@
 import {Card, Code, Stack, Text} from '@sanity/ui'
-import React, {forwardRef, useCallback, useImperativeHandle, useMemo} from 'react'
 import {isPlainObject} from 'lodash'
-import {useTranslation, Translate} from '../../../i18n'
-import {PatchEvent, set, unset} from '../../patch'
+import {forwardRef, type Ref, useCallback, useImperativeHandle, useMemo} from 'react'
+
+import {Button} from '../../../../ui-components'
+import {isDev} from '../../../environment'
+import {Translate, useTranslation} from '../../../i18n'
 import {Alert} from '../../components/Alert'
 import {Details} from '../../components/Details'
-import {isDev} from '../../../environment'
-import {Button} from '../../../../ui-components'
-import {converters as CONVERTERS, ValueConverter} from './converters'
+import {PatchEvent, set, unset} from '../../patch'
+import {converters as CONVERTERS, type ValueConverter} from './converters'
 import {UntypedValueInput} from './UntypedValueInput'
 
 interface Converter extends ValueConverter {
@@ -38,7 +39,7 @@ interface InvalidValueProps {
 }
 
 export const InvalidValueInput = forwardRef(
-  (props: InvalidValueProps, ref: React.Ref<{focus: () => void}>) => {
+  (props: InvalidValueProps, ref: Ref<{focus: () => void}>) => {
     const {value, actualType, validTypes, onChange} = props
 
     useImperativeHandle(ref, () => ({

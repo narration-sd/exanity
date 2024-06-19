@@ -1,24 +1,24 @@
-import {CheckmarkIcon, PublishIcon} from '@sanity/icons'
-import {isValidationErrorMarker} from '@sanity/types'
-import React, {useCallback, useEffect, useState} from 'react'
+import {PublishIcon} from '@sanity/icons'
 import {useTelemetry} from '@sanity/telemetry/react'
-import {useDocumentPane} from '../panes/document/useDocumentPane'
-import {structureLocaleNamespace, type StructureLocaleResourceKeys} from '../i18n'
-
-import {DocumentPublished} from './__telemetry__/documentActions.telemetry'
+import {isValidationErrorMarker} from '@sanity/types'
+import {useCallback, useEffect, useState} from 'react'
 import {
-  DocumentActionComponent,
+  type DocumentActionComponent,
   InsufficientPermissionsMessage,
-  TFunction,
+  type TFunction,
   useCurrentUser,
   useDocumentOperation,
   useDocumentPairPermissions,
   useEditState,
-  useSyncState,
   useRelativeTime,
+  useSyncState,
   useTranslation,
   useValidationStatus,
 } from 'sanity'
+
+import {structureLocaleNamespace, type StructureLocaleResourceKeys} from '../i18n'
+import {useDocumentPane} from '../panes/document/useDocumentPane'
+import {DocumentPublished} from './__telemetry__/documentActions.telemetry'
 
 const DISABLED_REASON_TITLE_KEY: Record<string, StructureLocaleResourceKeys> = {
   LIVE_EDIT_ENABLED: 'action.publish.live-edit.publish-disabled',
@@ -40,7 +40,7 @@ function getDisabledReason(
 
 function AlreadyPublished({publishedAt}: {publishedAt: string}) {
   const {t} = useTranslation(structureLocaleNamespace)
-  const timeSincePublished = useRelativeTime(publishedAt)
+  const timeSincePublished = useRelativeTime(publishedAt, {useTemporalPhrase: true})
   return <span>{t('action.publish.already-published.tooltip', {timeSincePublished})}</span>
 }
 

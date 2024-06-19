@@ -1,23 +1,17 @@
-import React, {createContext, useContext, useEffect, useMemo, useSyncExternalStore} from 'react'
-import {studioTheme, ThemeColorSchemeKey, ThemeProvider, usePrefersDark} from '@sanity/ui'
 import {DesktopIcon, MoonIcon, SunIcon} from '@sanity/icons'
-import type {StudioThemeColorSchemeKey} from '../theme/types'
-import {TFunction} from '../i18n'
+import {studioTheme, type ThemeColorSchemeKey, ThemeProvider, usePrefersDark} from '@sanity/ui'
+import {
+  type ComponentType,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+} from 'react'
+import {ColorSchemeSetValueContext, ColorSchemeValueContext} from 'sanity/_singletons'
 
-/**
- * Used to keep track of the internal value, which can be "system" in addition to "light" and "dark"
- * @internal
- */
-export const ColorSchemeValueContext = createContext<StudioThemeColorSchemeKey | null>(null)
-
-/**
- * The setter for ColorSchemeValueContext, in a separate context to avoid unnecessary re-renders
- * If set to false then the UI should adjust to reflect that the Studio can't change the color scheme
- * @internal
- */
-export const ColorSchemeSetValueContext = createContext<
-  ((nextScheme: StudioThemeColorSchemeKey) => void) | false | null
->(null)
+import {type TFunction} from '../i18n'
+import {type StudioThemeColorSchemeKey} from '../theme/types'
 
 /** @internal */
 function useSystemScheme(): ThemeColorSchemeKey {
@@ -29,7 +23,7 @@ function ColorThemeProvider({
   children,
   scheme: _scheme,
 }: {
-  children: React.ReactNode
+  children: ReactNode
   scheme: StudioThemeColorSchemeKey
 }) {
   const systemScheme = useSystemScheme()
@@ -50,7 +44,7 @@ const LOCAL_STORAGE_KEY = 'sanityStudio:ui:colorScheme'
 
 /** @internal */
 export interface ColorSchemeProviderProps {
-  children: React.ReactNode
+  children: ReactNode
   onSchemeChange?: (nextScheme: StudioThemeColorSchemeKey) => void
   scheme?: StudioThemeColorSchemeKey
 }
@@ -148,7 +142,7 @@ export function ColorSchemeCustomProvider({
   scheme,
 }: Pick<ColorSchemeProviderProps, 'children' | 'onSchemeChange'> & {
   scheme: StudioThemeColorSchemeKey
-}) {
+}): JSX.Element {
   return (
     <ColorSchemeSetValueContext.Provider
       value={typeof onSchemeChange === 'function' ? onSchemeChange : false}
@@ -161,14 +155,16 @@ export function ColorSchemeCustomProvider({
 }
 
 /** @alpha */
-export function useColorSchemeSetValue() {
+export function useColorSchemeSetValue():
+  | false
+  | ((nextScheme: StudioThemeColorSchemeKey) => void) {
   const setValue = useContext(ColorSchemeSetValueContext)
   if (setValue === null) throw new Error('Could not find `ColorSchemeSetValueContext` context')
   return setValue
 }
 
 /** @internal */
-export function _useColorSchemeInternalValue(): StudioThemeColorSchemeKey {
+export function useColorSchemeInternalValue(): StudioThemeColorSchemeKey {
   const value = useContext(ColorSchemeValueContext)
   if (value === null) throw new Error('Could not find `ColorSchemeValueContext` context')
   return value
@@ -176,7 +172,7 @@ export function _useColorSchemeInternalValue(): StudioThemeColorSchemeKey {
 
 /** @alpha */
 export function useColorSchemeValue(): ThemeColorSchemeKey {
-  const scheme = _useColorSchemeInternalValue()
+  const scheme = useColorSchemeInternalValue()
   const systemScheme = useSystemScheme()
   return scheme === 'system' ? systemScheme : scheme
 }
@@ -186,13 +182,19 @@ export function useColorSchemeValue(): ThemeColorSchemeKey {
  * @internal
  */
 export function useColorScheme() {
+  useEffect(() => {
+    console.warn(
+      'useColorScheme() is deprecated, use useColorSchemeValue() or useColorSchemeSetValue() instead',
+    )
+  }, [])
+
   const scheme = useColorSchemeValue()
   const setScheme = useColorSchemeSetValue()
   return useMemo(() => ({scheme, setScheme}), [scheme, setScheme])
 }
 
 interface ColorSchemeOption {
-  icon: React.ComponentType
+  icon: ComponentType
   label: string
   name: StudioThemeColorSchemeKey
   onSelect: () => void
@@ -206,7 +208,7 @@ export function useColorSchemeOptions(
   setScheme: (nextScheme: StudioThemeColorSchemeKey) => void,
   t: TFunction<'studio', undefined>,
 ) {
-  const scheme = _useColorSchemeInternalValue()
+  const scheme = useColorSchemeInternalValue()
 
   return useMemo(() => {
     return [

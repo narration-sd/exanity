@@ -1,12 +1,13 @@
 // This is transitional in order to track usage of the ActivateOnFocusPart part from within the form-builder package
-import React, {KeyboardEvent, useCallback, useMemo, useState} from 'react'
 import {Text} from '@sanity/ui'
+import {type KeyboardEvent, type ReactNode, useCallback, useMemo, useState} from 'react'
+
 import {useTranslation} from '../../../i18n'
 import {
-  OverlayContainer,
-  FlexContainer,
   CardContainer,
   ContentContainer,
+  FlexContainer,
+  OverlayContainer,
 } from './ActivateOnFocus.styles'
 
 const isTouchDevice = () =>
@@ -17,8 +18,8 @@ const isTouchDevice = () =>
  * @internal
  */
 export interface ActivateOnFocusProps {
-  children: React.ReactNode
-  message?: React.ReactNode
+  children: ReactNode
+  message?: ReactNode
   onActivate?: () => void
   isOverlayActive: boolean
 }
@@ -50,6 +51,15 @@ export function ActivateOnFocus(props: ActivateOnFocusProps) {
     },
     [isOverlayActive, onActivate],
   )
+
+  const handleDragEnter = useCallback(() => {
+    if (!isOverlayActive) {
+      return
+    }
+    if (onActivate) {
+      onActivate()
+    }
+  }, [isOverlayActive, onActivate])
 
   const handleOnFocus = useCallback(() => {
     setFocused(true)
@@ -85,6 +95,7 @@ export function ActivateOnFocus(props: ActivateOnFocusProps) {
       onClick={handleClick}
       onFocus={handleOnFocus}
       onKeyDown={handleKeyDown}
+      onDragEnter={handleDragEnter}
     >
       {isOverlayActive && (
         <FlexContainer data-testid="activate-overlay" tabIndex={0} align="center" justify="center">

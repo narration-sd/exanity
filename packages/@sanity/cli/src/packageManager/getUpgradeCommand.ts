@@ -1,5 +1,7 @@
-import path from 'path'
+import path from 'node:path'
+
 import isInstalledGlobally from 'is-installed-globally'
+
 import {debug} from '../debug'
 import {getPackageManagerChoice} from './packageManagerChoice'
 

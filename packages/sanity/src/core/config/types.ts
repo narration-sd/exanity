@@ -1,36 +1,38 @@
-import type {BifurClient} from '@sanity/bifur-client'
-import type {ClientConfig as SanityClientConfig, SanityClient} from '@sanity/client'
-import type {
-  AssetSource,
-  CurrentUser,
-  ObjectSchemaType,
-  SanityDocumentLike,
-  Schema,
-  SchemaType,
-  SchemaTypeDefinition,
+import {type BifurClient} from '@sanity/bifur-client'
+import {type ClientConfig as SanityClientConfig, type SanityClient} from '@sanity/client'
+import {
+  type AssetSource,
+  type CurrentUser,
+  type ObjectSchemaType,
+  type SanityDocumentLike,
+  type Schema,
+  type SchemaType,
+  type SchemaTypeDefinition,
 } from '@sanity/types'
-import type {ComponentType, ReactNode} from 'react'
-import type {Observable} from 'rxjs'
-import type {i18n} from 'i18next'
-import type {FormBuilderCustomMarkersComponent, FormBuilderMarkersComponent} from '../form'
-import type {LocalePluginOptions, LocaleSource} from '../i18n/types'
-import type {InitialValueTemplateItem, Template, TemplateItem} from '../templates'
-import type {AuthStore} from '../store'
-import type {StudioTheme} from '../theme'
-import type {SearchFilterDefinition} from '../studio/components/navbar/search/definitions/filters'
-import type {SearchOperatorDefinition} from '../studio/components/navbar/search/definitions/operators'
-import type {StudioComponents, StudioComponentsPluginOptions} from './studio'
-import type {AuthConfig} from './auth/types'
-import type {
-  DocumentActionComponent,
-  DocumentBadgeComponent,
-  DocumentFieldAction,
-  DocumentFieldActionsResolver,
-  DocumentFieldActionsResolverContext,
-  DocumentInspector,
+import {type i18n} from 'i18next'
+import {type ComponentType, type ReactNode} from 'react'
+import {type Observable} from 'rxjs'
+import {type Router, type RouterState} from 'sanity/router'
+
+import {type FormBuilderCustomMarkersComponent, type FormBuilderMarkersComponent} from '../form'
+import {type LocalePluginOptions, type LocaleSource} from '../i18n/types'
+import {type ScheduledPublishingPluginOptions} from '../scheduledPublishing/types'
+import {type AuthStore} from '../store'
+import {type SearchFilterDefinition} from '../studio/components/navbar/search/definitions/filters'
+import {type SearchOperatorDefinition} from '../studio/components/navbar/search/definitions/operators'
+import {type InitialValueTemplateItem, type Template, type TemplateItem} from '../templates'
+import {type StudioTheme} from '../theme'
+import {type AuthConfig} from './auth/types'
+import {
+  type DocumentActionComponent,
+  type DocumentBadgeComponent,
+  type DocumentFieldAction,
+  type DocumentFieldActionsResolver,
+  type DocumentFieldActionsResolverContext,
+  type DocumentInspector,
 } from './document'
-import {FormComponents} from './form'
-import type {Router, RouterState} from 'sanity/router'
+import {type FormComponents} from './form'
+import {type StudioComponents, type StudioComponentsPluginOptions} from './studio'
 
 /**
  * @hidden
@@ -289,8 +291,13 @@ export interface DocumentPluginOptions {
    */
   newDocumentOptions?: NewDocumentOptionsResolver
 
-  /** @internal */
+  /** @deprecated Use `comments` instead */
   unstable_comments?: {
+    enabled: boolean | ((context: DocumentCommentsEnabledContext) => boolean)
+  }
+
+  /** @internal */
+  comments?: {
     enabled: boolean | ((context: DocumentCommentsEnabledContext) => boolean)
   }
 }
@@ -357,6 +364,10 @@ export interface PluginOptions {
   tools?: Tool[] | ComposableOption<Tool[], ConfigContext>
   form?: SanityFormConfig
 
+  __internal_tasks?: {
+    footerAction: ReactNode
+  }
+
   studio?: {
     /**
      * Components for the studio.
@@ -372,6 +383,10 @@ export interface PluginOptions {
     unstable_partialIndexing?: {
       enabled: boolean
     }
+    /**
+     * Enables the legacy Query API search strategy.
+     */
+    enableLegacySearch?: boolean
   }
 }
 
@@ -422,6 +437,24 @@ export interface WorkspaceOptions extends SourceOptions {
    * @beta
    */
   unstable_sources?: SourceOptions[]
+  /**
+   * @deprecated Use `tasks` instead
+   */
+  unstable_tasks?: DefaultPluginsWorkspaceOptions['tasks']
+  /**
+   * @internal
+   */
+  tasks?: DefaultPluginsWorkspaceOptions['tasks']
+
+  /**
+   * @hidden
+   * @internal
+   */
+  __internal_serverDocumentActions?: {
+    enabled?: boolean
+  }
+
+  scheduledPublishing?: DefaultPluginsWorkspaceOptions['scheduledPublishing']
 }
 
 /**
@@ -629,11 +662,19 @@ export interface Source {
      */
     inspectors: (props: PartialContext<DocumentInspectorContext>) => DocumentInspector[]
 
-    /** @internal */
+    /** @deprecated  Use `comments` instead */
     unstable_comments: {
       enabled: (props: DocumentCommentsEnabledContext) => boolean
     }
+
+    /** @internal */
+    comments: {
+      enabled: (props: DocumentCommentsEnabledContext) => boolean
+    }
   }
+
+  /** @internal */
+  __internal_tasks?: {footerAction: ReactNode}
 
   /**
    * Form-related functionality.
@@ -706,6 +747,8 @@ export interface Source {
     unstable_partialIndexing?: {
       enabled: boolean
     }
+
+    enableLegacySearch?: boolean
   }
 
   /** @internal */
@@ -725,10 +768,15 @@ export interface Source {
      */
     i18next: i18n
   }
+  /** @beta */
+  tasks?: WorkspaceOptions['tasks']
+
+  /** @internal */
+  __internal_serverDocumentActions?: WorkspaceOptions['__internal_serverDocumentActions']
 }
 
 /** @internal */
-export interface WorkspaceSummary {
+export interface WorkspaceSummary extends DefaultPluginsWorkspaceOptions {
   type: 'workspace-summary'
   name: string
   title: string
@@ -763,6 +811,7 @@ export interface WorkspaceSummary {
       source: Observable<Source>
     }>
   }
+  __internal_serverDocumentActions: WorkspaceOptions['__internal_serverDocumentActions']
 }
 
 /**
@@ -789,6 +838,7 @@ export interface Workspace extends Omit<Source, 'type'> {
    * @beta
    */
   unstable_sources: Source[]
+  scheduledPublishing: ScheduledPublishingPluginOptions
 }
 
 /**
@@ -826,6 +876,12 @@ export interface PreparedConfig {
 export type {
   AuthConfig,
   AuthProvider,
-  LoginMethod,
   CookielessCompatibleLoginMethod,
+  LoginMethod,
 } from './auth/types'
+
+/** @beta */
+export type DefaultPluginsWorkspaceOptions = {
+  tasks: {enabled: boolean}
+  scheduledPublishing: ScheduledPublishingPluginOptions
+}

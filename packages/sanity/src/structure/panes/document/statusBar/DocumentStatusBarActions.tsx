@@ -1,12 +1,18 @@
+/* eslint-disable camelcase */
 import {Flex, Hotkeys, LayerProvider, Stack, Text} from '@sanity/ui'
-import React, {memo, useMemo, useState} from 'react'
+import {memo, useMemo, useState} from 'react'
+import {
+  type DocumentActionComponent,
+  type DocumentActionDescription,
+  useTimelineSelector,
+} from 'sanity'
+
+import {Button, Tooltip} from '../../../../ui-components'
 import {RenderActionCollectionState} from '../../../components'
 import {HistoryRestoreAction} from '../../../documentActions'
-import {Button, Tooltip} from '../../../../ui-components'
 import {useDocumentPane} from '../useDocumentPane'
 import {ActionMenuButton} from './ActionMenuButton'
 import {ActionStateDialog} from './ActionStateDialog'
-import {DocumentActionDescription, useTimelineSelector} from 'sanity'
 
 interface DocumentStatusBarActionsInnerProps {
   disabled: boolean
@@ -16,6 +22,7 @@ interface DocumentStatusBarActionsInnerProps {
 
 function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsInnerProps) {
   const {disabled, showMenu, states} = props
+  const {__internal_tasks} = useDocumentPane()
   const [firstActionState, ...menuActionStates] = states
   const [buttonElement, setButtonElement] = useState<HTMLButtonElement | null>(null)
 
@@ -41,6 +48,7 @@ function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsInnerProps
 
   return (
     <Flex align="center" gap={1}>
+      {__internal_tasks && __internal_tasks.footerAction}
       {firstActionState && (
         <LayerProvider zOffset={200}>
           <Tooltip disabled={!tooltipContent} content={tooltipContent} placement="top">
@@ -71,13 +79,20 @@ function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsInnerProps
 }
 
 export const DocumentStatusBarActions = memo(function DocumentStatusBarActions() {
-  const {actions, connectionState, documentId, editState} = useDocumentPane()
+  const {actions: allActions, connectionState, documentId, editState} = useDocumentPane()
   // const [isMenuOpen, setMenuOpen] = useState(false)
   // const handleMenuOpen = useCallback(() => setMenuOpen(true), [])
   // const handleMenuClose = useCallback(() => setMenuOpen(false), [])
   // const handleActionComplete = useCallback(() => setMenuOpen(false), [])
 
-  if (!actions || !editState) {
+  // The restore action has a dedicated place in the UI; it's only visible when the user is viewing
+  // a different document revision. It must be omitted from this collection.
+  const actions = useMemo(
+    () => (allActions ?? []).filter((action) => !isRestoreAction(action)),
+    [allActions],
+  )
+
+  if (actions.length === 0 || !editState) {
     return null
   }
 
@@ -86,8 +101,8 @@ export const DocumentStatusBarActions = memo(function DocumentStatusBarActions()
       // component={}
       // onActionComplete={handleActionComplete}
       actions={actions}
-      // @ts-expect-error TODO: fix the document actions
       actionProps={editState}
+      group="default"
     >
       {({states}) => (
         <DocumentStatusBarActionsInner
@@ -106,7 +121,7 @@ export const DocumentStatusBarActions = memo(function DocumentStatusBarActions()
 })
 
 export const HistoryStatusBarActions = memo(function HistoryStatusBarActions() {
-  const {connectionState, editState, timelineStore} = useDocumentPane()
+  const {actions, connectionState, editState, timelineStore} = useDocumentPane()
 
   // Subscribe to external timeline state changes
   const revTime = useTimelineSelector(timelineStore, (state) => state.revTime)
@@ -114,10 +129,16 @@ export const HistoryStatusBarActions = memo(function HistoryStatusBarActions() {
   const revision = revTime?.id || ''
   const disabled = (editState?.draft || editState?.published || {})._rev === revision
   const actionProps = useMemo(() => ({...(editState || {}), revision}), [editState, revision])
-  const historyActions = useMemo(() => [HistoryRestoreAction], [])
+
+  // If multiple `restore` actions are defined, ensure only the final one is used.
+  const historyActions = useMemo(() => (actions ?? []).filter(isRestoreAction).slice(-1), [actions])
 
   return (
-    <RenderActionCollectionState actions={historyActions} actionProps={actionProps as any}>
+    <RenderActionCollectionState
+      actions={historyActions}
+      actionProps={actionProps as any}
+      group="default"
+    >
       {({states}) => (
         <DocumentStatusBarActionsInner
           disabled={connectionState !== 'connected' || Boolean(disabled)}
@@ -128,3 +149,9 @@ export const HistoryStatusBarActions = memo(function HistoryStatusBarActions() {
     </RenderActionCollectionState>
   )
 })
+
+export function isRestoreAction(
+  action: DocumentActionComponent,
+): action is DocumentActionComponent & {action: 'restore'} {
+  return action.action === HistoryRestoreAction.action
+}

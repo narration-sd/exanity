@@ -1,13 +1,14 @@
-import type {SanityClient} from '@sanity/client'
+import {type Action, type SanityClient} from '@sanity/client'
 import {
   isReference,
-  Reference,
-  SanityDocument,
-  TransactionLogEventWithMutations,
+  type Reference,
+  type SanityDocument,
+  type TransactionLogEventWithMutations,
 } from '@sanity/types'
 import {reduce as jsonReduce} from 'json-reduce'
-import {from, Observable} from 'rxjs'
+import {from, type Observable} from 'rxjs'
 import {map, mergeMap} from 'rxjs/operators'
+
 import {isDev} from '../../../environment'
 import {getDraftId, getPublishedId, isRecord} from '../../../util'
 import {Timeline, TimelineController} from './history'
@@ -28,7 +29,7 @@ export interface HistoryStore {
 
   getTransactions: (documentIds: string[]) => Promise<TransactionLogEventWithMutations[]>
 
-  restore: (id: string, targetId: string, rev: string) => Observable<SanityDocument>
+  restore: (id: string, targetId: string, rev: string, options?: RestoreOptions) => Observable<void>
 
   /** @internal */
   getTimelineController: (options: {
@@ -36,6 +37,11 @@ export interface HistoryStore {
     documentId: string
     documentType: string
   }) => TimelineController
+}
+
+interface RestoreOptions {
+  fromDeleted: boolean
+  useServerDocumentActions?: boolean
 }
 
 const documentRevisionCache: Record<string, Promise<SanityDocument | undefined> | undefined> =
@@ -176,7 +182,13 @@ export const removeMissingReferences = (
     return documentExists ? refNode : undefined
   })
 
-function restore(client: SanityClient, documentId: string, targetDocumentId: string, rev: string) {
+function restore(
+  client: SanityClient,
+  documentId: string,
+  targetDocumentId: string,
+  rev: string,
+  options?: RestoreOptions,
+): Observable<void> {
   return from(getDocumentAtRevision(client, documentId, rev)).pipe(
     mergeMap((documentAtRevision) => {
       if (!documentAtRevision) {
@@ -192,13 +204,36 @@ function restore(client: SanityClient, documentId: string, targetDocumentId: str
         .pipe(map((existingIds) => removeMissingReferences(documentAtRevision, existingIds)))
     }),
     map((documentAtRevision) => {
-      // Remove _updatedAt and create a new draft from the document at given revision
+      // Remove _updatedAt
       const {_updatedAt, ...document} = documentAtRevision
       return {...document, _id: targetDocumentId}
     }),
-    mergeMap((restoredDraft) =>
-      client.observable.createOrReplace(restoredDraft, {visibility: 'async'}),
-    ),
+    mergeMap((restoredDraft) => {
+      if (options?.useServerDocumentActions) {
+        const replaceDraftAction: Action = {
+          actionType: 'sanity.action.document.replaceDraft',
+          publishedId: documentId,
+          attributes: restoredDraft,
+        }
+        return client.observable.action(
+          options.fromDeleted
+            ? [
+                {
+                  actionType: 'sanity.action.document.create',
+                  publishedId: documentId,
+                  attributes: restoredDraft,
+                  // This will guard against a race where someone else restores a deleted document at the same time
+                  ifExists: 'fail',
+                },
+                replaceDraftAction,
+              ]
+            : replaceDraftAction,
+        )
+      }
+
+      return client.observable.createOrReplace(restoredDraft, {visibility: 'async'})
+    }),
+    map(() => undefined),
   )
 }
 
@@ -217,7 +252,7 @@ export function createHistoryStore({client}: HistoryStoreOptions): HistoryStore 
 
     getTransactions: (documentIds) => getTransactions(client, documentIds),
 
-    restore: (id, targetId, rev) => restore(client, id, targetId, rev),
+    restore: (id, targetId, rev, options) => restore(client, id, targetId, rev, options),
 
     getTimelineController,
   }

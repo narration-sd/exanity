@@ -1,9 +1,11 @@
-import {streamToAsyncIterator} from '../../utils/streamToAsyncIterator'
-import {toArray} from '../../it-utils/toArray'
-import {untar} from '../untar'
+import {expect, test} from '@jest/globals'
+
 import {readFileAsWebStream} from '../../fs-webstream/readFileAsWebStream'
-import {drain} from '../drain'
+import {toArray} from '../../it-utils/toArray'
 import {concatUint8Arrays} from '../../uint8arrays'
+import {streamToAsyncIterator} from '../../utils/streamToAsyncIterator'
+import {drain} from '../drain'
+import {untar} from '../untar'
 
 function getCrypto() {
   if (typeof globalThis.crypto === 'undefined') {

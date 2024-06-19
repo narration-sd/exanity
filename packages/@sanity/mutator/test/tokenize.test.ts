@@ -1,3 +1,5 @@
+import {expect, test} from '@jest/globals'
+
 import {tokenize} from '../src/jsonpath/tokenize'
 
 const cases = {
@@ -124,6 +126,38 @@ const cases = {
     {
       symbol: ']',
       type: 'paren',
+    },
+  ],
+  'trueish': [
+    {
+      type: 'identifier',
+      name: 'trueish',
+    },
+  ],
+  'trueOrFalse[trueField == true]': [
+    {
+      type: 'identifier',
+      name: 'trueOrFalse',
+    },
+    {
+      type: 'paren',
+      symbol: '[',
+    },
+    {
+      type: 'identifier',
+      name: 'trueField',
+    },
+    {
+      type: 'comparator',
+      symbol: '==',
+    },
+    {
+      symbol: 'true',
+      type: 'boolean',
+    },
+    {
+      type: 'paren',
+      symbol: ']',
     },
   ],
 }

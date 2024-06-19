@@ -1,13 +1,14 @@
-import {ButtonTone, CardTone} from '@sanity/ui'
-import type {
-  SearchableType,
-  SearchOptions,
-  SearchSort,
-  SearchTerms,
-  WeightedHit,
+import {type SchemaType} from '@sanity/types'
+import {type ButtonTone, type CardTone} from '@sanity/ui'
+
+import {
+  type SearchHit,
+  type SearchOptions,
+  type SearchSort,
+  type SearchTerms,
 } from '../../../../search'
-import type {SearchFieldDefinition} from './definitions/fields'
-import type {SearchFilterDefinition} from './definitions/filters'
+import {type SearchFieldDefinition} from './definitions/fields'
+import {type SearchFilterDefinition} from './definitions/filters'
 
 export type DocumentTypeMenuItem =
   | DocumentTypeMenuDivider
@@ -16,7 +17,7 @@ export type DocumentTypeMenuItem =
 
 interface DocumentTypeMenuItemType {
   selected: boolean
-  item: SearchableType
+  item: SchemaType
   type: 'item'
 }
 
@@ -71,7 +72,7 @@ export type SearchFilterValues = {
 export interface SearchOrdering {
   customMeasurementLabel?: string
   ignoreScore?: boolean
-  sort: SearchSort
+  sort?: SearchSort
   /**
    * i18n key for title
    */
@@ -82,7 +83,7 @@ export interface SearchOrdering {
  * @internal
  */
 export interface SearchState {
-  hits: WeightedHit[]
+  hits: SearchHit[]
   loading: boolean
   error: Error | null
   options?: SearchOptions

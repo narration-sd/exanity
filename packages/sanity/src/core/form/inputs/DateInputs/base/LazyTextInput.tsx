@@ -1,22 +1,32 @@
-import React, {ChangeEvent, FocusEvent, HTMLProps, SyntheticEvent} from 'react'
-import {TextInput, TextInputProps} from '@sanity/ui'
+import {TextInput, type TextInputProps} from '@sanity/ui'
+import {
+  type ChangeEvent,
+  type FocusEvent,
+  type ForwardedRef,
+  forwardRef,
+  type HTMLProps,
+  type KeyboardEvent,
+  type SyntheticEvent,
+  useCallback,
+  useState,
+} from 'react'
 
 /**
  * A TextInput that only emit onChange when it has to
  * By default it will only emit onChange when: 1) user hits enter or 2) user leaves the
  * field (e.g. onBlur) and the input value at this time is different from the given `value` prop
  */
-export const LazyTextInput = React.forwardRef(function LazyTextInput(
+export const LazyTextInput = forwardRef(function LazyTextInput(
   {onChange, onBlur, onKeyPress, value, ...rest}: TextInputProps & HTMLProps<HTMLInputElement>,
-  forwardedRef: React.ForwardedRef<HTMLInputElement>,
+  forwardedRef: ForwardedRef<HTMLInputElement>,
 ) {
-  const [inputValue, setInputValue] = React.useState<string>()
+  const [inputValue, setInputValue] = useState<string>()
 
-  const handleChange = React.useCallback((event: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.currentTarget.value)
   }, [])
 
-  const checkEvent = React.useCallback(
+  const checkEvent = useCallback(
     (event: SyntheticEvent<HTMLInputElement>) => {
       const currentValue = event.currentTarget.value
       if (currentValue !== `${value}`) {
@@ -29,7 +39,7 @@ export const LazyTextInput = React.forwardRef(function LazyTextInput(
     [onChange, value],
   )
 
-  const handleBlur = React.useCallback(
+  const handleBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
       checkEvent(e)
       if (onBlur) {
@@ -39,8 +49,8 @@ export const LazyTextInput = React.forwardRef(function LazyTextInput(
     [checkEvent, onBlur],
   )
 
-  const handleKeyPress = React.useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
         checkEvent(e)
       }

@@ -1,9 +1,12 @@
-import * as fs from 'fs'
-import * as assert from 'assert'
-import * as path from 'path'
+import assert from 'node:assert'
+import fs from 'node:fs'
+import path from 'node:path'
+
+import {describe, it} from '@jest/globals'
 import {JSDOM} from 'jsdom'
+
 import * as blockTools from '../../../src'
-import type {BlockTestFn} from './types'
+import {type BlockTestFn} from './types'
 
 describe('HtmlDeserializer', () => {
   const tests = fs.readdirSync(__dirname)

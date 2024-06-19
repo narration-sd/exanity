@@ -1,4 +1,7 @@
+import {describe, expect, test} from '@jest/globals'
+import {SquareIcon} from '@sanity/icons'
 import {flatten} from 'lodash'
+
 import {validateSchema} from '../../src/sanity/validateSchema'
 
 describe('Validation test', () => {
@@ -137,7 +140,7 @@ describe('Validation test', () => {
 
     const invalidObjectResult = validation.get('invalidObject')
     const problems = flatten(
-      invalidObjectResult.fields[0].of[0].of.map((item) => item._problems),
+      invalidObjectResult.fields[0].of[0].of.map((item: {_problems: unknown[]}) => item._problems),
     ).filter(Boolean)
     expect(problems).toHaveLength(7)
     expect(problems[0]).toMatchObject({
@@ -168,5 +171,36 @@ describe('Validation test', () => {
       severity: 'error',
       helpId: 'schema-array-of-type-builtin-type-conflict',
     })
+  })
+
+  test('accepts blocks with a style icon', () => {
+    const schemaDef = [
+      {
+        name: 'testBlock',
+        type: 'block',
+        styles: [{icon: SquareIcon, title: 'Normal text', value: 'normal'}],
+      },
+    ]
+
+    const validation = validateSchema(schemaDef).get('testBlock')
+    const validationErrors = validation._problems.filter(
+      (problem: any) => problem.severity === 'error',
+    )
+    expect(validationErrors).toHaveLength(0)
+  })
+  test('accepts blocks without a style icon', () => {
+    const schemaDef = [
+      {
+        name: 'testBlock',
+        type: 'block',
+        styles: [{title: 'Normal text', value: 'normal'}],
+      },
+    ]
+
+    const validation = validateSchema(schemaDef).get('testBlock')
+    const validationErrors = validation._problems.filter(
+      (problem: any) => problem.severity === 'error',
+    )
+    expect(validationErrors).toHaveLength(0)
   })
 })

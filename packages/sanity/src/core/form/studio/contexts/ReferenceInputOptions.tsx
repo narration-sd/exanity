@@ -1,8 +1,8 @@
-import React, {ComponentType, createContext, HTMLProps, useContext, useMemo} from 'react'
-import {Path} from '@sanity/types'
-import {TemplatePermissionsResult} from '../../../store'
+import {type Path} from '@sanity/types'
+import {type ComponentType, type HTMLProps, type ReactNode, useContext, useMemo} from 'react'
+import {ReferenceInputOptionsContext} from 'sanity/_singletons'
 
-const Context = createContext<ReferenceInputOptions>({})
+import {type TemplatePermissionsResult} from '../../../store'
 
 /** @internal */
 export interface TemplateOption {
@@ -26,7 +26,7 @@ export interface EditReferenceLinkComponentProps {
   documentType: string
   parentRefPath: Path
   template?: TemplateOption
-  children: React.ReactNode
+  children: ReactNode
 }
 
 /**
@@ -58,14 +58,14 @@ export interface ReferenceInputOptions {
  * @internal
  */
 export function useReferenceInputOptions() {
-  return useContext(Context)
+  return useContext(ReferenceInputOptionsContext)
 }
 
 /**
  * @internal
  */
 export function ReferenceInputOptionsProvider(
-  props: ReferenceInputOptions & {children: React.ReactNode},
+  props: ReferenceInputOptions & {children: ReactNode},
 ) {
   const {
     children,
@@ -85,5 +85,9 @@ export function ReferenceInputOptionsProvider(
     [activePath, EditReferenceLinkComponent, onEditReference, initialValueTemplateItems],
   )
 
-  return <Context.Provider value={contextValue}>{children}</Context.Provider>
+  return (
+    <ReferenceInputOptionsContext.Provider value={contextValue}>
+      {children}
+    </ReferenceInputOptionsContext.Provider>
+  )
 }

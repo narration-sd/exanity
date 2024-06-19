@@ -1,10 +1,12 @@
+import {describe, expect, it} from '@jest/globals'
+
 import {typeString} from '../../../src/core/validation/util/typeString'
 
 describe('typeString', () => {
   it('returns the a type string of built in types', () => {
     expect(typeString({})).toBe('Object')
     expect(
-      typeString(function () {
+      typeString(() => {
         // intentionally blank
       }),
     ).toBe('Function')

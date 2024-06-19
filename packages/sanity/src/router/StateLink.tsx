@@ -1,4 +1,5 @@
-import React, {forwardRef} from 'react'
+import {type ForwardedRef, forwardRef, type HTMLProps} from 'react'
+
 import {useStateLink} from './useStateLink'
 
 /**
@@ -41,8 +42,8 @@ export interface StateLinkProps {
  * ```
  */
 export const StateLink = forwardRef(function StateLink(
-  props: StateLinkProps & Omit<React.HTMLProps<HTMLAnchorElement>, 'href'>,
-  ref: React.ForwardedRef<HTMLAnchorElement>,
+  props: StateLinkProps & Omit<HTMLProps<HTMLAnchorElement>, 'href'>,
+  ref: ForwardedRef<HTMLAnchorElement>,
 ) {
   const {onClick: onClickProp, replace, state, target, toIndex = false, ...restProps} = props
   const {onClick, href} = useStateLink({

@@ -1,16 +1,23 @@
-import React, {MouseEventHandler, ReactNode, useCallback, useEffect, useState} from 'react'
 import {CropIcon} from '@sanity/icons'
-import {Inline, Menu, useClickOutside, useGlobalKeyDown} from '@sanity/ui'
-import styled from 'styled-components'
+import {Inline, Menu, Skeleton, useClickOutside, useGlobalKeyDown} from '@sanity/ui'
+import {type MouseEventHandler, type ReactNode, useCallback, useEffect, useState} from 'react'
+import {styled} from 'styled-components'
+
 import {Button, Popover, TooltipDelayGroupProvider} from '../../../../../ui-components'
-import {useTranslation} from '../../../../i18n'
 import {ContextMenuButton} from '../../../../components/contextMenuButton'
+import {useTranslation} from '../../../../i18n'
 
 export const MenuActionsWrapper = styled(Inline)`
   position: absolute;
   top: 0;
   right: 0;
 `
+
+export const ImageActionsMenuWaitPlaceholder = () => (
+  <MenuActionsWrapper padding={2}>
+    <Skeleton style={{width: '25px', height: '25px'}} animated />
+  </MenuActionsWrapper>
+)
 
 interface ImageActionsMenuProps {
   children: ReactNode

@@ -1,19 +1,21 @@
-import util from 'util'
-import path from 'path'
-import {promises as fs} from 'fs'
+import {promises as fs} from 'node:fs'
+import path from 'node:path'
+import util from 'node:util'
+
 import boxen from 'boxen'
+import {noop, padStart} from 'lodash'
+import resolveFrom from 'resolve-from'
 import rimrafCb from 'rimraf'
 import semver from 'semver'
-import resolveFrom from 'resolve-from'
-import {padStart, noop} from 'lodash'
-import type {CliCommandAction, PackageJson} from '../../types'
+
+import {type CliCommandContext} from '../..'
 import {
   findSanityModuleVersions,
-  ModuleVersionResult,
+  type ModuleVersionResult,
 } from '../../actions/versions/findSanityModuleVersions'
-import {getFormatters} from '../versions/printVersionResult'
 import {debug} from '../../debug'
-import {CliCommandContext} from '../..'
+import {type CliCommandAction, type PackageJson} from '../../types'
+import {getFormatters} from '../versions/printVersionResult'
 
 const rimraf = util.promisify(rimrafCb)
 
@@ -23,9 +25,9 @@ Use npm-check-updates or similar (https://www.npmjs.com/package/npm-check-update
 `.trim()
 
 export interface UpgradeCommandFlags {
-  range?: string
-  tag?: string
-  offline?: boolean
+  'range'?: string
+  'tag'?: string
+  'offline'?: boolean
   'save-exact'?: boolean
 }
 

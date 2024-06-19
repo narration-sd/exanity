@@ -1,19 +1,30 @@
 /* eslint-disable camelcase */
-import {Badge, Box, Flex, Stack, Text, Theme, useForwardedRef} from '@sanity/ui'
-import React, {forwardRef, useCallback, useMemo} from 'react'
-import styled, {css} from 'styled-components'
-import {DeprecatedProperty, FormNodeValidation} from '@sanity/types'
-import {FormNodePresence} from '../../../presence'
-import {DocumentFieldActionNode} from '../../../config'
+import {type DeprecatedProperty, type FormNodeValidation} from '@sanity/types'
+import {Badge, Box, Flex, Stack, Text, type Theme} from '@sanity/ui'
+import {
+  type FocusEvent,
+  type ForwardedRef,
+  forwardRef,
+  type HTMLProps,
+  type ReactNode,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from 'react'
+import {css, styled} from 'styled-components'
+
+import {TextWithTone} from '../../../components'
+import {type DocumentFieldActionNode} from '../../../config'
+import {useTranslation} from '../../../i18n'
+import {type FormNodePresence} from '../../../presence'
 import {useFieldActions} from '../../field'
 import {createDescriptionId} from '../../members/common/createDescriptionId'
-import {FieldCommentsProps} from '../../types'
-import {TextWithTone} from '../../../components'
-import {useTranslation} from '../../../i18n'
-import {FormFieldValidationStatus} from './FormFieldValidationStatus'
-import {FormFieldSetLegend} from './FormFieldSetLegend'
-import {focusRingStyle, AlignedBottomGrid} from './styles'
+import {type FieldCommentsProps} from '../../types'
 import {FormFieldBaseHeader} from './FormFieldBaseHeader'
+import {FormFieldSetLegend} from './FormFieldSetLegend'
+import {FormFieldValidationStatus} from './FormFieldValidationStatus'
+import {AlignedBottomGrid, focusRingStyle} from './styles'
 
 /** @internal */
 export interface FormFieldSetProps {
@@ -30,19 +41,19 @@ export interface FormFieldSetProps {
   /** @internal @deprecated DO NOT USE */
   __internal_comments?: FieldCommentsProps
   /** @internal @deprecated ONLY USED BY AI ASSIST PLUGIN */
-  __internal_slot?: React.ReactNode
-  children: React.ReactNode | (() => React.ReactNode)
+  __internal_slot?: ReactNode
+  children: ReactNode | (() => ReactNode)
   collapsed?: boolean
   collapsible?: boolean
   columns?: number | number[]
-  description?: React.ReactNode
+  description?: ReactNode
   /**
    * The nesting level of the form field set
    */
   level?: number
   onCollapse?: () => void
   onExpand?: () => void
-  title?: React.ReactNode
+  title?: ReactNode
   /**
    *
    * @hidden
@@ -53,7 +64,7 @@ export interface FormFieldSetProps {
   deprecated?: DeprecatedProperty
 }
 
-function getChildren(children: React.ReactNode | (() => React.ReactNode)): React.ReactNode {
+function getChildren(children: ReactNode | (() => ReactNode)): ReactNode {
   return typeof children === 'function' ? children() : children
 }
 
@@ -97,8 +108,8 @@ const EMPTY_ARRAY: never[] = []
 
 /** @internal */
 export const FormFieldSet = forwardRef(function FormFieldSet(
-  props: FormFieldSetProps & Omit<React.HTMLProps<HTMLDivElement>, 'as' | 'height' | 'ref'>,
-  ref: React.ForwardedRef<HTMLDivElement>,
+  props: FormFieldSetProps & Omit<HTMLProps<HTMLDivElement>, 'as' | 'height' | 'ref'>,
+  forwardedRef: ForwardedRef<HTMLDivElement>,
 ) {
   const {
     __internal_comments: comments,
@@ -125,18 +136,20 @@ export const FormFieldSet = forwardRef(function FormFieldSet(
   const {focused, hovered, onMouseEnter, onMouseLeave} = useFieldActions()
 
   const hasValidationMarkers = validation.length > 0
-  const forwardedRef = useForwardedRef(ref)
+  const ref = useRef<HTMLDivElement | null>(null)
   const {t} = useTranslation()
 
+  useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(forwardedRef, () => ref.current)
+
   const handleFocus = useCallback(
-    (event: React.FocusEvent<HTMLDivElement>) => {
-      const element = forwardedRef.current
+    (event: FocusEvent<HTMLDivElement>) => {
+      const element = ref.current
 
       if (element === event.target) {
         if (onFocus) onFocus(event)
       }
     },
-    [forwardedRef, onFocus],
+    [onFocus],
   )
 
   const handleToggle = useCallback(
@@ -173,12 +186,14 @@ export const FormFieldSet = forwardRef(function FormFieldSet(
         content={
           <Stack space={3}>
             <Flex align="center">
-              <FormFieldSetLegend
-                collapsed={Boolean(collapsed)}
-                collapsible={collapsible}
-                onClick={collapsible ? handleToggle : undefined}
-                title={title}
-              />
+              {title && (
+                <FormFieldSetLegend
+                  collapsed={Boolean(collapsed)}
+                  collapsible={collapsible}
+                  onClick={collapsible ? handleToggle : undefined}
+                  title={title}
+                />
+              )}
               {deprecated && (
                 <Box marginLeft={2}>
                   <Badge data-testid={`deprecated-badge-${title}`} tone="caution">
@@ -213,7 +228,7 @@ export const FormFieldSet = forwardRef(function FormFieldSet(
         hidden={collapsed}
         paddingLeft={level === 0 ? 0 : 3}
         onFocus={typeof tabIndex === 'number' && tabIndex > -1 ? handleFocus : undefined}
-        ref={forwardedRef}
+        ref={ref}
         tabIndex={tabIndex}
       >
         {!collapsed && content}

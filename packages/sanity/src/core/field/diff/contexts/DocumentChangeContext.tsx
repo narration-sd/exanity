@@ -1,6 +1,7 @@
-import {Path, SanityDocument, SchemaType} from '@sanity/types'
-import {createContext} from 'react'
-import {ObjectDiff} from '../../types'
+import {type Path, type SanityDocument, type SchemaType} from '@sanity/types'
+import {type ComponentType, type ReactNode} from 'react'
+
+import {type ObjectDiff} from '../../types'
 
 /** @internal */
 export type DocumentChangeContextInstance = {
@@ -8,9 +9,6 @@ export type DocumentChangeContextInstance = {
   schemaType: SchemaType
   rootDiff: ObjectDiff | null
   isComparingCurrent: boolean
-  FieldWrapper: React.ComponentType<{path: Path; children: React.ReactNode; hasHover: boolean}>
+  FieldWrapper: ComponentType<{path: Path; children: ReactNode; hasHover: boolean}>
   value: Partial<SanityDocument>
 }
-
-/** @internal */
-export const DocumentChangeContext = createContext<DocumentChangeContextInstance | null>(null)

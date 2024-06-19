@@ -1,15 +1,9 @@
-import React, {createContext, ReactNode, useCallback, useContext, useMemo, useRef} from 'react'
-import {Path} from '@sanity/types'
+import {type Path} from '@sanity/types'
+import {type ReactNode, useCallback, useContext, useRef} from 'react'
+import {GetFormValueContext} from 'sanity/_singletons'
+
 import {getValueAtPath} from '../../field'
-import type {FormDocumentValue} from '../types'
-
-/**
- * @internal
- * @hidden
- */
-export type GetFormValueContextValue = (path: Path) => unknown
-
-const GetFormValueContext = createContext<GetFormValueContextValue | null>(null)
+import {type FormDocumentValue} from '../types'
 
 /**
  *

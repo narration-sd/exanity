@@ -1,5 +1,4 @@
-import React from 'react'
-import {Skeleton, Flex, Stack, TextSkeleton} from '@sanity/ui'
+import {Flex, Skeleton, Stack, TextSkeleton} from '@sanity/ui'
 
 export function FileSkeleton() {
   return (

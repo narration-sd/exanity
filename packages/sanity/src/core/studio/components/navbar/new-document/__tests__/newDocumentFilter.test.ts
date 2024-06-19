@@ -1,6 +1,8 @@
+import {describe, expect, it} from '@jest/globals'
 import {startCase} from 'lodash'
+
 import {filterOptions} from '../filter'
-import {NewDocumentOption} from '../types'
+import {type NewDocumentOption} from '../types'
 
 const createNewDocumentOption = (name: string): NewDocumentOption => ({
   id: name,

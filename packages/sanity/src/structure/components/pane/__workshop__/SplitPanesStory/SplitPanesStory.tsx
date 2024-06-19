@@ -1,11 +1,12 @@
-import {Flex, ToastProvider, PortalProvider, useTheme} from '@sanity/ui'
-import React, {useState, useCallback} from 'react'
+import {Flex, PortalProvider, ToastProvider, useTheme} from '@sanity/ui'
 import {useBoolean} from '@sanity/ui-workshop'
+import {type Dispatch, type SetStateAction, useCallback, useState} from 'react'
+
 import {PaneLayout} from '../../PaneLayout'
+import {panes} from './config'
 import {DocumentPane} from './DocumentPane'
 import {ListPane} from './ListPane'
 import {Navbar} from './Navbar'
-import {panes} from './config'
 
 export function SplitPanesStory() {
   const debug = useBoolean('Debug', false) || false
@@ -46,7 +47,7 @@ function StructureTool(props: {
   onExpand: () => void
   onCollapse: () => void
   path: string[]
-  setPath: React.Dispatch<React.SetStateAction<string[]>>
+  setPath: Dispatch<SetStateAction<string[]>>
 }) {
   const {collapsed, onCollapse, onExpand, path, setPath} = props
 

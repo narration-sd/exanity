@@ -1,9 +1,9 @@
-import React from 'react'
 import {type Tool, useClient} from 'sanity'
-import {type VisionConfig} from './types'
+
 import {DEFAULT_API_VERSION} from './apiVersions'
 import {VisionContainer} from './containers/VisionContainer'
 import {VisionErrorBoundary} from './containers/VisionErrorBoundary'
+import {type VisionConfig} from './types'
 
 interface SanityVisionProps {
   tool: Tool<VisionConfig>

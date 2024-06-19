@@ -1,7 +1,7 @@
-import {Box, Card, Flex, Text, Layer, useTheme} from '@sanity/ui'
-import React, {useCallback} from 'react'
-import styled from 'styled-components'
+import {Box, Card, Flex, Layer, Text, useTheme} from '@sanity/ui'
+import {type Dispatch, type SetStateAction, useCallback} from 'react'
 import {LegacyLayerProvider} from 'sanity'
+import {styled} from 'styled-components'
 
 const RootCard = styled(Card)`
   padding-left: env(safe-area-inset-left);
@@ -12,10 +12,7 @@ const features = {
   inverted: true,
 }
 
-export function Navbar(props: {
-  path: string[]
-  setPath: React.Dispatch<React.SetStateAction<string[]>>
-}) {
+export function Navbar(props: {path: string[]; setPath: Dispatch<SetStateAction<string[]>>}) {
   const {path, setPath} = props
   const theme = useTheme()
   const {dark} = theme.sanity.color

@@ -1,13 +1,15 @@
-import {render} from '@testing-library/react'
-import React, {forwardRef, useImperativeHandle} from 'react'
+import {describe, expect, jest, test} from '@jest/globals'
 import {Schema} from '@sanity/schema'
+import {type Reference} from '@sanity/types'
 import {LayerProvider, studioTheme, ThemeProvider, ToastProvider} from '@sanity/ui'
-import {of} from 'rxjs'
+import {render} from '@testing-library/react'
 import {noop} from 'lodash'
-import {Reference} from '@sanity/types'
+import {forwardRef, useImperativeHandle} from 'react'
+import {of} from 'rxjs'
+import {route, RouterProvider} from 'sanity/router'
+
 import {ReferenceInput} from '../ReferenceInput'
-import {ReferenceInfo, ReferenceInputProps} from '../types'
-import {RouterProvider, route} from 'sanity/router'
+import {type ReferenceInfo, type ReferenceInputProps} from '../types'
 
 const EMPTY_SEARCH = () => of([])
 

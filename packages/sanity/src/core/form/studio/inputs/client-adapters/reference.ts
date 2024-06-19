@@ -1,11 +1,13 @@
+import {type SanityClient} from '@sanity/client'
+import {DEFAULT_MAX_FIELD_DEPTH} from '@sanity/schema/_internal'
+import {type ReferenceFilterSearchOptions, type ReferenceSchemaType} from '@sanity/types'
+import {combineLatest, type Observable, of} from 'rxjs'
 import {map, mergeMap, startWith, switchMap} from 'rxjs/operators'
-import {ReferenceFilterSearchOptions, ReferenceSchemaType} from '@sanity/types'
-import {combineLatest, Observable, of} from 'rxjs'
-import {SanityClient} from '@sanity/client'
-import {ReferenceInfo, ReferenceSearchHit} from '../../../inputs/ReferenceInput/types'
-import {DocumentPreviewStore, getPreviewPaths, prepareForPreview} from '../../../../preview'
-import {collate, CollatedHit, getDraftId, getIdPair, isRecord} from '../../../../util'
-import {createWeightedSearch, getSearchTypesWithMaxDepth} from '../../../../search'
+
+import {type DocumentPreviewStore, getPreviewPaths, prepareForPreview} from '../../../../preview'
+import {createSearch} from '../../../../search'
+import {collate, type CollatedHit, getDraftId, getIdPair, isRecord} from '../../../../util'
+import {type ReferenceInfo, type ReferenceSearchHit} from '../../../inputs/ReferenceInput/types'
 
 const READABLE = {
   available: true,
@@ -190,14 +192,15 @@ export function referenceSearch(
   textTerm: string,
   type: ReferenceSchemaType,
   options: ReferenceFilterSearchOptions,
+  enableLegacySearch: boolean,
 ): Observable<ReferenceSearchHit[]> {
-  const searchWeighted = createWeightedSearch(
-    getSearchTypesWithMaxDepth(type.to, options.maxFieldDepth),
-    client,
-    options,
-  )
-  return searchWeighted(textTerm, {includeDrafts: true}).pipe(
-    map((results) => results.map((result) => result.hit)),
+  const search = createSearch(type.to, client, {
+    ...options,
+    enableLegacySearch,
+    maxDepth: options.maxFieldDepth || DEFAULT_MAX_FIELD_DEPTH,
+  })
+  return search(textTerm, {includeDrafts: true}).pipe(
+    map(({hits}) => hits.map(({hit}) => hit)),
     map(collate),
     // pick the 100 best matches
     map((collated) => collated.slice(0, 100)),

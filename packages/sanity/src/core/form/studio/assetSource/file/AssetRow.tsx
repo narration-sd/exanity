@@ -1,6 +1,5 @@
-import type {Subscription} from 'rxjs'
-import React, {useCallback, useMemo, useRef, useState} from 'react'
-import styled, {css} from 'styled-components'
+import {ChevronDownIcon, ChevronUpIcon, DocumentIcon, LinkIcon, TrashIcon} from '@sanity/icons'
+import {type Asset as AssetType} from '@sanity/types'
 import {
   Box,
   // eslint-disable-next-line no-restricted-imports
@@ -12,25 +11,27 @@ import {
   Text,
   useToast,
 } from '@sanity/ui'
-import {ChevronDownIcon, ChevronUpIcon, DocumentIcon, LinkIcon, TrashIcon} from '@sanity/icons'
-import {Asset as AssetType} from '@sanity/types'
+import {type KeyboardEvent, type MouseEvent, useCallback, useMemo, useRef, useState} from 'react'
+import {type Subscription} from 'rxjs'
+import {css, styled} from 'styled-components'
+
 import {Tooltip} from '../../../../../ui-components'
+import {getHumanFriendlyBytes} from '../../../../field/types/file/diff/helpers'
 import {useClient, useRelativeTime, useUnitFormatter} from '../../../../hooks'
+import {useTranslation} from '../../../../i18n'
 import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../../studioClient'
 import {AssetDeleteDialog} from '../shared/AssetDeleteDialog'
 import {AssetMenu} from '../shared/AssetMenu'
-import {AssetMenuAction} from '../types'
-import {formatMimeType} from '../utils/mimeType'
 import {AssetUsageDialog} from '../shared/AssetUsageDialog'
-import {useTranslation} from '../../../../i18n'
-import {getHumanFriendlyBytes} from '../../../../field/types/file/diff/helpers'
+import {type AssetMenuAction} from '../types'
+import {formatMimeType} from '../utils/mimeType'
 
 interface RowProps {
   isMobile?: boolean
   asset: AssetType
   isSelected?: boolean
-  onClick?: (event: React.MouseEvent) => void
-  onKeyPress?: (event: React.KeyboardEvent) => void
+  onClick?: (event: MouseEvent) => void
+  onKeyPress?: (event: KeyboardEvent) => void
   onDeleteFinished?: (assetId: string) => void
 }
 

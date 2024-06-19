@@ -1,8 +1,9 @@
-import React, {useState, useRef, useMemo, useEffect, useCallback, startTransition} from 'react'
-import {Box, Flex, Text, useGlobalKeyDown, useTheme} from '@sanity/ui'
 import {EditIcon, TrashIcon} from '@sanity/icons'
+import {Box, Flex, Text, useGlobalKeyDown, useTheme} from '@sanity/ui'
+import {startTransition, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+
+import {Button, Popover, type PopoverProps} from '../../../../../ui-components'
 import {useTranslation} from '../../../../i18n'
-import {Button, Popover, PopoverProps} from '../../../../../ui-components'
 
 const POPOVER_FALLBACK_PLACEMENTS: PopoverProps['fallbackPlacements'] = ['top', 'bottom']
 
@@ -182,6 +183,7 @@ export function AnnotationToolbarPopover(props: AnnotationToolbarPopoverProps) {
             </Box>
             <Button
               aria-label={t('inputs.portable-text.action.edit-annotation-aria-label')}
+              data-testid="edit-annotation-button"
               icon={EditIcon}
               mode="bleed"
               onClick={handleEditButtonClicked}
@@ -190,6 +192,7 @@ export function AnnotationToolbarPopover(props: AnnotationToolbarPopoverProps) {
             />
             <Button
               aria-label={t('inputs.portable-text.action.remove-annotation-aria-label')}
+              data-testid="remove-annotation-button"
               icon={TrashIcon}
               mode="bleed"
               onClick={handleRemoveButtonClicked}

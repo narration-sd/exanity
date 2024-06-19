@@ -1,6 +1,9 @@
 /** @jest-environment ./setup/collaborative.jest.env.ts */
-import os from 'os'
 import '../setup/globals.jest'
+
+import os from 'node:os'
+
+import {describe, expect, it} from '@jest/globals'
 import {noop} from 'lodash'
 
 function isMacOs() {

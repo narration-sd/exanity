@@ -1,34 +1,34 @@
 /* eslint-disable no-nested-ternary */
-import {Box, Container, Flex, Spinner, Text, focusFirstDescendant} from '@sanity/ui'
-import React, {forwardRef, useEffect, useMemo, useCallback, useState} from 'react'
+import {Box, Container, Flex, focusFirstDescendant, Spinner, Text} from '@sanity/ui'
+import {type FormEvent, forwardRef, useCallback, useEffect, useMemo, useState} from 'react'
 import {tap} from 'rxjs/operators'
-import {structureLocaleNamespace} from '../../../../i18n'
-import {useDocumentTitle} from '../../useDocumentTitle'
-import {useDocumentPane} from '../../useDocumentPane'
-import {Delay} from '../../../../components'
-import {useConditionalToast} from './useConditionalToast'
-import {FormHeader} from './FormHeader'
 import {
-  FormDocumentValue,
-  DocumentMutationEvent,
-  DocumentRebaseEvent,
-  FormBuilder,
-  PatchMsg,
-  PresenceOverlay,
   createPatchChannel,
+  type DocumentMutationEvent,
+  type DocumentRebaseEvent,
+  FormBuilder,
+  type FormDocumentValue,
   fromMutationPatches,
+  type PatchMsg,
+  PresenceOverlay,
   useDocumentPresence,
   useDocumentStore,
   useTranslation,
-  LoadingBlock,
 } from 'sanity'
+
+import {Delay} from '../../../../components'
+import {structureLocaleNamespace} from '../../../../i18n'
+import {useDocumentPane} from '../../useDocumentPane'
+import {useDocumentTitle} from '../../useDocumentTitle'
+import {FormHeader} from './FormHeader'
+import {useConditionalToast} from './useConditionalToast'
 
 interface FormViewProps {
   hidden: boolean
   margins: [number, number, number, number]
 }
 
-const preventDefault = (ev: React.FormEvent) => ev.preventDefault()
+const preventDefault = (ev: FormEvent) => ev.preventDefault()
 
 export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormView(props, ref) {
   const {hidden, margins} = props
@@ -46,6 +46,7 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
     ready,
     formState,
     onFocus,
+    connectionState,
     onBlur,
     onSetCollapsedPath,
     onPathOpen,
@@ -113,15 +114,16 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
 
   const [formRef, setFormRef] = useState<null | HTMLDivElement>(null)
 
+  // We only want to run it on first mount
+  const [focusedFirstDescendant, setFocusedFirstDescendant] = useState(false)
   useEffect(() => {
     // Only focus on the first descendant if there is not already a focus path
     // This is to avoid stealing focus from intent links
-    if (ready && !formState?.focusPath.length && formRef) {
+    if (!focusedFirstDescendant && ready && !formState?.focusPath.length && formRef) {
+      setFocusedFirstDescendant(true)
       focusFirstDescendant(formRef)
     }
-    // We only want to run it on first mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready])
+  }, [focusedFirstDescendant, formRef, formState?.focusPath.length, ready])
 
   const setRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -139,16 +141,12 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
   //   () =>
   //     Array.isArray(afterEditorComponents) &&
   //     afterEditorComponents.map(
-  //       (AfterEditorComponent: React.ComponentType<{documentId: string}>, idx: number) => (
+  //       (AfterEditorComponent: ComponentType<{documentId: string}>, idx: number) => (
   //         <AfterEditorComponent key={String(idx)} documentId={documentId} />
   //       )
   //     ),
   //   [documentId]
   // )
-
-  if (!ready) {
-    return <LoadingBlock showText />
-  }
 
   return (
     <Container
@@ -161,49 +159,7 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
     >
       <PresenceOverlay margins={margins}>
         <Box as="form" onSubmit={preventDefault} ref={setRef}>
-          {ready ? (
-            formState === null || hidden ? (
-              <Box padding={2}>
-                <Text>{t('document-view.form-view.form-hidden')}</Text>
-              </Box>
-            ) : (
-              <>
-                <FormHeader
-                  documentId={documentId}
-                  schemaType={formState.schemaType}
-                  title={title}
-                />
-                <FormBuilder
-                  __internal_fieldActions={fieldActions}
-                  __internal_patchChannel={patchChannel}
-                  collapsedFieldSets={collapsedFieldSets}
-                  collapsedPaths={collapsedPaths}
-                  focusPath={formState.focusPath}
-                  changed={formState.changed}
-                  focused={formState.focused}
-                  groups={formState.groups}
-                  id="root"
-                  members={formState.members}
-                  onChange={onChange}
-                  onFieldGroupSelect={onSetActiveFieldGroup}
-                  onPathBlur={onBlur}
-                  onPathFocus={onFocus}
-                  onPathOpen={onPathOpen}
-                  onSetFieldSetCollapsed={onSetCollapsedFieldSet}
-                  onSetPathCollapsed={onSetCollapsedPath}
-                  presence={presence}
-                  readOnly={formState.readOnly}
-                  schemaType={formState.schemaType}
-                  validation={validation}
-                  value={
-                    // note: the form state doesn't have a typed concept of a "document" value
-                    // but these should be compatible
-                    formState.value as FormDocumentValue
-                  }
-                />
-              </>
-            )
-          ) : (
+          {connectionState === 'connecting' ? (
             <Delay ms={300}>
               {/* TODO: replace with loading block */}
               <Flex align="center" direction="column" height="fill" justify="center">
@@ -215,6 +171,42 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
                 </Box>
               </Flex>
             </Delay>
+          ) : formState === null || hidden ? (
+            <Box padding={2}>
+              <Text>{t('document-view.form-view.form-hidden')}</Text>
+            </Box>
+          ) : (
+            <>
+              <FormHeader documentId={documentId} schemaType={formState.schemaType} title={title} />
+              <FormBuilder
+                __internal_fieldActions={fieldActions}
+                __internal_patchChannel={patchChannel}
+                collapsedFieldSets={collapsedFieldSets}
+                collapsedPaths={collapsedPaths}
+                focusPath={formState.focusPath}
+                changed={formState.changed}
+                focused={formState.focused}
+                groups={formState.groups}
+                id="root"
+                members={formState.members}
+                onChange={onChange}
+                onFieldGroupSelect={onSetActiveFieldGroup}
+                onPathBlur={onBlur}
+                onPathFocus={onFocus}
+                onPathOpen={onPathOpen}
+                onSetFieldSetCollapsed={onSetCollapsedFieldSet}
+                onSetPathCollapsed={onSetCollapsedPath}
+                presence={presence}
+                readOnly={connectionState === 'reconnecting' || formState.readOnly}
+                schemaType={formState.schemaType}
+                validation={validation}
+                value={
+                  // note: the form state doesn't have a typed concept of a "document" value
+                  // but these should be compatible
+                  formState.value as FormDocumentValue
+                }
+              />
+            </>
           )}
         </Box>
       </PresenceOverlay>

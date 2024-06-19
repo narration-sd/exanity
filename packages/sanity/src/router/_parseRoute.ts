@@ -1,4 +1,4 @@
-import {Route, RouteSegment} from './types'
+import {type Route, type RouteSegment} from './types'
 
 const VALID_PARAM_SEGMENT = /^[a-zA-Z0-9_-]+$/
 
@@ -8,7 +8,7 @@ function createSegment(segment: string): RouteSegment | null {
   }
 
   if (segment.startsWith(':')) {
-    const paramName = segment.substring(1)
+    const paramName = segment.slice(1)
 
     if (!VALID_PARAM_SEGMENT.test(paramName)) {
       const addendum = segment.includes('*')

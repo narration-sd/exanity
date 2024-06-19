@@ -1,8 +1,9 @@
 /* eslint-disable camelcase */
 
 import {Layer} from '@sanity/ui'
-import styled, {css} from 'styled-components'
 import {getTheme_v2} from '@sanity/ui/theme'
+import {css, styled} from 'styled-components'
+
 import {focusRingBorderStyle, focusRingStyle} from '../../components/withFocusRing/helpers'
 
 export const Root = styled.div((props) => {
@@ -55,4 +56,8 @@ export const ExpandedLayer = styled(Layer)`
   left: 0;
   right: 0;
   bottom: 0;
+
+  & > div {
+    height: 100%;
+  }
 `

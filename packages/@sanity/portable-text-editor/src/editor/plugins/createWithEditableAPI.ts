@@ -1,36 +1,28 @@
 import {
-  Text,
-  Range,
-  Transforms,
-  Editor,
-  Element as SlateElement,
-  Node,
-  Path as SlatePath,
-} from 'slate'
-import {
-  ObjectSchemaType,
-  Path,
-  PortableTextBlock,
-  PortableTextChild,
-  PortableTextObject,
-  PortableTextTextBlock,
-  SchemaType,
+  isPortableTextSpan,
+  type ObjectSchemaType,
+  type Path,
+  type PortableTextBlock,
+  type PortableTextChild,
+  type PortableTextObject,
+  type PortableTextTextBlock,
+  type SchemaType,
 } from '@sanity/types'
+import {Editor, Element as SlateElement, Node, Range, Text, Transforms} from 'slate'
 import {ReactEditor} from 'slate-react'
-import {DOMNode} from 'slate-react/dist/utils/dom'
-import {
-  EditableAPIDeleteOptions,
-  EditorSelection,
-  PortableTextMemberSchemaTypes,
-  PortableTextSlateEditor,
-} from '../../types/editor'
-import {toSlateValue, fromSlateValue, isEqualToEmptyEditor} from '../../utils/values'
-import {toSlateRange, toPortableTextRange} from '../../utils/ranges'
-import {PortableTextEditor} from '../PortableTextEditor'
+import {type DOMNode} from 'slate-react/dist/utils/dom'
 
+import {
+  type EditableAPIDeleteOptions,
+  type EditorSelection,
+  type PortableTextMemberSchemaTypes,
+  type PortableTextSlateEditor,
+} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
+import {toPortableTextRange, toSlateRange} from '../../utils/ranges'
+import {fromSlateValue, isEqualToEmptyEditor, toSlateValue} from '../../utils/values'
 import {KEY_TO_VALUE_ELEMENT, SLATE_TO_PORTABLE_TEXT_RANGE} from '../../utils/weakMaps'
-import {normalizeMarkDefs} from './createWithPortableTextMarkModel'
+import {type PortableTextEditor} from '../PortableTextEditor'
 
 const debug = debugWithName('API:editable')
 
@@ -303,16 +295,69 @@ export function createWithEditableAPI(
           return []
         }
       },
+      isAnnotationActive: (annotationType: PortableTextObject['_type']): boolean => {
+        if (!editor.selection || editor.selection.focus.path.length < 2) {
+          return false
+        }
+
+        try {
+          const spans = [
+            ...Editor.nodes(editor, {
+              at: editor.selection,
+              match: (node) => Text.isText(node),
+            }),
+          ]
+
+          if (
+            spans.some(
+              ([span]) => !isPortableTextSpan(span) || !span.marks || span.marks?.length === 0,
+            )
+          )
+            return false
+
+          const selectionMarkDefs = spans.reduce((accMarkDefs, [, path]) => {
+            const [block] = Editor.node(editor, path, {depth: 1})
+            if (editor.isTextBlock(block) && block.markDefs) {
+              return [...accMarkDefs, ...block.markDefs]
+            }
+            return accMarkDefs
+          }, [] as PortableTextObject[])
+
+          return spans.every(([span]) => {
+            if (!isPortableTextSpan(span)) return false
+
+            const spanMarkDefs = span.marks?.map(
+              (markKey) => selectionMarkDefs.find((def) => def?._key === markKey)?._type,
+            )
+
+            return spanMarkDefs?.includes(annotationType)
+          })
+        } catch (err) {
+          return false
+        }
+      },
       addAnnotation: (
         type: ObjectSchemaType,
         value?: {[prop: string]: unknown},
       ): {spanPath: Path; markDefPath: Path} | undefined => {
-        const {selection} = editor
-        if (selection) {
-          const [block] = Editor.node(editor, selection.focus, {depth: 1})
-          if (SlateElement.isElement(block) && block._type === types.block.name) {
-            const annotationKey = keyGenerator()
-            if (editor.isTextBlock(block)) {
+        const {selection: originalSelection} = editor
+        let returnValue: {spanPath: Path; markDefPath: Path} | undefined = undefined
+        if (originalSelection) {
+          const [block] = Editor.node(editor, originalSelection.focus, {depth: 1})
+          if (!editor.isTextBlock(block)) {
+            return undefined
+          }
+          if (Range.isCollapsed(originalSelection)) {
+            editor.pteExpandToWord()
+            editor.onChange()
+          }
+          const [textNode] = Editor.node(editor, originalSelection.focus, {depth: 2})
+
+          // If we still have a selection, add the annotation to the selected text
+          if (editor.selection) {
+            Editor.withoutNormalizing(editor, () => {
+              // Add markDefs to the block
+              const annotationKey = keyGenerator()
               Transforms.setNodes(
                 editor,
                 {
@@ -321,68 +366,55 @@ export function createWithEditableAPI(
                     {_type: type.name, _key: annotationKey, ...value} as PortableTextObject,
                   ],
                 },
-                {at: selection.focus},
+                {at: originalSelection.focus},
               )
               editor.onChange()
-              if (Range.isCollapsed(selection)) {
-                editor.pteExpandToWord()
-                editor.onChange()
-              }
-              const [textNode] = Editor.node(editor, selection.focus, {depth: 2})
-              if (editor.selection) {
-                Editor.withoutNormalizing(editor, () => {
-                  // Split if needed
-                  Transforms.setNodes(editor, {}, {match: Text.isText, split: true})
-                  if (editor.selection && Text.isText(textNode)) {
-                    Transforms.setNodes(
-                      editor,
-                      {
-                        marks: [...((textNode.marks || []) as string[]), annotationKey],
-                      },
-                      {
-                        at: editor.selection,
-                        match: (n) => n._type === types.span.name,
-                      },
-                    )
-                    editor.onChange()
-                  }
-                })
-                Editor.normalize(editor)
-                editor.onChange()
-                const newSelection = toPortableTextRange(
-                  fromSlateValue(
-                    editor.children,
-                    types.block.name,
-                    KEY_TO_VALUE_ELEMENT.get(editor),
-                  ),
-                  editor.selection,
-                  types,
+
+              // Split if needed
+              Transforms.setNodes(editor, {}, {match: Text.isText, split: true})
+              editor.onChange()
+
+              // Add marks to the span node
+              if (editor.selection && Text.isText(textNode)) {
+                Transforms.setNodes(
+                  editor,
+                  {
+                    marks: [...((textNode.marks || []) as string[]), annotationKey],
+                  },
+                  {
+                    at: editor.selection,
+                    match: (n) => n._type === types.span.name,
+                  },
                 )
-                // eslint-disable-next-line max-depth
-                if (newSelection && typeof block._key === 'string') {
-                  // Insert an empty string to continue writing non-annotated text
-                  Editor.withoutNormalizing(editor, () => {
-                    if (editor.selection) {
-                      Transforms.insertNodes(
-                        editor,
-                        [{_type: 'span', text: '', marks: [], _key: keyGenerator()}],
-                        {
-                          at: Range.end(editor.selection),
-                        },
-                      )
-                      editor.onChange()
-                    }
-                  })
-                  return {
-                    spanPath: newSelection.focus.path,
-                    markDefPath: [{_key: block._key}, 'markDefs', {_key: annotationKey}],
-                  }
+              }
+              editor.onChange()
+              if (editor.selection) {
+                // Insert an empty string to continue writing non-annotated text
+                Transforms.insertNodes(
+                  editor,
+                  [{_type: 'span', text: '', marks: [], _key: keyGenerator()}],
+                  {
+                    at: Range.end(editor.selection),
+                  },
+                )
+              }
+              const newPortableTextEditorSelection = toPortableTextRange(
+                fromSlateValue(editor.children, types.block.name, KEY_TO_VALUE_ELEMENT.get(editor)),
+                editor.selection,
+                types,
+              )
+              if (newPortableTextEditorSelection) {
+                returnValue = {
+                  spanPath: newPortableTextEditorSelection.focus.path,
+                  markDefPath: [{_key: block._key}, 'markDefs', {_key: annotationKey}],
                 }
               }
-            }
+            })
+            Editor.normalize(editor)
+            editor.onChange()
           }
         }
-        return undefined
+        return returnValue
       },
       delete: (selection: EditorSelection, options?: EditableAPIDeleteOptions): void => {
         if (selection) {
@@ -434,7 +466,7 @@ export function createWithEditableAPI(
             // that would insert the placeholder into the actual value
             // which should remain empty)
             if (editor.children.length === 0) {
-              editor.children = [editor.createPlaceholderBlock()]
+              editor.children = [editor.pteCreateEmptyBlock()]
             }
             editor.onChange()
           }
@@ -484,7 +516,6 @@ export function createWithEditableAPI(
                   })
                 }
               })
-              normalizeMarkDefs(editor, types)
             }
           })
           Editor.normalize(editor)
@@ -519,6 +550,22 @@ export function createWithEditableAPI(
       insertBreak: () => {
         editor.insertBreak()
         editor.onChange()
+      },
+      getFragment: () => {
+        return fromSlateValue(editor.getFragment(), types.block.name)
+      },
+      isSelectionsOverlapping: (selectionA: EditorSelection, selectionB: EditorSelection) => {
+        // Convert the selections to Slate ranges
+        const rangeA = toSlateRange(selectionA, editor)
+        const rangeB = toSlateRange(selectionB, editor)
+
+        // Make sure the ranges are valid
+        const isValidRanges = Range.isRange(rangeA) && Range.isRange(rangeB)
+
+        // Check if the ranges are overlapping
+        const isOverlapping = isValidRanges && Range.includes(rangeA, rangeB)
+
+        return isOverlapping
       },
     })
     return editor

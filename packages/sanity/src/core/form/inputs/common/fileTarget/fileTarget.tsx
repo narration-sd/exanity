@@ -1,6 +1,18 @@
-import React, {useCallback} from 'react'
-import {useForwardedRef} from '@sanity/ui'
-import {extractDroppedFiles, extractPastedFiles} from './utils/extractFiles'
+import {
+  type ClipboardEvent,
+  type ComponentType,
+  type DragEvent,
+  type ForwardedRef,
+  forwardRef,
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react'
+
+import {extractDroppedFiles, extractPastedFiles, isPortableTextItem} from './utils/extractFiles'
 import {imageUrlToBlob} from './utils/imageUrlToBlob'
 
 export type FileInfo = {
@@ -37,19 +49,21 @@ const PASTE_INPUT_STYLE = {opacity: 0, position: 'absolute'} as const
  * Higher order component that creates a file target from a given component.
  * Returns a component that acts both as a drop target and a paste target, emitting a list of Files upon drop or paste
  */
-export function fileTarget<ComponentProps>(Component: React.ComponentType<ComponentProps>) {
-  return React.forwardRef(function FileTarget(
+export function fileTarget<ComponentProps>(Component: ComponentType<ComponentProps>) {
+  return forwardRef(function FileTarget(
     props: Omit<ComponentProps, ManagedProps> & Props,
-    ref: React.ForwardedRef<HTMLElement>,
+    forwardedRef: ForwardedRef<HTMLElement>,
   ) {
     const {onFiles, onFilesOver, onFilesOut, disabled, ...rest} = props
 
-    const [showPasteInput, setShowPasteInput] = React.useState(false)
+    const [showPasteInput, setShowPasteInput] = useState(false)
 
-    const pasteInput = React.useRef<HTMLDivElement | null>(null)
-    const forwardedRef = useForwardedRef(ref)
+    const pasteInput = useRef<HTMLDivElement | null>(null)
+    const ref = useRef<HTMLElement | null>(null)
 
-    const enteredElements = React.useRef<Element[]>([])
+    useImperativeHandle<HTMLElement | null, HTMLElement | null>(forwardedRef, () => ref.current)
+
+    const enteredElements = useRef<Element[]>([])
 
     const emitFiles = useCallback(
       (files: File[]) => {
@@ -58,20 +72,13 @@ export function fileTarget<ComponentProps>(Component: React.ComponentType<Compon
       [onFiles],
     )
 
-    const handleKeyDown = useCallback(
-      (event: React.KeyboardEvent) => {
-        if (
-          event.target === forwardedRef.current &&
-          (event.ctrlKey || event.metaKey) &&
-          event.key === 'v'
-        ) {
-          setShowPasteInput(true)
-        }
-      },
-      [forwardedRef],
-    )
+    const handleKeyDown = useCallback((event: KeyboardEvent) => {
+      if (event.target === ref.current && (event.ctrlKey || event.metaKey) && event.key === 'v') {
+        setShowPasteInput(true)
+      }
+    }, [])
     const handlePaste = useCallback(
-      (event: React.ClipboardEvent) => {
+      (event: ClipboardEvent) => {
         extractPastedFiles(event.clipboardData)
           .then((files) => {
             if (!pasteInput.current) {
@@ -85,13 +92,13 @@ export function fileTarget<ComponentProps>(Component: React.ComponentType<Compon
           .then((files) => {
             emitFiles(files)
             setShowPasteInput(false)
-            forwardedRef.current?.focus()
+            ref.current?.focus()
           })
       },
-      [emitFiles, forwardedRef],
+      [emitFiles],
     )
     const handleDrop = useCallback(
-      (event: React.DragEvent) => {
+      (event: DragEvent) => {
         enteredElements.current = []
         event.preventDefault()
         event.stopPropagation()
@@ -109,7 +116,7 @@ export function fileTarget<ComponentProps>(Component: React.ComponentType<Compon
     )
 
     const handleDragOver = useCallback(
-      (event: React.DragEvent) => {
+      (event: DragEvent) => {
         if (onFiles) {
           event.preventDefault()
           event.stopPropagation()
@@ -119,28 +126,35 @@ export function fileTarget<ComponentProps>(Component: React.ComponentType<Compon
     )
 
     const handleDragEnter = useCallback(
-      (event: React.DragEvent) => {
+      (event: DragEvent) => {
+        const fileTypes = Array.from(event.dataTransfer.items).map((item) => ({
+          type: item.type,
+          kind: item.kind,
+        }))
+
+        // Skip items that is PTE blocks
+        const isPortableTextBlock = fileTypes.some((item) => isPortableTextItem(item))
+
+        if (isPortableTextBlock) {
+          return
+        }
         event.stopPropagation()
 
-        if (onFilesOver && forwardedRef.current === event.currentTarget) {
+        if (onFilesOver && ref.current === event.currentTarget) {
           /* this is a (hackish) work around to have the drag and drop work when the file is hovered back and forth over it
           as part of the refactor and adding more components to the "hover" state, it didn't recognise that it just kept adding the same
           element over and over, so when it tried to remove them on the handleDragLeave, it only removed the last instance.
         */
           enteredElements.current = [...new Set(enteredElements.current), event.currentTarget]
 
-          const fileTypes = Array.from(event.dataTransfer.items).map((item) => ({
-            type: item.type,
-            kind: item.kind,
-          }))
           onFilesOver(fileTypes)
         }
       },
-      [onFilesOver, forwardedRef],
+      [onFilesOver],
     )
 
     const handleDragLeave = useCallback(
-      (event: React.DragEvent) => {
+      (event: DragEvent) => {
         event.stopPropagation()
         const idx = enteredElements.current.indexOf(event.currentTarget)
         if (idx > -1) {
@@ -153,8 +167,8 @@ export function fileTarget<ComponentProps>(Component: React.ComponentType<Compon
       [onFilesOut],
     )
 
-    const prevShowPasteInput = React.useRef(false)
-    React.useEffect(() => {
+    const prevShowPasteInput = useRef(false)
+    useEffect(() => {
       if (!prevShowPasteInput.current && showPasteInput && pasteInput.current) {
         pasteInput.current.focus()
         select(pasteInput.current) // Needed by Edge
@@ -168,12 +182,13 @@ export function fileTarget<ComponentProps>(Component: React.ComponentType<Compon
       <>
         <Component
           {...(rest as ComponentProps)}
-          ref={forwardedRef}
+          ref={ref}
           onKeyDown={disabled ? undefined : handleKeyDown}
           onDragOver={disabled ? undefined : handleDragOver}
           onDragEnter={disabled ? undefined : handleDragEnter}
           onDragLeave={disabled ? undefined : handleDragLeave}
           onDrop={disabled ? undefined : handleDrop}
+          data-test-id="file-target"
         />
         {!disabled && showPasteInput && (
           <div contentEditable onPaste={handlePaste} ref={pasteInput} style={PASTE_INPUT_STYLE} />

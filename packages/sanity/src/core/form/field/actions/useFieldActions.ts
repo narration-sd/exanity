@@ -1,5 +1,5 @@
 import {useContext} from 'react'
-import {FieldActionsContext, FieldActionsContextValue} from './FieldActionsContext'
+import {FieldActionsContext, type FieldActionsContextValue} from 'sanity/_singletons'
 
 /** @internal */
 export function useFieldActions(): FieldActionsContextValue {

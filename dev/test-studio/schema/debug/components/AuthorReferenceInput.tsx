@@ -1,8 +1,17 @@
-import {ObjectInputProps, set, setIfMissing, unset, useClient} from 'sanity'
 import imageUrlBuilder from '@sanity/image-url'
-import {Reference, ReferenceSchemaType} from '@sanity/types'
+import {type Reference, type ReferenceSchemaType} from '@sanity/types'
 import {Button, Spinner} from '@sanity/ui'
-import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react'
+import {
+  type ForwardedRef,
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import {type ObjectInputProps, set, setIfMissing, unset, useClient} from 'sanity'
+
 import styles from './AuthorReferenceInput.module.css'
 
 const noop = () => null
@@ -15,7 +24,7 @@ interface AuthorReference {
 
 export const AuthorReferenceInput = forwardRef(function AuthorReferenceInput(
   props: ObjectInputProps<Reference, ReferenceSchemaType>,
-  ref: React.ForwardedRef<any>,
+  ref: ForwardedRef<any>,
 ) {
   // @todo fix
   const {inputProps, type, value} = props

@@ -1,17 +1,18 @@
-import React from 'react'
-import {SanityClient} from '@sanity/client'
+import {type SanityClient} from '@sanity/client'
 import {LayerProvider, studioTheme, ThemeProvider, ToastProvider} from '@sanity/ui'
+import {type ReactNode} from 'react'
+
 import {
   LocaleProviderBase,
-  LocaleResourceBundle,
+  type LocaleResourceBundle,
   ResourceCacheProvider,
-  SingleWorkspace,
+  type SingleWorkspace,
   SourceProvider,
   usEnglishLocale,
   WorkspaceProvider,
 } from '../../src/core'
-import {prepareI18n} from '../../src/core/i18n/i18nConfig'
 import {studioDefaultLocaleResources} from '../../src/core/i18n/bundles/studio'
+import {prepareI18n} from '../../src/core/i18n/i18nConfig'
 import {getMockWorkspace} from './getMockWorkspaceFromConfig'
 
 interface TestProviderOptions {
@@ -37,7 +38,7 @@ export async function createTestProvider({
 
   await i18next.init()
 
-  function TestProvider({children}: {children: React.ReactNode}) {
+  function TestProvider({children}: {children: ReactNode}) {
     return (
       <ThemeProvider theme={studioTheme}>
         <LocaleProviderBase locales={locales} i18next={i18next} projectId="test" sourceId="test">

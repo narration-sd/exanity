@@ -1,4 +1,4 @@
-import React, {memo, useCallback, useMemo} from 'react'
+import {ChevronDownIcon} from '@sanity/icons'
 import {PortableTextEditor, usePortableTextEditor} from '@sanity/portable-text-editor'
 import {
   Menu,
@@ -6,28 +6,30 @@ import {
   MenuItem,
   Text,
 } from '@sanity/ui'
-import {ChevronDownIcon} from '@sanity/icons'
-import styled from 'styled-components'
+import {memo, type MouseEvent, type ReactNode, useCallback, useMemo} from 'react'
+import {styled} from 'styled-components'
+
+import {Button, MenuButton, type MenuButtonProps} from '../../../../../ui-components'
 import {useTranslation} from '../../../../i18n'
 import {
+  BlockQuote,
   Heading1,
   Heading2,
   Heading3,
   Heading4,
   Heading5,
   Heading6,
-  BlockQuote,
   Normal,
 } from '../text/textStyles'
-import {Button, MenuButton, MenuButtonProps} from '../../../../../ui-components'
 import {useActiveStyleKeys, useFocusBlock} from './hooks'
-import {BlockStyleItem} from './types'
+import {type BlockStyleItem} from './types'
 
 const MenuButtonMemo = memo(MenuButton)
 
 interface BlockStyleSelectProps {
   disabled: boolean
   items: BlockStyleItem[]
+  boundaryElement: HTMLDivElement | null
 }
 
 const StyledMenuItem = styled(MenuItem)`
@@ -46,7 +48,7 @@ const MENU_POPOVER_PROPS: MenuButtonProps['popover'] = {
   portal: 'default',
 }
 
-const TEXT_STYLE_OPTIONS: Record<string, (title: React.ReactNode) => React.ReactNode> = {
+const TEXT_STYLE_OPTIONS: Record<string, (title: ReactNode) => ReactNode> = {
   h1: (title) => <Heading1>{title}</Heading1>,
   h2: (title) => <Heading2>{title}</Heading2>,
   h3: (title) => <Heading3>{title}</Heading3>,
@@ -57,9 +59,7 @@ const TEXT_STYLE_OPTIONS: Record<string, (title: React.ReactNode) => React.React
   blockquote: (title) => <BlockQuote data-option="blockquote">{title}</BlockQuote>,
 }
 
-const TEXT_STYLE_KEYS = Object.keys(TEXT_STYLE_OPTIONS)
-
-const preventDefault = (event: React.MouseEvent<HTMLButtonElement>) => event.preventDefault()
+const preventDefault = (event: MouseEvent<HTMLButtonElement>) => event.preventDefault()
 
 const emptyStyle: BlockStyleItem = {
   key: 'style-none',
@@ -71,10 +71,17 @@ const emptyStyle: BlockStyleItem = {
 export const BlockStyleSelect = memo(function BlockStyleSelect(
   props: BlockStyleSelectProps,
 ): JSX.Element {
-  const {disabled, items: itemsProp} = props
+  const {disabled, items: itemsProp, boundaryElement} = props
   const editor = usePortableTextEditor()
   const focusBlock = useFocusBlock()
   const {t} = useTranslation()
+
+  const popoverProperties: MenuButtonProps['popover'] = {
+    constrainSize: true,
+    placement: 'bottom-start',
+    portal: 'default',
+    referenceBoundary: boundaryElement,
+  }
 
   const _disabled =
     disabled || (focusBlock ? editor.schemaTypes.block.name !== focusBlock._type : false)
@@ -117,16 +124,29 @@ export const BlockStyleSelect = memo(function BlockStyleSelect(
     [editor, focusBlock],
   )
 
-  const renderOption = useCallback((style: string, title: string) => {
-    const hasTextStyle = TEXT_STYLE_KEYS.includes(style)
-    const renderStyle = TEXT_STYLE_OPTIONS[style]
+  const renderOption = useCallback(
+    (item: BlockStyleItem) => {
+      const {style, styleComponent} = item
+      const renderStyle = TEXT_STYLE_OPTIONS[style]
+      const title = item.i18nTitleKey ? t(item.i18nTitleKey) : item?.title || item.style
 
-    if (hasTextStyle) {
-      return renderStyle(title)
-    }
+      const CustomComponent = typeof styleComponent === 'function' ? styleComponent : undefined
 
-    return <Text>{title}</Text>
-  }, [])
+      // If we have default support for the style and there is no custom component
+      // defined, we render the default style.
+      if (renderStyle && !CustomComponent) {
+        return renderStyle(title)
+      }
+
+      // If we have a custom component, we render that
+      if (CustomComponent) {
+        return <CustomComponent>{title}</CustomComponent>
+      }
+
+      return <Text>{title}</Text>
+    },
+    [t],
+  )
 
   const button = useMemo(
     () => (
@@ -154,21 +174,18 @@ export const BlockStyleSelect = memo(function BlockStyleSelect(
               // eslint-disable-next-line react/jsx-no-bind
               onClick={_disabled ? undefined : () => handleChange(item)}
             >
-              {renderOption(
-                item.style,
-                item.i18nTitleKey ? t(item.i18nTitleKey) : item?.title || item.style,
-              )}
+              {renderOption(item)}
             </StyledMenuItem>
           )
         })}
       </Menu>
     ),
-    [_disabled, activeItems, handleChange, items, renderOption, t],
+    [_disabled, activeItems, handleChange, items, renderOption],
   )
 
   return (
     <MenuButtonMemo
-      popover={MENU_POPOVER_PROPS}
+      popover={popoverProperties}
       id="block-style-select"
       button={button}
       menu={menu}

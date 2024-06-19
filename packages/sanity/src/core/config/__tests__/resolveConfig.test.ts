@@ -1,8 +1,11 @@
+import {describe, expect, it} from '@jest/globals'
 import {createClient} from '@sanity/client'
 import {firstValueFrom, lastValueFrom, of} from 'rxjs'
 import {bufferTime} from 'rxjs/operators'
+
 import {createMockAuthStore} from '../../store'
-import {resolveConfig, createWorkspaceFromConfig, createSourceFromConfig} from '../resolveConfig'
+import {definePlugin} from '../definePlugin'
+import {createSourceFromConfig, createWorkspaceFromConfig, resolveConfig} from '../resolveConfig'
 
 describe('resolveConfig', () => {
   it('throws on invalid tools property', async () => {
@@ -132,6 +135,59 @@ describe('resolveConfig', () => {
           },
         ],
       },
+    ])
+  })
+
+  it('includes all the default plugins', async () => {
+    const projectId = 'ppsg7ml5'
+    const dataset = 'production'
+    const client = createClient({
+      projectId,
+      apiVersion: '2021-06-07',
+      dataset,
+      useCdn: false,
+    })
+    const mockPlugin = definePlugin({name: 'sanity/mock-plugin'})
+    const [workspace] = await firstValueFrom(
+      resolveConfig({
+        name: 'default',
+        dataset,
+        projectId,
+        auth: createMockAuthStore({client, currentUser: null}),
+        plugins: [mockPlugin()],
+      }),
+    )
+    expect(workspace.__internal.options.plugins).toMatchObject([
+      {name: 'sanity/mock-plugin'},
+      {name: 'sanity/comments'},
+      {name: 'sanity/tasks'},
+      {name: 'sanity/scheduled-publishing'},
+    ])
+  })
+
+  it('wont include scheduled publishing default plugin', async () => {
+    // Schedule publishing should not be included when none other plugin is included in the user config.
+    const projectId = 'ppsg7ml5'
+    const dataset = 'production'
+    const client = createClient({
+      projectId,
+      apiVersion: '2021-06-07',
+      dataset,
+      useCdn: false,
+    })
+    const [workspace] = await firstValueFrom(
+      resolveConfig({
+        name: 'default',
+        dataset,
+        projectId,
+        auth: createMockAuthStore({client, currentUser: null}),
+        plugins: [], // No plugins
+      }),
+    )
+
+    expect(workspace.__internal.options.plugins).toMatchObject([
+      {name: 'sanity/comments'},
+      {name: 'sanity/tasks'},
     ])
   })
 })

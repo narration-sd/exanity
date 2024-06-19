@@ -1,10 +1,10 @@
-import type {ProjectTemplate} from '../initProject'
+import {type ProjectTemplate} from '../initProject'
 
 const configTemplate = `
 import {defineConfig, isDev} from 'sanity'
 import {visionTool} from '@sanity/vision'
 import {structureTool} from 'sanity/structure'
-import {schemaTypes} from './schemas'
+import {schemaTypes} from './schemaTypes'
 import {getStartedPlugin} from './plugins/sanity-plugin-tutorial'
 
 const devOnlyPlugins = [getStartedPlugin()]
@@ -29,7 +29,7 @@ const getStartedTemplate: ProjectTemplate = {
   configTemplate,
   typescriptOnly: true,
   dependencies: {
-    '@sanity/icons': '^2.6.0',
+    '@sanity/icons': '^2.11.0',
     '@sanity/ui': '^2.0.0',
   },
 }

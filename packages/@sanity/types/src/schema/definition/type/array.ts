@@ -1,26 +1,27 @@
-import type {FieldReference} from '../../../validation'
-import type {RuleDef, ValidationBuilder} from '../../ruleBuilder'
-import type {InitialValueProperty, SchemaValidationValue} from '../../types'
-import type {
-  IntrinsicDefinitions,
-  TypeAliasDefinition,
-  IntrinsicTypeName,
+import {type InsertMenuOptions} from '@sanity/insert-menu'
+
+import {type FieldReference} from '../../../validation'
+import {type RuleDef, type ValidationBuilder} from '../../ruleBuilder'
+import {type InitialValueProperty, type SchemaValidationValue} from '../../types'
+import {
+  type IntrinsicDefinitions,
+  type IntrinsicTypeName,
+  type TypeAliasDefinition,
 } from '../schemaDefinition'
-import type {BaseSchemaDefinition, TitledListValue} from './common'
+import {type BaseSchemaDefinition, type SearchConfiguration, type TitledListValue} from './common'
 
 /** @public */
-export interface ArrayOptions<V = unknown> {
+export interface ArrayOptions<V = unknown> extends SearchConfiguration {
   list?: TitledListValue<V>[] | V[]
-  /**
-   * layout: 'tags' only works for string array
-   * layout: 'grid' only works for arrays with objects
-   */
   // inferring the array.of value for ArrayDefinition cause too much code-noise and was removed.
   // Since we don't have the type-info needed here, we allow values
-  layout?: 'tags' | 'grid'
+  layout?: 'list' | 'tags' | 'grid'
+  /** @deprecated This option does not have any effect anymore */
   direction?: 'horizontal' | 'vertical'
   sortable?: boolean
   modal?: {type?: 'dialog' | 'popover'; width?: number | 'auto'}
+  /** @alpha This API may change */
+  insertMenu?: InsertMenuOptions
 }
 
 /** @public */

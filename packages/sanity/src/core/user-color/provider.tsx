@@ -1,12 +1,13 @@
-import React, {useMemo} from 'react'
-import {useColorScheme} from '../studio'
-import {UserColorManagerContext} from './context'
-import {UserColorManager} from './types'
+import {type ReactElement, type ReactNode, useMemo} from 'react'
+import {UserColorManagerContext} from 'sanity/_singletons'
+
+import {useColorSchemeValue} from '../studio'
 import {createUserColorManager} from './manager'
+import {type UserColorManager} from './types'
 
 /** @internal */
 export interface UserColorManagerProviderProps {
-  children: React.ReactNode
+  children: ReactNode
   manager?: UserColorManager
 }
 
@@ -14,8 +15,8 @@ export interface UserColorManagerProviderProps {
 export function UserColorManagerProvider({
   children,
   manager: managerFromProps,
-}: UserColorManagerProviderProps): React.ReactElement {
-  const {scheme} = useColorScheme()
+}: UserColorManagerProviderProps): ReactElement {
+  const scheme = useColorSchemeValue()
 
   const manager = useMemo(() => {
     return managerFromProps || createUserColorManager({scheme})

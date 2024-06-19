@@ -1,6 +1,8 @@
-import type {TFunction} from 'i18next'
-import React, {useMemo, type ComponentType, type ReactNode} from 'react'
-import {simpleParser, type CloseTagToken, type TextToken, type Token} from './simpleParser'
+import {type TFunction} from 'i18next'
+import {type ComponentType, createElement, type ReactNode, useMemo} from 'react'
+
+import {useListFormat} from '../hooks/useListFormat'
+import {type CloseTagToken, simpleParser, type TextToken, type Token} from './simpleParser'
 
 const COMPONENT_NAME_RE = /^[A-Z]/
 const RECOGNIZED_HTML_TAGS = [
@@ -18,6 +20,8 @@ const RECOGNIZED_HTML_TAGS = [
   'sub',
   'sup',
 ]
+
+type FormatterFns = {list: (value: Iterable<string>) => string}
 
 /**
  * A map of component names to React components. The component names are the names used within the
@@ -97,7 +101,7 @@ export function Translate(props: TranslationProps) {
    */
   const translated = props.t(props.i18nKey, {
     context: props.context,
-    replace: props.values,
+    skipInterpolation: true,
     count:
       props.values && 'count' in props.values && typeof props.values.count === 'number'
         ? props.values.count
@@ -105,20 +109,43 @@ export function Translate(props: TranslationProps) {
   })
 
   const tokens = useMemo(() => simpleParser(translated), [translated])
-
-  return <>{render(tokens, props.components || {})}</>
+  const listFormat = useListFormat()
+  const formatters: FormatterFns = {
+    list: (listValues) => listFormat.format(listValues),
+  }
+  return <>{render(tokens, props.values, props.components || {}, formatters)}</>
 }
 
-function render(tokens: Token[], componentMap: TranslateComponentMap): ReactNode {
+function render(
+  tokens: Token[],
+  values: TranslationProps['values'],
+  componentMap: TranslateComponentMap,
+  formatters: FormatterFns,
+): ReactNode {
   const [head, ...tail] = tokens
   if (!head) {
     return null
+  }
+  if (head.type === 'interpolation') {
+    const value = values ? values[head.variable] : undefined
+    if (typeof value === 'undefined') {
+      return `{{${head.variable}}}`
+    }
+
+    const formattedValue = applyFormatters(value, head.formatters || [], formatters)
+
+    return (
+      <>
+        {formattedValue}
+        {render(tail, values, componentMap, formatters)}
+      </>
+    )
   }
   if (head.type === 'text') {
     return (
       <>
         {head.text}
-        {render(tail, componentMap)}
+        {render(tail, values, componentMap, formatters)}
       </>
     )
   }
@@ -131,7 +158,7 @@ function render(tokens: Token[], componentMap: TranslateComponentMap): ReactNode
     return (
       <>
         <Component />
-        {render(tail, componentMap)}
+        {render(tail, values, componentMap, formatters)}
       </>
     )
   }
@@ -157,15 +184,33 @@ function render(tokens: Token[], componentMap: TranslateComponentMap): ReactNode
 
     return Component ? (
       <>
-        <Component>{render(children, componentMap)}</Component>
-        {render(remaining, componentMap)}
+        <Component>{render(children, values, componentMap, formatters)}</Component>
+        {render(remaining, values, componentMap, formatters)}
       </>
     ) : (
       <>
-        {React.createElement(head.name, {}, render(children, componentMap))}
-        {render(remaining, componentMap)}
+        {createElement(head.name, {}, render(children, values, componentMap, formatters))}
+        {render(remaining, values, componentMap, formatters)}
       </>
     )
   }
   return null
+}
+
+function applyFormatters(
+  value: Required<TranslationProps>['values'][string],
+  formatters: string[],
+  formatterFns: FormatterFns,
+): string {
+  let formattedValue = value
+  for (const formatter of formatters) {
+    if (formatter === 'list') {
+      if (Array.isArray(value)) {
+        formattedValue = formatterFns.list(value)
+      } else {
+        throw new Error('List formatter used on non-array value')
+      }
+    }
+  }
+  return `${formattedValue}`
 }

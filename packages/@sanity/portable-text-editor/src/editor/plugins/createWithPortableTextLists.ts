@@ -1,5 +1,6 @@
-import {Editor, Transforms, Element, Text, Node} from 'slate'
-import {PortableTextMemberSchemaTypes, PortableTextSlateEditor} from '../../types/editor'
+import {Editor, Element, type Node, Text, Transforms} from 'slate'
+
+import {type PortableTextMemberSchemaTypes, type PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
 
 const debug = debugWithName('plugin:withPortableTextLists')
@@ -142,11 +143,14 @@ export function createWithPortableTextLists(types: PortableTextMemberSchemaTypes
       const selectedBlocks = [
         ...Editor.nodes(editor, {
           at: editor.selection,
-          match: (node) => editor.isListBlock(node) && node.listItem === listStyle,
+          match: (node) => editor.isTextBlock(node),
         }),
       ]
+
       if (selectedBlocks.length > 0) {
-        return true
+        return selectedBlocks.every(
+          ([node]) => editor.isListBlock(node) && node.listItem === listStyle,
+        )
       }
       return false
     }

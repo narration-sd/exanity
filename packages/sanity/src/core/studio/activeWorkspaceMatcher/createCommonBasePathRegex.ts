@@ -1,5 +1,6 @@
 import {escapeRegExp} from 'lodash'
-import type {NormalizedWorkspace} from './types'
+
+import {type NormalizedWorkspace} from './types'
 
 /**
  * Recursively creates a matching expression.
@@ -19,7 +20,7 @@ export function createCommonBasePathRegex(workspaces: NormalizedWorkspace[]): Re
     // gets the segments from the basePath
     workspace.basePath
       // removes the leading `/`
-      .substring(1)
+      .slice(1)
       .split('/'),
   )
 

@@ -1,9 +1,9 @@
 /* eslint-disable react/jsx-no-bind */
-import {Path, defineArrayMember, defineField, defineType} from '@sanity/types'
-import React from 'react'
-import {SanityDocument} from '@sanity/client'
-import {TestWrapper} from '../../../utils/TestWrapper'
+import {type SanityDocument} from '@sanity/client'
+import {defineArrayMember, defineField, defineType, type Path} from '@sanity/types'
+
 import {TestForm} from '../../../utils/TestForm'
+import {TestWrapper} from '../../../utils/TestWrapper'
 
 const SCHEMA_TYPES = [
   defineType({
@@ -19,6 +19,36 @@ const SCHEMA_TYPES = [
             type: 'block',
             options: {
               unstable_whitespaceOnPasteMode: 'remove',
+            },
+          }),
+          defineArrayMember({
+            type: 'image',
+            name: 'image',
+            title: 'Image block',
+            preview: {
+              select: {
+                fileName: 'asset.originalFilename',
+                image: 'asset',
+              },
+              prepare({fileName, image}) {
+                return {
+                  media: image,
+                  title: fileName,
+                }
+              },
+            },
+          }),
+          defineArrayMember({
+            type: 'file',
+            name: 'filePDF',
+            title: 'PDF file block',
+            options: {
+              accept: 'application/pdf',
+            },
+            preview: {
+              select: {
+                tile: 'asset.originalFilename',
+              },
             },
           }),
         ],

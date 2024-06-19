@@ -1,6 +1,7 @@
-import React, {useCallback, useMemo} from 'react'
-import {Card, Code, Grid, Stack, TextArea, Text} from '@sanity/ui'
-import styled from 'styled-components'
+import {Card, Code, Grid, Stack, Text, TextArea} from '@sanity/ui'
+import {type ForwardedRef, forwardRef, useCallback, useMemo} from 'react'
+import {styled} from 'styled-components'
+
 import {Button} from '../../../../ui-components'
 
 const ExampleCode = styled(Code)`
@@ -15,9 +16,9 @@ interface FilterFieldInputOptions {
   value: string | null
 }
 
-export const FilterFieldInput = React.forwardRef(function FilterFieldInput(
+export const FilterFieldInput = forwardRef(function FilterFieldInput(
   props: FilterFieldInputOptions,
-  ref: React.ForwardedRef<HTMLTextAreaElement>,
+  ref: ForwardedRef<HTMLTextAreaElement>,
 ) {
   const {value, onChange, onFilter} = props
 

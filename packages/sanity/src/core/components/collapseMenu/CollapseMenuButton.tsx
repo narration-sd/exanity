@@ -1,13 +1,20 @@
-import React, {forwardRef} from 'react'
-import {Button, ButtonProps, TooltipProps} from '../../../ui-components'
+import {
+  type ElementType,
+  type ForwardedRef,
+  forwardRef,
+  type HTMLProps,
+  type ReactNode,
+} from 'react'
+
+import {Button, type ButtonProps, type TooltipProps} from '../../../ui-components'
 
 /** @internal */
 export interface CommonProps extends Omit<ButtonProps, 'text' | 'iconRight'> {
-  as?: React.ElementType | keyof JSX.IntrinsicElements
+  as?: ElementType | keyof JSX.IntrinsicElements
   dividerBefore?: boolean
   focused?: boolean
   tooltipProps?: TooltipProps
-  tooltipText?: React.ReactNode
+  tooltipText?: ReactNode
 }
 
 /** @internal */
@@ -19,8 +26,8 @@ export interface CollapseMenuButtonProps extends CommonProps {
 
 /** @internal */
 export const CollapseMenuButton = forwardRef(function CollapseMenuButton(
-  props: CollapseMenuButtonProps & Omit<React.HTMLProps<HTMLButtonElement>, 'as' | 'size'>,
-  ref: React.ForwardedRef<HTMLButtonElement>,
+  props: CollapseMenuButtonProps & Omit<HTMLProps<HTMLButtonElement>, 'as' | 'size'>,
+  ref: ForwardedRef<HTMLButtonElement>,
 ) {
   const {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

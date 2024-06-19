@@ -8,14 +8,14 @@ Contributions are always welcome, no matter how large or small.
 
 Before contributing, please read our [code of conduct](https://github.com/sanity-io/sanity/blob/current/CODE_OF_CONDUCT.md).
 
-Then make sure you have _Node.js version 16 or newer_. We currently use [Yarn](https://classic.yarnpkg.com/en/docs/install) 1 as our package manager, so make sure you have that installed as well.
+Then make sure you have _Node.js version 18 or newer_. We currently use [pnpm](https://pnpm.io/installation) as our package manager, so make sure you have that installed as well.
 
 ```sh
 git clone git@github.com:sanity-io/sanity.git
 cd sanity
-yarn
-yarn build
-yarn dev
+pnpm install
+pnpm build
+pnpm dev
 ```
 
 # Release/workflow guidelines
@@ -27,7 +27,6 @@ yarn dev
 - Rebase your feature branch regularly against `next`. Make sure its even with `next` before merging
 - Once it's done, open a pull request targeting `next`
 - After at least two reviewers has approved the pull request, you can merge it into `next` when you feel ready (if you're on the Sanity team, obviously)
-- Everything except minor _trivial_ changes should go through pull-requests. If you're unsure whether it's a trivial change or not, submit a pull request just to be sure
 - Pull requests should be as ready as possible for merge. Unless stated otherwise, it should be safe to assume that:
 
   - The changes/feature are reviewed and tested by you
@@ -35,8 +34,6 @@ yarn dev
   - The code is linted and the test suite is passing
 
 - It's fine to open a pull request to start a discussion / ask for help, but it should be stated clearly that it's not yet ready for merge.
-- When the `next`-branch is thoroughly tested and ready to be released (either as a minor or major version bump), it should be merged into `current` and bumped.
-- Critical fixes go straight into `current` (preferably through a pull request)
 
 ## Merging
 
@@ -46,14 +43,6 @@ Prefer squash + merge. If it makes sense to keep individual commits (e.g. differ
 
 - `current`: This contains all the features and fixes included in the latest official release.
 - `next`: This includes everything scheduled for the next, upcoming release.
-
-## Publishing official releases
-
-When `next` is ready for release, merge `next` into `current`, then run `yarn release` in the `current` branch and select version. After a successful release, remember to merge the new version number commits that were performed as part of the release into `next`.
-
-## Publishing _canary_ versions from feature branches
-
-This can be done at any time by anyone and is done by `yarn release-canary`. This will publish with the commit hash from HEAD.
 
 # How to file an issue
 
@@ -83,15 +72,15 @@ If you find yourself wishing for a feature that doesn't exist in Sanity, you are
 
 # Troubleshooting
 
-If you run into build issues, you might want to run `yarn init`, which will delete all `node_modules` folders, then run a fresh `yarn bootstrap` to install and cross-symlink all modules, followed by building all ES6 code to ES5.
+If you run into build issues, you might want to run `pnpm clean && pnpm clean:deps`, which will delete all `node_modules` folders, then run a fresh `pnpm bootstrap` to install and cross-symlink all modules, followed by building all ES6 code to ES5.
 
 # Testing
 
 Some tests are based on compiled files, so you will need to build the repository first before running the tests:
 
 ```sh
-yarn build
-yarn test
+pnpm build
+pnpm test
 ```
 
-Note: this runs `yarn test` for all the Sanity packages - the output can be quite hard to read. If you encounter an issue, it's usually best to figure out which module is failing, then run `yarn test` in that individual module.
+Note: this runs `pnpm test` for all the Sanity packages - the output can be quite hard to read. If you encounter an issue, it's usually best to figure out which module is failing, then run `pnpm test` in that individual module.

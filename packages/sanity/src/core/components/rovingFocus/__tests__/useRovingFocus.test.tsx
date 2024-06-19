@@ -1,11 +1,11 @@
-// eslint-disable-next-line import/no-unassigned-import
-import '@testing-library/jest-dom/extend-expect'
-import {render, fireEvent} from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import React, {useState} from 'react'
+import {describe, expect, it} from '@jest/globals'
 import {Card, studioTheme, ThemeProvider} from '@sanity/ui'
-import {RovingFocusProps} from '../types'
+import {fireEvent, render} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import {useState} from 'react'
+
 import {Button} from '../../../../ui-components'
+import {type RovingFocusProps} from '../types'
 import {useRovingFocus} from '../useRovingFocus'
 
 interface TestProps extends Pick<RovingFocusProps, 'direction' | 'initialFocus' | 'loop'> {

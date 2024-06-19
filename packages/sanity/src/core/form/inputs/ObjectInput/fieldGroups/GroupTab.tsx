@@ -1,26 +1,27 @@
-import React, {forwardRef} from 'react'
+import {type ComponentType, forwardRef, type Ref, useCallback} from 'react'
+
 import {Tab} from '../../../../../ui-components'
 
 interface GroupType {
   'aria-controls': string
-  autoFocus?: boolean
-  disabled?: boolean
-  icon?: React.ComponentType
-  name: string
-  onClick?: (value: string) => void
-  selected: boolean
-  title: string
+  'autoFocus'?: boolean
+  'disabled'?: boolean
+  'icon'?: ComponentType
+  'name': string
+  'onClick'?: (value: string) => void
+  'selected': boolean
+  'title': string
 }
 
 export const GroupTab = forwardRef(function GroupTab(
   props: GroupType,
-  ref: React.Ref<HTMLButtonElement>,
+  ref: Ref<HTMLButtonElement>,
 ) {
   // Separate props for resolving conditional hidden groups
   const {onClick} = props
 
   // Here goes the content of our component
-  const handleClick = React.useCallback(() => {
+  const handleClick = useCallback(() => {
     onClick?.(props.name)
   }, [props.name, onClick])
 

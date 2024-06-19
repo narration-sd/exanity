@@ -1,17 +1,22 @@
-import {catchError, map, shareReplay, startWith} from 'rxjs/operators'
-import {Observable, of} from 'rxjs'
-import {SanityClient} from '@sanity/client'
-import {useMemoObservable} from 'react-rx'
-import {isFinite} from 'lodash'
+import {type SanityClient} from '@sanity/client'
 import {DEFAULT_MAX_FIELD_DEPTH} from '@sanity/schema/_internal'
+import {isFinite} from 'lodash'
+import {useMemo} from 'react'
+import {useObservable} from 'react-rx'
+import {type Observable, of} from 'rxjs'
+import {catchError, map, shareReplay, startWith} from 'rxjs/operators'
+
+import {useClient} from '../../../../../hooks'
 import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../../../studioClient'
 import {useWorkspace} from '../../../../workspace'
-import {useClient} from '../../../../../hooks'
-import {useMemo} from 'react'
 
 /** By default the API will return 0 = all fields */
 const DEFAULT_API_FIELD_DEPTH = 0
 
+/**
+ * @internal
+ * @hidden
+ */
 export interface PartialIndexSettings {
   partialIndexSettings: {
     maxFieldDepth: number
@@ -38,14 +43,17 @@ const INITIAL_LOADING_STATE: Settings = {
 function fetchMaxDepth({client}: {client: SanityClient}): Observable<PartialIndexSettings> {
   const {projectId, dataset} = client.config()
   return client.observable.request<PartialIndexSettings>({
-    uri: `/projects/${projectId}/datasets/${dataset}/index-settings`,
+    uri: `/projects/${projectId}/datasets/${dataset}/settings/indexing`,
     tag: 'search.getPartialIndexSettings',
   })
 }
 
 const cachedSettings: Map<string, Observable<PartialIndexSettings>> = new Map()
 
-/** @internal */
+/**
+ * @internal
+ * @hidden
+ */
 export function useSearchMaxFieldDepth(overrideClient?: SanityClient): number {
   const isEnabled = useWorkspace().search?.unstable_partialIndexing?.enabled
   const workspaceClient = useClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
@@ -60,7 +68,7 @@ export function useSearchMaxFieldDepth(overrideClient?: SanityClient): number {
     cachedSettings.set(dataset, fetchMaxDepth({client}).pipe(shareReplay()))
   }
 
-  const indexSettings = useMemoObservable(
+  const indexSettingsObservable = useMemo(
     () =>
       cachedSettings.get(dataset)!.pipe(
         map((settings) => ({
@@ -78,8 +86,8 @@ export function useSearchMaxFieldDepth(overrideClient?: SanityClient): number {
         }),
       ),
     [dataset],
-    INITIAL_LOADING_STATE,
   )
+  const indexSettings = useObservable(indexSettingsObservable, INITIAL_LOADING_STATE)
 
   const maxFieldDepth = indexSettings?.settings?.partialIndexSettings?.maxFieldDepth
 

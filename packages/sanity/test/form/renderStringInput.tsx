@@ -1,15 +1,16 @@
-import React from 'react'
-import {FieldDefinition, StringSchemaType} from '@sanity/types'
-import {PrimitiveInputElementProps, StringInputProps} from '../../src/core'
-import {renderInput, TestRenderInputContext, TestRenderInputProps} from './renderInput'
-import {TestRenderProps} from './types'
+import {type FieldDefinition, type StringSchemaType} from '@sanity/types'
+import {type ReactElement} from 'react'
+
+import {type PrimitiveInputElementProps, type StringInputProps} from '../../src/core'
+import {renderInput, type TestRenderInputContext, type TestRenderInputProps} from './renderInput'
+import {type TestRenderProps} from './types'
 
 const noopRenderDefault = () => <></>
 
 export type TestRenderStringInputCallback = (
   inputProps: StringInputProps,
   context: TestRenderInputContext,
-) => React.ReactElement
+) => ReactElement
 
 export async function renderStringInput(options: {
   fieldDefinition: FieldDefinition<'date' | 'datetime' | 'string' | 'url'>
@@ -36,15 +37,11 @@ export async function renderStringInput(options: {
     }
   }
 
-  const result = await renderInput({
+  const result = await renderInput<PrimitiveInputElementProps>({
     fieldDefinition,
     props,
     render: (inputProps, context) => render(transformProps(inputProps), context),
   })
 
-  function rerender(subsequentRender: TestRenderStringInputCallback) {
-    result.rerender((inputProps, context) => subsequentRender(transformProps(inputProps), context))
-  }
-
-  return {...result, rerender}
+  return result
 }

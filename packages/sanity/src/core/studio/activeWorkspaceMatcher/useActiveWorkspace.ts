@@ -1,8 +1,7 @@
 import {useContext} from 'react'
-import {
-  ActiveWorkspaceMatcherContext,
-  ActiveWorkspaceMatcherContextValue,
-} from './ActiveWorkspaceMatcherContext'
+import {ActiveWorkspaceMatcherContext} from 'sanity/_singletons'
+
+import {type ActiveWorkspaceMatcherContextValue} from './ActiveWorkspaceMatcherContext'
 
 /** @internal */
 export function useActiveWorkspace(): ActiveWorkspaceMatcherContextValue {

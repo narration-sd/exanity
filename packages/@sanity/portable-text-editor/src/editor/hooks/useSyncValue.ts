@@ -1,18 +1,19 @@
 /* eslint-disable max-nested-callbacks */
-import {useCallback, useMemo, useRef} from 'react'
-import {PortableTextBlock} from '@sanity/types'
+import {type PortableTextBlock} from '@sanity/types'
 import {debounce, isEqual} from 'lodash'
-import {Editor, Transforms, Node, Descendant, Text} from 'slate'
+import {useCallback, useMemo, useRef} from 'react'
+import {type Descendant, Editor, type Node, Text, Transforms} from 'slate'
 import {useSlate} from 'slate-react'
-import {PortableTextEditor} from '../PortableTextEditor'
-import {EditorChange, PortableTextSlateEditor} from '../../types/editor'
+
+import {type EditorChange, type PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
-import {VOID_CHILD_KEY, toSlateValue} from '../../utils/values'
-import {withoutSaving} from '../plugins/createWithUndoRedo'
-import {withPreserveKeys} from '../../utils/withPreserveKeys'
-import {withoutPatching} from '../../utils/withoutPatching'
 import {validateValue} from '../../utils/validateValue'
+import {toSlateValue, VOID_CHILD_KEY} from '../../utils/values'
 import {isChangingLocally, isChangingRemotely, withRemoteChanges} from '../../utils/withChanges'
+import {withoutPatching} from '../../utils/withoutPatching'
+import {withPreserveKeys} from '../../utils/withPreserveKeys'
+import {withoutSaving} from '../plugins/createWithUndoRedo'
+import {type PortableTextEditor} from '../PortableTextEditor'
 
 const debug = debugWithName('hook:useSyncValue')
 
@@ -60,10 +61,8 @@ export function useSyncValue(
       updateValueFunctionRef.current(currentValue)
     }
   }, [portableTextEditor])
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const updateValueDebounced = useCallback(
-    debounce(updateFromCurrentValue, 1000, {trailing: true, leading: false}),
+  const updateValueDebounced = useMemo(
+    () => debounce(updateFromCurrentValue, 1000, {trailing: true, leading: false}),
     [updateFromCurrentValue],
   )
 
@@ -105,7 +104,7 @@ export function useSyncValue(
                   at: [childrenLength - 1 - index],
                 })
               })
-              Transforms.insertNodes(slateEditor, slateEditor.createPlaceholderBlock(), {at: [0]})
+              Transforms.insertNodes(slateEditor, slateEditor.pteCreateEmptyBlock(), {at: [0]})
               // Add a new selection in the top of the document
               if (hadSelection) {
                 Transforms.select(slateEditor, [0, 0])
@@ -141,7 +140,24 @@ export function useSyncValue(
                   if (hasChanges && isValid) {
                     const validationValue = [value[currentBlockIndex]]
                     const validation = validateValue(validationValue, schemaTypes, keyGenerator)
-                    if (validation.valid) {
+                    // Resolve validations that can be resolved automatically, without involving the user (but only if the value was changed)
+                    if (
+                      !validation.valid &&
+                      validation.resolution?.autoResolve &&
+                      validation.resolution?.patches.length > 0
+                    ) {
+                      // Only apply auto resolution if the value has been populated before and is different from the last one.
+                      if (!readOnly && previousValue.current && previousValue.current !== value) {
+                        // Give a console warning about the fact that it did an auto resolution
+                        console.warn(
+                          `${validation.resolution.action} for block with _key '${validationValue[0]._key}'. ${validation.resolution?.description}`,
+                        )
+                        validation.resolution.patches.forEach((patch) => {
+                          change$.next({type: 'patch', patch})
+                        })
+                      }
+                    }
+                    if (validation.valid || validation.resolution?.autoResolve) {
                       if (oldBlock._key === currentBlock._key) {
                         if (debug.enabled) debug('Updating block', oldBlock, currentBlock)
                         _updateBlock(slateEditor, currentBlock, oldBlock, currentBlockIndex)
@@ -167,7 +183,7 @@ export function useSyncValue(
                         'Validating and inserting new block in the end of the value',
                         currentBlock,
                       )
-                    if (validation.valid) {
+                    if (validation.valid || validation.resolution?.autoResolve) {
                       withPreserveKeys(slateEditor, () => {
                         Transforms.insertNodes(slateEditor, currentBlock, {
                           at: [currentBlockIndex],
@@ -254,6 +270,7 @@ function _replaceBlock(
   withPreserveKeys(slateEditor, () => {
     Transforms.insertNodes(slateEditor, currentBlock, {at: [currentBlockIndex]})
   })
+  slateEditor.onChange()
   if (selectionFocusOnBlock) {
     Transforms.select(slateEditor, currentSelection)
   }

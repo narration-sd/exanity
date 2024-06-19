@@ -1,5 +1,6 @@
-import React, {ChangeEvent, HTMLProps} from 'react'
-import {TextInputProps} from '@sanity/ui'
+import {type TextInputProps} from '@sanity/ui'
+import {type ChangeEvent, type HTMLProps, useCallback} from 'react'
+
 import {LazyTextInput} from '../LazyTextInput'
 
 export const YearInput = (
@@ -8,7 +9,7 @@ export const YearInput = (
 ) => {
   const {onChange, ...restProps} = props
 
-  const handleChange = React.useCallback(
+  const handleChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       const numericValue = parseInt(event.currentTarget.value, 10)
       if (!isNaN(numericValue)) {

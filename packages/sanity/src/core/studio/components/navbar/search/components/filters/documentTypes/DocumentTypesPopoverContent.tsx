@@ -1,22 +1,22 @@
-import {Schema} from '@sanity/types'
+import {type Schema, type SchemaType} from '@sanity/types'
 import {Box, Flex, MenuDivider, Stack, Text} from '@sanity/ui'
 import {partition} from 'lodash'
-import React, {useCallback, useMemo, useRef, useState} from 'react'
-import styled from 'styled-components'
+import {type KeyboardEvent, useCallback, useMemo, useRef, useState} from 'react'
+import {styled} from 'styled-components'
+
+import {Button} from '../../../../../../../../ui-components'
 import {
   CommandList,
-  CommandListGetItemSelectedCallback,
-  CommandListHandle,
-  CommandListRenderItemCallback,
+  type CommandListGetItemSelectedCallback,
+  type CommandListHandle,
+  type CommandListRenderItemCallback,
 } from '../../../../../../../components'
 import {useSchema} from '../../../../../../../hooks'
-import type {SearchableType} from '../../../../../../../search'
-import {useSearchState} from '../../../contexts/search/useSearchState'
-import type {DocumentTypeMenuItem} from '../../../types'
-import {getSelectableOmnisearchTypes} from '../../../utils/selectors'
-import {Button} from '../../../../../../../../ui-components'
-import {FilterPopoverContentHeader} from '../common/FilterPopoverContentHeader'
 import {useTranslation} from '../../../../../../../i18n'
+import {useSearchState} from '../../../contexts/search/useSearchState'
+import {type DocumentTypeMenuItem} from '../../../types'
+import {getSelectableOmnisearchTypes} from '../../../utils/selectors'
+import {FilterPopoverContentHeader} from '../common/FilterPopoverContentHeader'
 import {DocumentTypeFilterItem} from './items/DocumentTypeFilterItem'
 
 const ClearButtonBox = styled(Box)`
@@ -52,7 +52,7 @@ export function DocumentTypesPopoverContent() {
   )
 
   const handleFilterChange = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => setTypeFilter(e.currentTarget.value),
+    (e: KeyboardEvent<HTMLInputElement>) => setTypeFilter(e.currentTarget.value),
     [setTypeFilter],
   )
   const handleFilterClear = useCallback(() => setTypeFilter(''), [])
@@ -172,13 +172,7 @@ export function DocumentTypesPopoverContent() {
   )
 }
 
-function ClearButton({
-  onClick,
-  selectedTypes,
-}: {
-  onClick: () => void
-  selectedTypes: SearchableType[]
-}) {
+function ClearButton({onClick, selectedTypes}: {onClick: () => void; selectedTypes: SchemaType[]}) {
   const {t} = useTranslation()
 
   return (
@@ -200,8 +194,8 @@ function ClearButton({
 
 function useGetDocumentTypeItems(
   schema: Schema,
-  selectedTypes: SearchableType[],
-  selectedTypesSnapshot: SearchableType[],
+  selectedTypes: SchemaType[],
+  selectedTypesSnapshot: SchemaType[],
   typeFilter: string,
 ) {
   return useMemo(() => {

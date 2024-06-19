@@ -1,21 +1,22 @@
-import type {Subscription} from 'rxjs'
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import styled from 'styled-components'
+import {type Asset} from '@sanity/types'
 import {
   // eslint-disable-next-line no-restricted-imports
   Button,
   Card,
   useToast,
 } from '@sanity/ui'
-import {Asset} from '@sanity/types'
+import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {type Subscription} from 'rxjs'
+import {styled} from 'styled-components'
+
 import {LoadingBlock} from '../../../../components/loadingBlock'
 import {useClient} from '../../../../hooks'
+import {useTranslation} from '../../../../i18n'
 import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../../studioClient'
+import {AssetDeleteDialog} from '../shared/AssetDeleteDialog'
 import {AssetMenu} from '../shared/AssetMenu'
 import {AssetUsageDialog} from '../shared/AssetUsageDialog'
-import {AssetDeleteDialog} from '../shared/AssetDeleteDialog'
-import {AssetMenuAction} from '../types'
-import {useTranslation} from '../../../../i18n'
+import {type AssetMenuAction} from '../types'
 
 interface AssetProps {
   asset: Asset
@@ -84,7 +85,7 @@ const MenuContainer = styled.div`
   }
 `
 
-export const AssetThumb = React.memo(function AssetThumb(props: AssetProps) {
+export const AssetThumb = memo(function AssetThumb(props: AssetProps) {
   const versionedClient = useClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
   const toast = useToast()
   const deleteRef$ = useRef<Subscription>()

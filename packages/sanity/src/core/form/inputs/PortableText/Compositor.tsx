@@ -1,32 +1,41 @@
-import React, {useState, useMemo, useCallback} from 'react'
 import {
-  OnCopyFn,
-  OnPasteFn,
+  type BlockAnnotationRenderProps,
+  type BlockChildRenderProps as EditorChildRenderProps,
+  type BlockRenderProps as EditorBlockRenderProps,
+  type EditorSelection,
+  type HotkeyOptions,
+  type OnCopyFn,
+  type OnPasteFn,
+  type RangeDecoration,
   usePortableTextEditor,
-  HotkeyOptions,
-  BlockRenderProps as EditorBlockRenderProps,
-  BlockChildRenderProps as EditorChildRenderProps,
-  BlockAnnotationRenderProps,
-  EditorSelection,
 } from '@sanity/portable-text-editor'
-import {Path, PortableTextBlock, PortableTextTextBlock} from '@sanity/types'
+import {type Path, type PortableTextBlock, type PortableTextTextBlock} from '@sanity/types'
 import {Box, Portal, PortalProvider, useBoundaryElement, usePortal} from '@sanity/ui'
-import {ArrayOfObjectsInputProps, RenderCustomMarkers} from '../../types'
-import {ActivateOnFocus} from '../../components/ActivateOnFocus/ActivateOnFocus'
-import {EMPTY_ARRAY} from '../../../util'
+import {type ReactNode, useCallback, useMemo, useState} from 'react'
+
 import {ChangeIndicator} from '../../../changeIndicators'
-import {RenderBlockActionsCallback} from '../../types/_transitional'
+import {EMPTY_ARRAY} from '../../../util'
+import {ActivateOnFocus} from '../../components/ActivateOnFocus/ActivateOnFocus'
+import {
+  type ArrayOfObjectsInputProps,
+  type PortableTextInputProps,
+  type RenderCustomMarkers,
+} from '../../types'
+import {type RenderBlockActionsCallback} from '../../types/_transitional'
+import {UploadTargetCard} from '../arrays/common/UploadTargetCard'
+import {ExpandedLayer, Root} from './Compositor.styles'
+import {Editor} from './Editor'
+import {useHotkeys} from './hooks/useHotKeys'
+import {useTrackFocusPath} from './hooks/useTrackFocusPath'
 import {Annotation} from './object/Annotation'
 import {BlockObject} from './object/BlockObject'
 import {InlineObject} from './object/InlineObject'
 import {TextBlock} from './text'
-import {Editor} from './Editor'
-import {ExpandedLayer, Root} from './Compositor.styles'
-import {useHotkeys} from './hooks/useHotKeys'
-import {useTrackFocusPath} from './hooks/useTrackFocusPath'
 
 interface InputProps extends ArrayOfObjectsInputProps<PortableTextBlock> {
+  elementRef: React.RefObject<HTMLDivElement>
   hasFocusWithin: boolean
+  hideToolbar?: boolean
   hotkeys?: HotkeyOptions
   isActive: boolean
   isFullscreen: boolean
@@ -35,20 +44,25 @@ interface InputProps extends ArrayOfObjectsInputProps<PortableTextBlock> {
   onPaste?: OnPasteFn
   onToggleFullscreen: () => void
   path: Path
+  rangeDecorations?: RangeDecoration[]
   renderBlockActions?: RenderBlockActionsCallback
   renderCustomMarkers?: RenderCustomMarkers
+  renderEditable?: PortableTextInputProps['renderEditable']
 }
 
 /** @internal */
 export type PortableTextEditorElement = HTMLDivElement | HTMLSpanElement
 
 /** @internal */
-export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunctions'>) {
+export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunctions'>): ReactNode {
   const {
     changed,
+    elementRef,
     focused,
     focusPath = EMPTY_ARRAY,
+    elementProps,
     hasFocusWithin,
+    hideToolbar,
     hotkeys,
     isActive,
     isFullscreen,
@@ -60,17 +74,21 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
     onPaste,
     onPathFocus,
     onToggleFullscreen,
+    onUpload,
     path,
+    rangeDecorations,
     readOnly,
     renderAnnotation,
     renderBlock,
     renderBlockActions,
     renderCustomMarkers,
+    renderEditable,
     renderField,
     renderInlineBlock,
     renderInput,
     renderItem,
     renderPreview,
+    resolveUploader,
     value,
   } = props
 
@@ -145,13 +163,12 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
     [
       _renderBlockActions,
       _renderCustomMarkers,
-      scrollElement,
+      boundaryElement,
       isFullscreen,
       onItemClose,
       onItemOpen,
       onItemRemove,
       onPathFocus,
-      boundaryElement,
       path,
       readOnly,
       renderAnnotation,
@@ -161,6 +178,7 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
       renderInput,
       renderItem,
       renderPreview,
+      scrollElement,
     ],
   )
 
@@ -277,14 +295,14 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
       )
     },
     [
-      boundaryElement,
-      scrollElement,
       editor.schemaTypes.span.name,
+      boundaryElement,
       onItemClose,
       onItemOpen,
       onPathFocus,
       path,
       readOnly,
+      scrollElement,
       renderAnnotation,
       renderBlock,
       renderCustomMarkers,
@@ -352,7 +370,7 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
       renderPreview,
     ],
   )
-  const ariaDescribedBy = props.elementProps['aria-describedby']
+  const ariaDescribedBy = elementProps['aria-describedby']
 
   // Create an initial editor selection based on the focusPath
   // at the time that the editor mounts. Any updates to the
@@ -361,7 +379,7 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
   // prop to the Editable PTE component (initialSelection) so that
   // selections can be set initially even though the editor value
   // might not be fully propagated or rendered yet.
-  const initialSelection: EditorSelection | undefined = useMemo(() => {
+  const [initialSelection] = useState<EditorSelection | undefined>(() => {
     // We can be sure that the focusPath is pointing directly to
     // editor content when hasFocusWithin is true.
     if (hasFocusWithin) {
@@ -377,40 +395,53 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
       }
     }
     return undefined
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only at mount time!
+  })
 
   const editorNode = useMemo(
     () => (
-      <Editor
-        ariaDescribedBy={ariaDescribedBy}
-        initialSelection={initialSelection}
-        hotkeys={editorHotkeys}
-        isActive={isActive}
-        isFullscreen={isFullscreen}
-        onItemOpen={onItemOpen}
-        onCopy={onCopy}
-        onPaste={onPaste}
-        onToggleFullscreen={handleToggleFullscreen}
-        path={path}
-        readOnly={readOnly}
-        renderAnnotation={editorRenderAnnotation}
-        renderBlock={editorRenderBlock}
-        renderChild={editorRenderChild}
-        setPortalElement={setPortalElement}
-        scrollElement={scrollElement}
-        setScrollElement={setScrollElement}
-      />
+      <UploadTargetCard
+        types={editor.schemaTypes.portableText.of}
+        resolveUploader={resolveUploader}
+        onUpload={onUpload}
+        tabIndex={-1}
+      >
+        <Editor
+          ariaDescribedBy={ariaDescribedBy}
+          elementRef={elementRef}
+          initialSelection={initialSelection}
+          hideToolbar={hideToolbar}
+          hotkeys={editorHotkeys}
+          isActive={isActive}
+          isFullscreen={isFullscreen}
+          onItemOpen={onItemOpen}
+          onCopy={onCopy}
+          onPaste={onPaste}
+          onToggleFullscreen={handleToggleFullscreen}
+          path={path}
+          rangeDecorations={rangeDecorations}
+          readOnly={readOnly}
+          renderAnnotation={editorRenderAnnotation}
+          renderBlock={editorRenderBlock}
+          renderChild={editorRenderChild}
+          renderEditable={renderEditable}
+          setPortalElement={setPortalElement}
+          scrollElement={scrollElement}
+          setScrollElement={setScrollElement}
+        />
+      </UploadTargetCard>
     ),
 
     // Keep only stable ones here!
     [
       ariaDescribedBy,
+      editor.schemaTypes.portableText.of,
       editorHotkeys,
       editorRenderAnnotation,
       editorRenderBlock,
       editorRenderChild,
+      elementRef,
       handleToggleFullscreen,
+      hideToolbar,
       initialSelection,
       isActive,
       isFullscreen,
@@ -418,7 +449,11 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
       onItemOpen,
       onPaste,
       path,
+      onUpload,
+      resolveUploader,
+      rangeDecorations,
       readOnly,
+      renderEditable,
       scrollElement,
     ],
   )

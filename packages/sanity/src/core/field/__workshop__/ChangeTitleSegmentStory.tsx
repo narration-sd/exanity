@@ -1,5 +1,5 @@
 import {Box} from '@sanity/ui'
-import React from 'react'
+
 import {ChangeTitleSegment} from '../diff/components/ChangeTitleSegment'
 
 export default function ChangeTitleSegmentStory() {

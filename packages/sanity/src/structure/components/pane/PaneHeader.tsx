@@ -1,22 +1,23 @@
-import {useElementRect, Box, Card, Flex, LayerProvider} from '@sanity/ui'
-import React, {useMemo, useCallback, forwardRef} from 'react'
-import {usePane} from './usePane'
-import {Layout, Root, TabsBox, TitleCard, TitleTextSkeleton, TitleText} from './PaneHeader.styles'
+import {Box, Card, Flex, LayerProvider, useElementRect} from '@sanity/ui'
+import {type ForwardedRef, forwardRef, type ReactNode, useCallback, useMemo} from 'react'
 import {LegacyLayerProvider} from 'sanity'
+
+import {Layout, Root, TabsBox, TitleCard, TitleText, TitleTextSkeleton} from './PaneHeader.styles'
+import {usePane} from './usePane'
 
 /**
  * @beta This API will change. DO NOT USE IN PRODUCTION.
  */
 export interface PaneHeaderProps {
-  actions?: React.ReactNode
-  backButton?: React.ReactNode
+  actions?: ReactNode
+  backButton?: ReactNode
   border?: boolean
-  contentAfter?: React.ReactNode
+  contentAfter?: ReactNode
   loading?: boolean
-  subActions?: React.ReactNode
+  subActions?: ReactNode
   tabIndex?: number
-  tabs?: React.ReactNode
-  title: React.ReactNode
+  tabs?: ReactNode
+  title: ReactNode
 }
 
 /**
@@ -26,7 +27,7 @@ export interface PaneHeaderProps {
  */
 export const PaneHeader = forwardRef(function PaneHeader(
   props: PaneHeaderProps,
-  ref: React.ForwardedRef<HTMLDivElement>,
+  ref: ForwardedRef<HTMLDivElement>,
 ) {
   const {actions, backButton, border, contentAfter, loading, subActions, tabs, tabIndex, title} =
     props

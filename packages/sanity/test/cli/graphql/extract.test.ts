@@ -1,6 +1,8 @@
+import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {orderBy} from 'lodash'
+
 import {extractFromSanitySchema} from '../../../src/_internal/cli/actions/graphql/extractFromSanitySchema'
-import type {ApiSpecification} from '../../../src/_internal/cli/actions/graphql/types'
+import {type ApiSpecification} from '../../../src/_internal/cli/actions/graphql/types'
 import testStudioSchema from './fixtures/test-studio'
 
 describe('GraphQL - Schema extraction', () => {

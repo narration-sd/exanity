@@ -1,12 +1,19 @@
-import {appendFile} from 'fs/promises'
-import {SanityClient} from '@sanity/client'
-import {ConsentStatus, createBatchedStore, createSessionId, TelemetryEvent} from '@sanity/telemetry'
+import {appendFile} from 'node:fs/promises'
+
+import {type SanityClient} from '@sanity/client'
+import {
+  type ConsentStatus,
+  createBatchedStore,
+  createSessionId,
+  type TelemetryEvent,
+} from '@sanity/telemetry'
+
 import {debug as baseDebug} from '../debug'
 import {getClientWrapper, getCliToken} from './clientWrapper'
-import {isTrueish} from './isTrueish'
-import {isCi} from './isCi'
-import {getUserConfig} from './getUserConfig'
 import {createExpiringConfig} from './createExpiringConfig'
+import {getUserConfig} from './getUserConfig'
+import {isCi} from './isCi'
+import {isTrueish} from './isTrueish'
 
 const debug = baseDebug.extend('telemetry')
 
@@ -53,7 +60,7 @@ interface Env {
 }
 
 interface Options {
-  env: Env
+  env: Env | NodeJS.ProcessEnv
 }
 
 export type ConsentInformation =

@@ -1,9 +1,14 @@
-import {Worker} from 'worker_threads'
-import {Server, createServer} from 'http'
-import type {SanityDocument, SanityProject} from '@sanity/client'
-import {parse, evaluate} from 'groq-js'
-import type {ValidateDocumentsWorkerData, ValidationWorkerChannel} from '../validateDocuments'
-import {WorkerChannelReceiver, createReceiver} from '../../util/workerChannels'
+import {createServer, type Server} from 'node:http'
+import path from 'node:path'
+import {Worker} from 'node:worker_threads'
+
+import {afterAll, beforeAll, describe, expect, it, jest} from '@jest/globals'
+import {type SanityDocument, type SanityProject} from '@sanity/client'
+import {evaluate, parse} from 'groq-js'
+
+import {getAliases} from '../../server/aliases'
+import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels'
+import {type ValidateDocumentsWorkerData, type ValidationWorkerChannel} from '../validateDocuments'
 
 async function toArray<T>(asyncIterator: AsyncIterable<T>) {
   const arr: T[] = []
@@ -112,7 +117,7 @@ describe('validateDocuments', () => {
           .filter((key) => key.startsWith('$'))
           .reduce<Record<string, string | string[]>>((acc, key) => {
             const values = searchParams.getAll(key)
-            acc[key.substring(1)] = values.length === 1 ? values[0] : values
+            acc[key.slice(1)] = values.length === 1 ? values[0] : values
             return acc
           }, {})
 
@@ -196,7 +201,10 @@ describe('validateDocuments', () => {
 
     const worker = new Worker(
       `
+        const moduleAlias = require('module-alias')
         const { register } = require('esbuild-register/dist/node')
+
+        moduleAlias.addAliases(${JSON.stringify(getAliases({monorepo: {path: path.resolve(__dirname, '../../../../../../..')}}))})
 
         const { unregister } = register({
           target: 'node18',
@@ -217,12 +225,11 @@ describe('validateDocuments', () => {
   afterAll(async () => {
     await receiver?.dispose()
 
-    await new Promise<void>(
-      (resolve, reject) =>
-        server?.close((err) => {
-          if (err) reject(err)
-          else resolve()
-        }),
+    await new Promise<void>((resolve, reject) =>
+      server?.close((err) => {
+        if (err) reject(err)
+        else resolve()
+      }),
     )
   })
 

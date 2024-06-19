@@ -1,5 +1,5 @@
-import type {ImageUrlFitMode, SchemaType} from '@sanity/types'
-import type {ComponentType, ReactNode, ReactElement} from 'react'
+import {type ImageUrlFitMode, type SchemaType} from '@sanity/types'
+import {type ComponentType, type ReactElement, type ReactNode} from 'react'
 
 /**
  * Portable text preview layout key
@@ -14,6 +14,14 @@ export type PortableTextPreviewLayoutKey = 'block' | 'blockImage' | 'inline'
  * @public
  */
 export type GeneralPreviewLayoutKey = 'compact' | 'default' | 'media' | 'detail'
+
+/**
+ * General Document list layout key
+ *
+ * @hidden
+ * @beta
+ */
+export type GeneralDocumentListLayoutKey = GeneralPreviewLayoutKey | 'sheetList'
 
 /**
  * Preview layout key. See also {@link GeneralPreviewLayoutKey} and {@link PortableTextPreviewLayoutKey}

@@ -1,21 +1,22 @@
-import {Box, Card, Flex, Stack, Text, useClickOutside} from '@sanity/ui'
+import {type SanityDocument} from '@sanity/client'
 import {RevertIcon} from '@sanity/icons'
-import React, {useCallback, useContext, useMemo, useState} from 'react'
-import {SanityDocument} from '@sanity/client'
-import {ObjectSchemaType} from '@sanity/types'
+import {type ObjectSchemaType} from '@sanity/types'
+import {Box, Card, Flex, Stack, Text, useClickOutside} from '@sanity/ui'
+import {type ReactElement, useCallback, useContext, useMemo, useState} from 'react'
+import {DiffContext} from 'sanity/_singletons'
+
+import {Button, Popover} from '../../../../ui-components'
+import {useDocumentOperation} from '../../../hooks'
+import {useTranslation} from '../../../i18n'
+import {useDocumentPairPermissions} from '../../../store'
 import {unstable_useConditionalProperty as useConditionalProperty} from '../../conditional-property'
-import {ObjectDiff, ChangeNode, FieldOperationsAPI} from '../../types'
-import {DiffContext} from '../contexts/DiffContext'
+import {type ChangeNode, type FieldOperationsAPI, type ObjectDiff} from '../../types'
 import {buildObjectChangeList} from '../changes/buildChangeList'
 import {undoChange} from '../changes/undoChange'
 import {useDocumentChange} from '../hooks/useDocumentChange'
-import {useDocumentPairPermissions} from '../../../store'
-import {useDocumentOperation} from '../../../hooks'
-import {Button, Popover} from '../../../../ui-components'
-import {useTranslation} from '../../../i18n'
+import {ChangeListWrapper} from './ChangeList.styled'
 import {ChangeResolver} from './ChangeResolver'
 import {NoChanges} from './NoChanges'
-import {ChangeListWrapper} from './ChangeList.styled'
 
 /** @internal */
 export interface ChangeListProps {
@@ -25,7 +26,7 @@ export interface ChangeListProps {
 }
 
 /** @internal */
-export function ChangeList({diff, fields, schemaType}: ChangeListProps): React.ReactElement | null {
+export function ChangeList({diff, fields, schemaType}: ChangeListProps): ReactElement | null {
   const {documentId, isComparingCurrent, value} = useDocumentChange()
   const docOperations = useDocumentOperation(documentId, schemaType.name) as FieldOperationsAPI
   const {path} = useContext(DiffContext)

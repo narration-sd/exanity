@@ -1,27 +1,43 @@
-import type {ComponentType} from 'react'
-import type {SanityClient} from '@sanity/client'
-import type {Rule} from '../validation'
-import type {SanityDocument} from '../documents'
-import type {CurrentUser} from '../user'
-import type {PreviewConfig} from './preview'
-import type {SchemaTypeDefinition} from './definition/schemaDefinition'
-import type {ArrayOptions} from './definition/type/array'
-import type {
-  BlockDecoratorDefinition,
-  BlockOptions,
-  BooleanOptions,
-  DateOptions,
-  DatetimeOptions,
-  FileOptions,
-  ImageOptions,
-  NumberOptions,
-  ReferenceOptions,
-  SlugOptions,
-  StringOptions,
-  TextOptions,
-} from './definition/type'
+import {type SanityClient} from '@sanity/client'
+import {type ComponentType} from 'react'
 
-export {defineType, defineField, defineArrayMember, typed} from './define'
+import {type SanityDocument} from '../documents'
+import {type CurrentUser} from '../user'
+import {type Rule} from '../validation'
+import {type SchemaTypeDefinition} from './definition/schemaDefinition'
+import {
+  type BlockDecoratorDefinition,
+  type BlockOptions,
+  type BooleanOptions,
+  type DateOptions,
+  type DatetimeOptions,
+  type FileOptions,
+  type ImageOptions,
+  type NumberOptions,
+  type ReferenceOptions,
+  type SlugOptions,
+  type StringOptions,
+  type TextOptions,
+} from './definition/type'
+import {type ArrayOptions} from './definition/type/array'
+import {type PreviewConfig} from './preview'
+
+export {defineArrayMember, defineField, defineType, typed} from './define'
+
+/**
+ * Enhances VSCode autocomplete by using a distinct type for strings.
+ *
+ * `AllowOtherStrings` is defined as `string & {}`, an intersection that behaves
+ * like `string` but is treated differently by TypeScript's type system for
+ * internal processing. This helps in improving the specificity and relevance of
+ * autocomplete suggestions by potentially prioritizing `IntrinsicTypeName`
+ * over general string inputs, addressing issues where `string` type suggestions
+ * might overshadow more useful specific literals.
+ *
+ * @beta
+ */
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type AutocompleteString = string & {}
 
 /**
  * Note: you probably want `SchemaTypeDefinition` instead
@@ -390,7 +406,7 @@ export interface ObjectSchemaType extends BaseSchemaType {
   // Note: `path` is a string in the _specification_, but converted to a
   // string/number array in the schema normalization/compilation step
   // a path segment is a number when specified like array.0.prop in preview config.
-  /** @alpha */
+  /** @deprecated Unused. Use the new field-level search config. */
   __experimental_search: {path: (string | number)[]; weight: number; mapWith?: string}[]
   /** @alpha */
   __experimental_omnisearch_visibility?: boolean

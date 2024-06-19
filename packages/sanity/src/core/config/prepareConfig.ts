@@ -1,34 +1,23 @@
-import {createClient, type SanityClient} from '@sanity/client'
-import {map, shareReplay} from 'rxjs/operators'
-import type {CurrentUser, Schema, SchemaValidationProblem} from '@sanity/types'
-import {studioTheme} from '@sanity/ui'
-import {startCase} from 'lodash'
 import {fromUrl} from '@sanity/bifur-client'
-import {createElement, isValidElement} from 'react'
+import {createClient, type SanityClient} from '@sanity/client'
+import {type CurrentUser, type Schema, type SchemaValidationProblem} from '@sanity/types'
+import {studioTheme} from '@sanity/ui'
+import {type i18n} from 'i18next'
+import {startCase} from 'lodash'
+import {type ComponentType, createElement, type ElementType, isValidElement} from 'react'
 import {isValidElementType} from 'react-is'
-import type {i18n} from 'i18next'
+import {map, shareReplay} from 'rxjs/operators'
+
+import {FileSource, ImageSource} from '../form/studio/assetSource'
+import {type LocaleSource} from '../i18n'
+import {prepareI18n} from '../i18n/i18nConfig'
 import {createSchema} from '../schema'
 import {type AuthStore, createAuthStore, isAuthStore} from '../store/_legacy'
-import {FileSource, ImageSource} from '../form/studio/assetSource'
-import type {InitialValueTemplateItem, Template, TemplateItem} from '../templates'
-import {EMPTY_ARRAY, isNonNullable} from '../util'
 import {validateWorkspaces} from '../studio'
 import {filterDefinitions} from '../studio/components/navbar/search/definitions/defaultFilters'
 import {operatorDefinitions} from '../studio/components/navbar/search/definitions/operators/defaultOperators'
-import {prepareI18n} from '../i18n/i18nConfig'
-import type {LocaleSource} from '../i18n'
-import type {
-  Config,
-  ConfigContext,
-  MissingConfigFile,
-  PreparedConfig,
-  SingleWorkspace,
-  Source,
-  SourceClientOptions,
-  SourceOptions,
-  WorkspaceOptions,
-  WorkspaceSummary,
-} from './types'
+import {type InitialValueTemplateItem, type Template, type TemplateItem} from '../templates'
+import {EMPTY_ARRAY, isNonNullable} from '../util'
 import {
   documentActionsReducer,
   documentBadgesReducer,
@@ -40,25 +29,40 @@ import {
   initialDocumentActions,
   initialDocumentBadges,
   initialLanguageFilter,
+  internalTasksReducer,
+  legacySearchEnabledReducer,
   newDocumentOptionsResolver,
   partialIndexingEnabledReducer,
   resolveProductionUrlReducer,
   schemaTemplatesReducer,
   toolsReducer,
 } from './configPropertyReducers'
-import {resolveConfigProperty} from './resolveConfigProperty'
 import {ConfigResolutionError} from './ConfigResolutionError'
-import {SchemaError} from './SchemaError'
 import {createDefaultIcon} from './createDefaultIcon'
 import {documentFieldActionsReducer, initialDocumentFieldActions} from './document'
+import {resolveConfigProperty} from './resolveConfigProperty'
+import {getDefaultPlugins, getDefaultPluginsOptions} from './resolveDefaultPlugins'
 import {resolveSchemaTypes} from './resolveSchemaTypes'
+import {SchemaError} from './SchemaError'
+import {
+  type Config,
+  type ConfigContext,
+  type MissingConfigFile,
+  type PreparedConfig,
+  type SingleWorkspace,
+  type Source,
+  type SourceClientOptions,
+  type SourceOptions,
+  type WorkspaceOptions,
+  type WorkspaceSummary,
+} from './types'
 
 type InternalSource = WorkspaceSummary['__internal']['sources'][number]
 
 const isError = (p: SchemaValidationProblem) => p.severity === 'error'
 
 function normalizeIcon(
-  icon: React.ComponentType | React.ElementType | undefined,
+  icon: ComponentType | ElementType | undefined,
   title: string,
   subtitle = '',
 ): JSX.Element {
@@ -110,8 +114,15 @@ export function prepareConfig(
     if (preparedWorkspaces.has(rawWorkspace)) {
       return preparedWorkspaces.get(rawWorkspace)!
     }
+    const defaultPluginsOptions = getDefaultPluginsOptions(rawWorkspace)
+
     const {unstable_sources: nestedSources = [], ...rootSource} = rawWorkspace
-    const sources = [rootSource as SourceOptions, ...nestedSources]
+    const sources = [rootSource as SourceOptions, ...nestedSources].map(({plugins, ...source}) => {
+      return {
+        ...source,
+        plugins: [...(plugins ?? []), ...getDefaultPlugins(defaultPluginsOptions, plugins)],
+      }
+    })
 
     const resolvedSources = sources.map((source): InternalSource => {
       const {projectId, dataset} = source
@@ -193,6 +204,9 @@ export function prepareConfig(
       __internal: {
         sources: resolvedSources,
       },
+      // eslint-disable-next-line camelcase
+      __internal_serverDocumentActions: rawWorkspace.__internal_serverDocumentActions,
+      ...defaultPluginsOptions,
     }
     preparedWorkspaces.set(rawWorkspace, workspaceSummary)
     return workspaceSummary
@@ -469,6 +483,10 @@ function resolveSource({
     templates,
     auth,
     i18n: i18n.source,
+    // eslint-disable-next-line camelcase
+    __internal_tasks: internalTasksReducer({
+      config,
+    }),
     document: {
       actions: (partialContext) =>
         resolveConfigProperty({
@@ -519,7 +537,7 @@ function resolveSource({
           propertyName: 'document.unstable_languageFilter',
           reducer: documentLanguageFilterReducer,
         }),
-
+      /** @todo this is deprecated so it will eventually be removed */
       unstable_comments: {
         enabled: (partialContext) => {
           return documentCommentsEnabledReducer({
@@ -529,7 +547,17 @@ function resolveSource({
           })
         },
       },
+      comments: {
+        enabled: (partialContext) => {
+          return documentCommentsEnabledReducer({
+            context: partialContext,
+            config,
+            initialValue: true,
+          })
+        },
+      },
     },
+
     form: {
       file: {
         assetSources: resolveConfigProperty({
@@ -568,6 +596,13 @@ function resolveSource({
           initialValue: config.search?.unstable_partialIndexing?.enabled ?? false,
         }),
       },
+      enableLegacySearch: resolveConfigProperty({
+        config,
+        context,
+        reducer: legacySearchEnabledReducer,
+        propertyName: 'enableLegacySearch',
+        initialValue: true,
+      }),
       // we will use this when we add search config to PluginOptions
       /*filters: resolveConfigProperty({
         config,

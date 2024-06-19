@@ -1,8 +1,9 @@
 import {useLayer} from '@sanity/ui'
-import React, {useMemo} from 'react'
+import {type ReactNode, useContext, useMemo} from 'react'
+import {ConnectorContext} from 'sanity/_singletons'
+
 import {Tooltip} from '../../ui-components'
 import {useTranslation} from '../i18n/hooks/useTranslation'
-import {ConnectorContext} from './ConnectorContext'
 import {
   ChangeBar,
   ChangeBarButton,
@@ -12,7 +13,7 @@ import {
 } from './ElementWithChangeBar.styled'
 
 export function ElementWithChangeBar(props: {
-  children: React.ReactNode
+  children: ReactNode
   disabled?: boolean
   hasFocus?: boolean
   isChanged?: boolean
@@ -20,7 +21,7 @@ export function ElementWithChangeBar(props: {
 }) {
   const {children, disabled, hasFocus, isChanged, withHoverEffect = true} = props
 
-  const {onOpenReviewChanges, isReviewChangesOpen} = React.useContext(ConnectorContext)
+  const {onOpenReviewChanges, isReviewChangesOpen} = useContext(ConnectorContext)
   const {zIndex} = useLayer()
   const {t} = useTranslation()
 

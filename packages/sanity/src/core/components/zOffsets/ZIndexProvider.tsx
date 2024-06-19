@@ -1,12 +1,11 @@
-import React from 'react'
-import {defaults} from './defaults'
-import {ZIndexContext} from './ZIndexContext'
+import {type ReactElement, type ReactNode} from 'react'
+import {ZIndexContext, zIndexContextDefaults} from 'sanity/_singletons'
 
 /**
  * TODO: Rename to `ZOffsetsProvider`
  *
  * @internal
  */
-export function ZIndexProvider({children}: {children?: React.ReactNode}): React.ReactElement {
-  return <ZIndexContext.Provider value={defaults}>{children}</ZIndexContext.Provider>
+export function ZIndexProvider({children}: {children?: ReactNode}): ReactElement {
+  return <ZIndexContext.Provider value={zIndexContextDefaults}>{children}</ZIndexContext.Provider>
 }

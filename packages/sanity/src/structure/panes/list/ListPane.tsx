@@ -1,11 +1,11 @@
-import React from 'react'
 import {Card, Code} from '@sanity/ui'
-import {Pane} from '../../components'
-import {BaseStructureToolPaneProps} from '../types'
-import {_DEBUG} from '../../constants'
-import {ListPaneHeader} from './ListPaneHeader'
-import {ListPaneContent} from './ListPaneContent'
 import {useI18nText} from 'sanity'
+
+import {Pane} from '../../components'
+import {_DEBUG} from '../../constants'
+import {type BaseStructureToolPaneProps} from '../types'
+import {ListPaneContent} from './ListPaneContent'
+import {ListPaneHeader} from './ListPaneHeader'
 
 type ListPaneProps = BaseStructureToolPaneProps<'list'>
 

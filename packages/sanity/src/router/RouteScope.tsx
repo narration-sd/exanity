@@ -1,8 +1,8 @@
 /* eslint-disable camelcase */
+import {type ReactElement, type ReactNode, useCallback, useMemo, useRef} from 'react'
+import {RouterContext} from 'sanity/_singletons'
 
-import React, {useCallback, useMemo, useRef} from 'react'
-import {RouterContext} from './RouterContext'
-import {RouterContextValue, RouterState} from './types'
+import {type NavigateOptions, type RouterContextValue, type RouterState} from './types'
 import {useRouter} from './useRouter'
 
 function addScope(
@@ -39,7 +39,7 @@ export interface RouteScopeProps {
   /**
    * The content to display inside the route scope.
    */
-  children: React.ReactNode
+  children: ReactNode
 }
 
 /**
@@ -63,7 +63,7 @@ export interface RouteScopeProps {
  * }
  * ```
  */
-export function RouteScope(props: RouteScopeProps): React.ReactElement {
+export function RouteScope(props: RouteScopeProps): ReactElement {
   const {children, scope, __unsafe_disableScopedSearchParams} = props
   const parentRouter = useRouter()
   const {resolvePathFromState: parent_resolvePathFromState, navigate: parent_navigate} =
@@ -94,7 +94,8 @@ export function RouteScope(props: RouteScopeProps): React.ReactElement {
   )
 
   const navigate = useCallback(
-    (nextState: RouterState) => parent_navigate(resolveNextParentState(nextState)),
+    (nextState: RouterState, options?: NavigateOptions) =>
+      parent_navigate(resolveNextParentState(nextState), options),
     [parent_navigate, resolveNextParentState],
   )
 

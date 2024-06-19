@@ -1,25 +1,26 @@
 /* eslint-disable i18next/no-literal-string */
-import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react'
-import {Text, Box, Card, Code} from '@sanity/ui'
-import styled from 'styled-components'
-import {Subject} from 'rxjs'
-import {PortableTextBlock} from '@sanity/types'
+import {type PortableTextBlock} from '@sanity/types'
+import {Box, Card, Code, Text} from '@sanity/ui'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {type Subject} from 'rxjs'
+import {styled} from 'styled-components'
+
 import {
-  BlockDecoratorRenderProps,
-  BlockRenderProps,
-  PortableTextEditor,
+  type BlockDecoratorRenderProps,
+  type BlockListItemRenderProps,
+  type BlockRenderProps,
+  type BlockStyleRenderProps,
+  type EditorChange,
+  type EditorSelection,
+  type HotkeyOptions,
+  type Patch,
   PortableTextEditable,
-  EditorChange,
-  RenderBlockFunction,
-  RenderChildFunction,
-  EditorSelection,
-  Patch,
-  HotkeyOptions,
-  BlockListItemRenderProps,
-  BlockStyleRenderProps,
+  PortableTextEditor,
+  type RenderBlockFunction,
+  type RenderChildFunction,
 } from '../../../src'
-import {createKeyGenerator} from '../keyGenerator'
 import {portableTextType} from '../../schema'
+import {createKeyGenerator} from '../keyGenerator'
 
 export const HOTKEYS: HotkeyOptions = {
   marks: {
@@ -70,7 +71,7 @@ export const Editor = ({
   const [selectionValue, setSelectionValue] = useState<EditorSelection | null>(selection)
   const selectionString = useMemo(() => JSON.stringify(selectionValue), [selectionValue])
   const editor = useRef<PortableTextEditor>(null)
-  const keyGenFn = useMemo(() => createKeyGenerator(editorId.substring(0, 1)), [editorId])
+  const keyGenFn = useMemo(() => createKeyGenerator(editorId.slice(0, 1)), [editorId])
   const [isOffline, setIsOffline] = useState(!window.navigator.onLine)
   const [readOnly, setReadOnly] = useState(false)
 

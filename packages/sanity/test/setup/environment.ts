@@ -1,3 +1,5 @@
+import {jest} from '@jest/globals'
+
 export {}
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -19,13 +21,13 @@ window.console = {
 }
 
 // IntersectionObserver isn't available in the test browser environment
-const mockIntersectionObserver = jest.fn()
-mockIntersectionObserver.mockReturnValue({
+const mockIntersectionObserver = jest.fn().mockReturnValue({
   observe: () => null,
   unobserve: () => null,
   disconnect: () => null,
 })
-window.IntersectionObserver = mockIntersectionObserver
+
+window.IntersectionObserver = mockIntersectionObserver as any
 
 // ResizeObserver isn't available in the test browser environment
 const mockResizeObserver = jest.fn()
@@ -34,4 +36,4 @@ mockResizeObserver.mockReturnValue({
   unobserve: () => null,
   disconnect: () => null,
 })
-window.ResizeObserver = mockResizeObserver
+window.ResizeObserver = mockResizeObserver as any

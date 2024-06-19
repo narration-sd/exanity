@@ -1,5 +1,6 @@
-import React, {useMemo} from 'react'
-import {Asset as AssetType} from '@sanity/types'
+import {type Asset as AssetType} from '@sanity/types'
+import {useMemo} from 'react'
+
 import {Dialog} from '../../../../../ui-components'
 import {LoadingBlock} from '../../../../components/loadingBlock'
 import {useReferringDocuments} from '../../../../hooks/useReferringDocuments'

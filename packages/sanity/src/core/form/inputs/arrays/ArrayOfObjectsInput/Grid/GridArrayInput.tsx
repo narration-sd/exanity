@@ -1,15 +1,20 @@
 /* eslint-disable react/jsx-handler-names */
 import {Card, Stack, Text} from '@sanity/ui'
-import React, {useCallback, useMemo} from 'react'
-import {Item, List} from '../../common/list'
-import {ArrayOfObjectsInputProps, ObjectItem, ObjectItemProps} from '../../../../types'
+import {useCallback, useMemo} from 'react'
+
+import {useTranslation} from '../../../../../i18n'
 import {ArrayOfObjectsItem} from '../../../../members'
-import {createProtoArrayValue} from '../createProtoArrayValue'
+import {
+  type ArrayOfObjectsInputProps,
+  type ObjectItem,
+  type ObjectItemProps,
+} from '../../../../types'
+import {Item, List} from '../../common/list'
 import {UploadTargetCard} from '../../common/UploadTargetCard'
 import {ArrayOfObjectsFunctions} from '../ArrayOfObjectsFunctions'
-import {useTranslation} from '../../../../../i18n'
-import {GridItem} from './GridItem'
+import {createProtoArrayValue} from '../createProtoArrayValue'
 import {ErrorItem} from './ErrorItem'
+import {GridItem} from './GridItem'
 
 const EMPTY: [] = []
 
@@ -51,9 +56,9 @@ export function GridArrayInput<Item extends ObjectItem>(props: ArrayOfObjectsInp
 
   const sortable = schemaType.options?.sortable !== false
 
-  const renderItem = useCallback((itemProps: Omit<ObjectItemProps, 'renderDefault'>) => {
+  const renderItem = useCallback(({key, ...itemProps}: Omit<ObjectItemProps, 'renderDefault'>) => {
     // todo: consider using a different item component for references
-    return <GridItem {...itemProps} />
+    return <GridItem key={key} {...itemProps} />
   }, [])
 
   const memberKeys = useMemo(() => members.map((member) => member.key), [members])
@@ -100,7 +105,9 @@ export function GridArrayInput<Item extends ObjectItem>(props: ArrayOfObjectsInp
                         renderPreview={renderPreview}
                       />
                     )}
-                    {member.kind === 'error' && <ErrorItem sortable={sortable} member={member} />}
+                    {member.kind === 'error' && (
+                      <ErrorItem sortable={sortable} member={member} readOnly={readOnly} />
+                    )}
                   </Item>
                 ))}
               </List>

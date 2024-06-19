@@ -1,40 +1,44 @@
+import {describe, it} from '@jest/globals'
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // noinspection JSUnusedLocalSymbols
-
 import {
-  CrossDatasetReferenceValue,
+  type CrossDatasetReferenceValue,
   defineArrayMember,
   defineField,
   defineType,
-  FileValue,
-  GeopointValue,
-  ImageValue,
-  ReferenceValue,
-  SlugValue,
+  type FileValue,
+  type GeopointValue,
+  type ImageValue,
+  type ReferenceValue,
+  type SlugValue,
 } from '@sanity/types'
-import {defineConfig} from '../../config'
-import {PreviewProps} from '../../components'
-import {CrossDatasetReferenceInputProps, ReferenceInputProps} from '../studio'
-import {
-  ArrayOfObjectsInputProps,
-  ArrayOfPrimitivesInputProps,
-  BooleanInputProps,
-  InputProps,
-  NumberInputProps,
-  ObjectInputProps,
-  StringInputProps,
-} from './inputProps'
-import {
-  ArrayFieldProps,
-  ArrayOfPrimitivesFieldProps,
-  BooleanFieldProps,
-  FieldProps,
-  NumberFieldProps,
-  ObjectFieldProps,
-  StringFieldProps,
-} from './fieldProps'
-import {ObjectItem, ObjectItemProps, PrimitiveItemProps} from './itemProps'
-import {
+// NOTE:
+// Fix: Addressed type error caused by missing 'preview' property in
+// 'DocumentComponents'. The error "Object literal may only specify known
+// properties, and 'preview' does not exist in type 'DocumentComponents'"
+// was resolved by extending the 'DocumentComponents' type within a module
+// augmentation.
+//
+// See: https://github.com/sanity-io/sanity/issues/6542
+//
+// This involves moving the component type definitions from
+// './definitionExtensions' into the '@sanity/types' module,
+// ensuring TypeScript properly recognizes the 'preview' property as part of
+// 'DocumentComponents'.
+//
+// This fix helps avoid cyclical dependencies by extending all type definitions
+// in one place, maintaining consistency across the codebase.
+//
+// Additionally, this issue also relates to how the build process creates the
+// `.d.ts` files. We had a naming collision with 'DocumentComponents' which
+// caused the type error. By inlining the type definitions within the module
+// augmentation, we ensure the build prefers the correct type instead of the type it collided with.
+//
+// We use a type import to ensure this change does not affect the runtime.
+// The 'sanity' package re-exports the '@sanity/types' module, which is why this
+// approach works.
+// eslint-disable-next-line import/consistent-type-specifier-style
+import type {
   ArrayOfObjectsComponents,
   ArrayOfPrimitivesComponents,
   BooleanComponents,
@@ -50,11 +54,32 @@ import {
   ObjectComponents,
   ReferenceComponents,
   SlugComponents,
-  SpanComponents,
   StringComponents,
   TextComponents,
   UrlComponents,
-} from './definitionExtensions'
+} from 'sanity'
+
+import {type PreviewProps} from '../../components'
+import {type CrossDatasetReferenceInputProps, type ReferenceInputProps} from '../studio'
+import {
+  type ArrayFieldProps,
+  type ArrayOfPrimitivesFieldProps,
+  type BooleanFieldProps,
+  type FieldProps,
+  type NumberFieldProps,
+  type ObjectFieldProps,
+  type StringFieldProps,
+} from './fieldProps'
+import {
+  type ArrayOfObjectsInputProps,
+  type ArrayOfPrimitivesInputProps,
+  type BooleanInputProps,
+  type InputProps,
+  type NumberInputProps,
+  type ObjectInputProps,
+  type StringInputProps,
+} from './inputProps'
+import {type ObjectItem, type ObjectItemProps, type PrimitiveItemProps} from './itemProps'
 
 describe('definitionExtensions', () => {
   describe('array-like types', () => {

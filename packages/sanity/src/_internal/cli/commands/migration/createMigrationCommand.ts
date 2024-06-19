@@ -1,14 +1,16 @@
-import path from 'node:path'
-import {writeFile} from 'node:fs/promises'
 import {existsSync, mkdirSync} from 'node:fs'
-import type {CliCommandDefinition} from '@sanity/cli'
-import deburr from 'lodash/deburr'
+import {writeFile} from 'node:fs/promises'
+import path from 'node:path'
+
+import {type CliCommandDefinition} from '@sanity/cli'
+import {deburr} from 'lodash'
+
 import {MIGRATIONS_DIRECTORY} from './constants'
+import {minimalAdvanced} from './templates/minimalAdvanced'
+import {minimalSimple} from './templates/minimalSimple'
+import {renameField} from './templates/renameField'
 import {renameType} from './templates/renameType'
 import {stringToPTE} from './templates/stringToPTE'
-import {minimalSimple} from './templates/minimalSimple'
-import {minimalAdvanced} from './templates/minimalAdvanced'
-import {renameField} from './templates/renameField'
 
 const helpText = `
 Examples:
@@ -74,12 +76,12 @@ const createMigrationCommand: CliCommandDefinition<CreateMigrationFlags> = {
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '')
 
-    const destDir = path.join(MIGRATIONS_DIRECTORY, sluggedName)
+    const destDir = path.join(workDir, MIGRATIONS_DIRECTORY, sluggedName)
     if (existsSync(destDir)) {
       if (
         !(await prompt.single({
           type: 'confirm',
-          message: `Migration directory ./${destDir} already exists. Overwrite?`,
+          message: `Migration directory ${chalk.cyan(destDir)} already exists. Overwrite?`,
           default: false,
         }))
       ) {
@@ -98,14 +100,14 @@ const createMigrationCommand: CliCommandDefinition<CreateMigrationFlags> = {
 
     const definitionFile = path.join(destDir, 'index.ts')
 
-    await writeFile(path.join(workDir, definitionFile), renderedTemplate)
+    await writeFile(definitionFile, renderedTemplate)
     // To dry run it, run \`sanity migration run ${sluggedName}\``)
     output.print()
     output.print(`${chalk.green('✓')} Migration created!`)
     output.print()
     output.print('Next steps:')
     output.print(
-      `Open ./${chalk.bold(
+      `Open ${chalk.bold(
         definitionFile,
       )} in your code editor and write the code for your migration.`,
     )

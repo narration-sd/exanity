@@ -1,11 +1,12 @@
-import React, {ReactElement} from 'react'
-import {useDocumentPane} from '../../useDocumentPane'
-import {structureLocaleNamespace} from '../../../../i18n'
+import {type ReactElement} from 'react'
 import {unstable_useValuePreview as useValuePreview, useTranslation} from 'sanity'
+
+import {structureLocaleNamespace} from '../../../../i18n'
+import {useDocumentPane} from '../../useDocumentPane'
 
 export function DocumentHeaderTitle(): ReactElement {
   const {connectionState, schemaType, title, value: documentValue} = useDocumentPane()
-  const subscribed = Boolean(documentValue) && connectionState === 'connected'
+  const subscribed = Boolean(documentValue) && connectionState !== 'connecting'
 
   const {error, value} = useValuePreview({
     enabled: subscribed,
@@ -14,7 +15,7 @@ export function DocumentHeaderTitle(): ReactElement {
   })
   const {t} = useTranslation(structureLocaleNamespace)
 
-  if (connectionState !== 'connected') {
+  if (connectionState === 'connecting') {
     return <></>
   }
 

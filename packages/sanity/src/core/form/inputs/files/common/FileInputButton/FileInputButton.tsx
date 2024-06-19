@@ -1,5 +1,13 @@
-import React, {useId} from 'react'
-import {ButtonProps} from '../../../../../../ui-components'
+import {
+  type ChangeEvent,
+  type ForwardedRef,
+  forwardRef,
+  type HTMLProps,
+  useCallback,
+  useId,
+} from 'react'
+
+import {type ButtonProps} from '../../../../../../ui-components'
 import {FileButton} from './styles'
 
 export type FileInputButtonProps = ButtonProps & {
@@ -10,16 +18,16 @@ export type FileInputButtonProps = ButtonProps & {
   disabled?: boolean
 }
 
-export const FileInputButton = React.forwardRef(function FileInputButton(
+export const FileInputButton = forwardRef(function FileInputButton(
   props: FileInputButtonProps &
-    Omit<React.HTMLProps<HTMLButtonElement>, 'as' | 'ref' | 'type' | 'value' | 'onSelect'>,
-  forwardedRef: React.ForwardedRef<HTMLInputElement>,
+    Omit<HTMLProps<HTMLButtonElement>, 'as' | 'ref' | 'type' | 'value' | 'onSelect'>,
+  forwardedRef: ForwardedRef<HTMLInputElement>,
 ) {
   const {icon, id: idProp, accept, capture, multiple, onSelect, text, disabled, ...rest} = props
   const id = `${idProp || ''}-${useId()}`
 
-  const handleChange = React.useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
       if (onSelect && event.target.files) {
         onSelect(Array.from(event.target.files))
       }

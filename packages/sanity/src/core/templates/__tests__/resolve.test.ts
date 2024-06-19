@@ -1,11 +1,18 @@
-import {omit} from 'lodash'
-import {InitialValueResolverContext} from '@sanity/types'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {Schema as SchemaBuilder} from '@sanity/schema'
-import {resolveInitialValue, Template} from '../'
+import {type InitialValueResolverContext} from '@sanity/types'
+import {omit} from 'lodash'
+
+import {type resolveInitialValue as resolveInitialValueType, type Template} from '../'
 import {schema} from './schema'
+
+let resolveInitialValue: typeof resolveInitialValueType
 
 beforeEach(() => {
   jest.resetModules()
+  jest.clearAllMocks()
+
+  resolveInitialValue = require('../').resolveInitialValue
 })
 
 const example: Template = {
@@ -53,6 +60,90 @@ describe('resolveInitialValue', () => {
     ).rejects.toMatchObject({
       message:
         'Template "author" initial value: includes "_type"-property (foo) that does not match template (author)',
+    })
+  })
+
+  test('throws on unknown prop in reference', () => {
+    expect(
+      resolveInitialValue(
+        schema,
+        {...example, value: {bestFriend: {_ref: 'grrm', name: 'GRRM'}}},
+        {},
+        mockConfigContext,
+      ),
+    ).rejects.toMatchObject({
+      message:
+        'Template "author" initial value: Disallowed property found in reference: "name" at path "bestFriend"',
+    })
+  })
+
+  test('throws on unknown props in reference', () => {
+    expect(
+      resolveInitialValue(
+        schema,
+        {...example, value: {bestFriend: {_ref: 'grrm', name: 'GRRM', age: 72}}},
+        {},
+        mockConfigContext,
+      ),
+    ).rejects.toMatchObject({
+      message:
+        'Template "author" initial value: Disallowed properties found in reference: "name", "age" at path "bestFriend"',
+    })
+  })
+
+  test('allows setting known reference properties', () => {
+    expect(
+      resolveInitialValue(
+        schema,
+        {
+          ...example,
+          value: {
+            bestFriend: {
+              _ref: 'grrm',
+              _type: 'reference',
+              _weak: true,
+              _strengthenOnPublish: {type: 'author', template: {id: 'author'}},
+            },
+          },
+        },
+        {},
+        mockConfigContext,
+      ),
+    ).resolves.toMatchObject({
+      bestFriend: {
+        _ref: 'grrm',
+        _type: 'reference',
+        _weak: true,
+        _strengthenOnPublish: {type: 'author', template: {id: 'author'}},
+      },
+    })
+  })
+
+  test('allows setting _dataset on cross-dataset references', () => {
+    expect(
+      resolveInitialValue(
+        schema,
+        {
+          ...example,
+          value: {
+            bestFriend: {
+              _ref: 'grrm',
+              _type: 'crossDatasetReference',
+              _dataset: 'bffs',
+              _projectId: 'beep',
+            },
+          },
+        },
+        {},
+        mockConfigContext,
+      ),
+    ).resolves.toMatchObject({
+      bestFriend: {
+        _ref: 'grrm',
+        _type: 'crossDatasetReference',
+        _dataset: 'bffs',
+        _projectId: 'beep',
+      },
     })
   })
 
@@ -245,6 +336,90 @@ describe('resolveInitialValue', () => {
       expect(result).toMatchObject({
         _type: 'author',
       })
+    })
+  })
+
+  describe('memoizes function calls', () => {
+    const initialValue = jest.fn().mockReturnValue('Name')
+
+    const testSchema = SchemaBuilder.compile({
+      name: 'default',
+      types: [
+        {
+          name: 'author',
+          title: 'Author',
+          type: 'document',
+          fields: [
+            {
+              name: 'name',
+              type: 'string',
+              initialValue,
+            },
+          ],
+        },
+      ],
+    })
+
+    test('memoizes function calls', async () => {
+      for (let index = 0; index < 2; index++) {
+        await resolveInitialValue(testSchema, example, {}, mockConfigContext, {useCache: true})
+      }
+
+      expect(initialValue).toHaveBeenCalledTimes(1)
+    })
+
+    test('calls function again if params change', async () => {
+      for (let index = 0; index < 2; index++) {
+        await resolveInitialValue(testSchema, example, {index}, mockConfigContext, {useCache: true})
+      }
+
+      expect(initialValue).toHaveBeenCalledTimes(2)
+    })
+
+    test('calls function again if context.projectId changes', async () => {
+      for (let index = 0; index < 2; index++) {
+        await resolveInitialValue(
+          testSchema,
+          example,
+          {},
+          {projectId: index.toString()} as InitialValueResolverContext,
+          {useCache: true},
+        )
+      }
+
+      expect(initialValue).toHaveBeenCalledTimes(2)
+    })
+
+    test('calls function again if context.dataset changes', async () => {
+      for (let index = 0; index < 2; index++) {
+        await resolveInitialValue(
+          testSchema,
+          example,
+          {},
+          {dataset: index.toString()} as InitialValueResolverContext,
+          {useCache: true},
+        )
+      }
+
+      expect(initialValue).toHaveBeenCalledTimes(2)
+    })
+
+    test('calls function again if context.currentUser.id changes', async () => {
+      for (let index = 0; index < 2; index++) {
+        await resolveInitialValue(
+          testSchema,
+          example,
+          {},
+          {
+            currentUser: {
+              id: index.toString(),
+            },
+          } as InitialValueResolverContext,
+          {useCache: true},
+        )
+      }
+
+      expect(initialValue).toHaveBeenCalledTimes(2)
     })
   })
 })

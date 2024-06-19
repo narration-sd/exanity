@@ -1,8 +1,9 @@
-import {addHook} from 'pirates'
-import jsdomGlobal from 'jsdom-global'
-import resolveFrom from 'resolve-from'
-import {register as registerESBuild} from 'esbuild-register/dist/node'
 import {ResizeObserver} from '@juggle/resize-observer'
+import {register as registerESBuild} from 'esbuild-register/dist/node'
+import jsdomGlobal from 'jsdom-global'
+import {addHook} from 'pirates'
+import resolveFrom from 'resolve-from'
+
 import {getStudioEnvironmentVariables} from '../server/getStudioEnvironmentVariables'
 
 const jsdomDefaultHtml = `<!doctype html>
@@ -62,6 +63,13 @@ const getFakeGlobals = (basePath: string) => ({
   InputEvent: global.window?.InputEvent,
   customElements: global.window?.customElements,
   ResizeObserver: global.window?.ResizeObserver || ResizeObserver,
+  matchMedia:
+    global.window?.matchMedia ||
+    (() => ({
+      matches: false,
+      media: '',
+      onchange: null,
+    })),
 })
 
 function provideFakeGlobals(basePath: string): () => void {
@@ -119,17 +127,19 @@ function tryGetAceGlobal(basePath: string) {
 
 function getFileExtensions() {
   return [
+    '.css',
+    '.eot',
+    '.gif',
     '.jpeg',
     '.jpg',
+    '.otf',
     '.png',
-    '.gif',
+    '.sass',
+    '.scss',
     '.svg',
+    '.ttf',
     '.webp',
     '.woff',
     '.woff2',
-    '.ttf',
-    '.eot',
-    '.otf',
-    '.css',
   ]
 }

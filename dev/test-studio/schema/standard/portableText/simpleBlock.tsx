@@ -1,6 +1,6 @@
-import React from 'react'
-import {defineArrayMember, defineType} from 'sanity'
 import {toPlainText} from '@portabletext/react'
+import {defineArrayMember, defineType} from 'sanity'
+
 import {CalloutPreview} from './components/CalloutPreview'
 
 const linkType = defineArrayMember({
@@ -118,6 +118,10 @@ export default defineType({
         {
           type: 'image',
           name: 'image',
+          options: {
+            hotspot: true,
+          },
+          fields: [{type: 'string', name: 'alt'}],
         },
         {
           type: 'object',

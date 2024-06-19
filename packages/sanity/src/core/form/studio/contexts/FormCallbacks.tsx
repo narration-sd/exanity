@@ -1,13 +1,16 @@
 /* eslint-disable react/no-unused-prop-types */
-import {Path} from '@sanity/types'
-import React, {memo, useCallback, useContext, useMemo, useRef} from 'react'
-import {FormPatch, PatchEvent} from '../../patch'
+import {type Path} from '@sanity/types'
+import {memo, type ReactNode, useCallback, useContext, useMemo, useRef} from 'react'
+import {FormCallbacksContext} from 'sanity/_singletons'
+
+import {type OnPathFocusPayload} from '../..'
+import {type FormPatch, type PatchEvent} from '../../patch'
 
 /** @internal */
 export interface FormCallbacksValue {
   transformPatches?: (patches: FormPatch[]) => FormPatch[]
   onChange: (patchEvent: PatchEvent) => void
-  onPathFocus: (path: Path) => void
+  onPathFocus: (path: Path, payload?: OnPathFocusPayload) => void
   onPathBlur: (path: Path) => void
   onPathOpen: (path: Path) => void
   onSetPathCollapsed: (path: Path, collapsed: boolean) => void
@@ -15,14 +18,9 @@ export interface FormCallbacksValue {
   onFieldGroupSelect: (path: Path, fieldGroupName: string) => void
 }
 
-/**
- * @internal
- */
-export const FormCallbacksContext = React.createContext<FormCallbacksValue | null>(null)
-
 /** @internal */
 export const FormCallbacksProvider = memo(function FormCallbacksProvider(
-  props: FormCallbacksValue & {children: React.ReactNode},
+  props: FormCallbacksValue & {children: ReactNode},
 ) {
   const ref = useRef<FormCallbacksValue>(props)
   ref.current = props
@@ -38,8 +36,8 @@ export const FormCallbacksProvider = memo(function FormCallbacksProvider(
     ref.current.onChange(patchEvent)
   }, [])
 
-  const onPathFocus = useCallback((path: Path) => {
-    ref.current.onPathFocus(path)
+  const onPathFocus = useCallback((path: Path, payload?: OnPathFocusPayload) => {
+    ref.current.onPathFocus(path, payload)
   }, [])
   const onPathBlur = useCallback((path: Path) => {
     ref.current.onPathBlur(path)

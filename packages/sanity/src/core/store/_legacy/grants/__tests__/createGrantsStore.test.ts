@@ -1,8 +1,10 @@
-import {SanityClient} from '@sanity/client'
-import {first} from 'rxjs/operators'
+import {describe, expect, it, jest} from '@jest/globals'
+import {type SanityClient} from '@sanity/client'
 import {firstValueFrom, lastValueFrom} from 'rxjs'
-import {createGrantsStore} from '../grantsStore'
+import {first} from 'rxjs/operators'
+
 import {viewer} from '../debug/exampleGrants'
+import {createGrantsStore} from '../grantsStore'
 
 function createMockClient(data: {requests?: Record<string, any>} = {}): SanityClient {
   const mockConfig = {

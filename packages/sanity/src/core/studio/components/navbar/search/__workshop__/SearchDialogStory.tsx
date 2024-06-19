@@ -1,5 +1,5 @@
 import {LayerProvider} from '@sanity/ui'
-import React from 'react'
+
 import {SearchDialog} from '..'
 import {SearchProvider} from '../contexts/search/SearchProvider'
 

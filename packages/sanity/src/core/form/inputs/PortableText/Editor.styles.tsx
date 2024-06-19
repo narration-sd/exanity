@@ -1,13 +1,23 @@
 /* eslint-disable camelcase */
 
-import {Card, Container, rem} from '@sanity/ui'
-import styled, {css} from 'styled-components'
+import {Card, rem} from '@sanity/ui'
 import {getTheme_v2} from '@sanity/ui/theme'
+import {css, styled} from 'styled-components'
+
 import {ScrollContainer} from '../../../components/scroll'
 import {createListName, TEXT_LEVELS} from './text'
 
-export const Root = styled(Card)<{$fullscreen: boolean}>`
-  height: ${({$fullscreen}) => ($fullscreen ? '100%' : '15em')};
+export const Root = styled(Card)`
+  &[data-fullscreen='true'] {
+    height: 100%;
+  }
+
+  &[data-fullscreen='false'] {
+    min-height: 5em;
+    resize: vertical;
+    overflow: auto;
+    height: 19em;
+  }
 
   &:not([hidden]) {
     display: flex;
@@ -56,11 +66,6 @@ export const Scroller = styled(ScrollContainer)`
     flex: 1;
     min-height: auto;
   }
-`
-
-export const EditableContainer = styled(Container)`
-  /* @todo: calculate from theme */
-  /* max-width: 728px; */
 `
 
 export const EditableWrapper = styled(Card)<{$isFullscreen: boolean; $readOnly?: boolean}>`
@@ -118,8 +123,11 @@ export const EditableWrapper = styled(Card)<{$isFullscreen: boolean; $readOnly?:
       padding-top: ${({$isFullscreen, theme}) => theme.sanity.space[$isFullscreen ? 5 : 3]}px;
     }
 
-    & > :last-child {
-      padding-bottom: ${({$isFullscreen, theme}) => theme.sanity.space[$isFullscreen ? 9 : 5]}px;
+    padding-bottom: ${({$isFullscreen, theme}) => theme.sanity.space[$isFullscreen ? 9 : 5]}px;
+
+    & > .pt-block {
+      margin: 0 auto;
+      max-width: ${(props) => getTheme_v2(props.theme).container[1]}px;
     }
 
     /* & > .pt-block {

@@ -1,8 +1,9 @@
-import React, {ReactElement} from 'react'
-import {NumberSchemaType, FieldDefinition} from '@sanity/types'
-import {NumberInputProps, PrimitiveInputElementProps} from '../../src/core'
-import {renderInput, TestRenderInputContext, TestRenderInputProps} from './renderInput'
-import {TestRenderProps} from './types'
+import {type FieldDefinition, type NumberSchemaType} from '@sanity/types'
+import {type ReactElement} from 'react'
+
+import {type NumberInputProps, type PrimitiveInputElementProps} from '../../src/core'
+import {renderInput, type TestRenderInputContext, type TestRenderInputProps} from './renderInput'
+import {type TestRenderProps} from './types'
 
 const noopRenderDefault = () => <></>
 
@@ -32,15 +33,11 @@ export async function renderNumberInput(options: {
     }
   }
 
-  const result = await renderInput({
+  const result = await renderInput<PrimitiveInputElementProps>({
     fieldDefinition,
     props,
     render: (inputProps, context) => initialRender(transformProps(inputProps), context),
   })
 
-  function rerender(subsequentRender: TestRenderNumberInputCallback) {
-    result.rerender((inputProps, context) => subsequentRender(transformProps(inputProps), context))
-  }
-
-  return {...result, rerender}
+  return result
 }

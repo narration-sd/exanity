@@ -1,12 +1,10 @@
 import {EllipsisHorizontalIcon} from '@sanity/icons'
-import React, {HTMLProps, forwardRef} from 'react'
-import {useTranslation} from '../..'
-import {Button, ButtonProps} from '../../../ui-components'
+import {type ForwardedRef, forwardRef, type HTMLProps} from 'react'
 
-type ContextMenuButtonProps = Pick<
-  ButtonProps,
-  'mode' | 'paddingY' | 'size' | 'tone' | 'tooltipProps'
->
+import {Button, type ButtonProps} from '../../../ui-components'
+import {useTranslation} from '../..'
+
+type ContextMenuButtonProps = Pick<ButtonProps, 'mode' | 'size' | 'tone' | 'tooltipProps'>
 
 /**
  * Simple context menu button (with horizontal ellipsis icon) with shared localization.
@@ -16,7 +14,7 @@ type ContextMenuButtonProps = Pick<
 export const ContextMenuButton = forwardRef(function ContextMenuButton(
   props: ContextMenuButtonProps &
     Pick<HTMLProps<HTMLButtonElement>, 'disabled' | 'hidden' | 'onClick'>,
-  ref: React.ForwardedRef<HTMLButtonElement>,
+  ref: ForwardedRef<HTMLButtonElement>,
 ) {
   const {mode = 'bleed', tooltipProps, tone, ...rest} = props
 

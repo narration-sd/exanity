@@ -1,7 +1,7 @@
-import {SanityDocumentLike} from '@sanity/types'
-import React from 'react'
+import {type SanityDocumentLike} from '@sanity/types'
+import {unstable_useValuePreview as useValuePreview, useSchema, useTranslation} from 'sanity'
+
 import {structureLocaleNamespace} from '../i18n'
-import {useSchema, useTranslation, unstable_useValuePreview as useValuePreview} from 'sanity'
 
 export interface DocTitleProps {
   document: SanityDocumentLike

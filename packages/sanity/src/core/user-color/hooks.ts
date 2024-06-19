@@ -1,8 +1,9 @@
-import {useContext} from 'react'
-import {empty} from 'rxjs'
-import {useMemoObservable} from 'react-rx'
-import {UserColorManagerContext} from './context'
-import {UserColor, UserColorManager} from './types'
+import {useContext, useMemo} from 'react'
+import {useObservable} from 'react-rx'
+import {EMPTY} from 'rxjs'
+import {UserColorManagerContext} from 'sanity/_singletons'
+
+import {type UserColor, type UserColorManager} from './types'
 
 /** @internal */
 export function useUserColorManager(): UserColorManager {
@@ -19,6 +20,6 @@ export function useUserColorManager(): UserColorManager {
 export function useUserColor(userId: string | null): UserColor {
   const manager = useUserColorManager()
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- no need to refactor to an inline function
-  return useMemoObservable(userId ? manager.listen(userId) : empty(), [userId], manager.get(null))
+  const observable = useMemo(() => (userId ? manager.listen(userId) : EMPTY), [manager, userId])
+  return useObservable(observable, manager.get(null))
 }

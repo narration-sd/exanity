@@ -1,5 +1,7 @@
-import {RouterNode} from '../types'
+import {expect, test} from '@jest/globals'
+
 import {_resolveStateFromPath} from '../_resolveStateFromPath'
+import {type RouterNode} from '../types'
 
 const node: RouterNode = {
   route: {

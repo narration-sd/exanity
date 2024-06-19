@@ -23,12 +23,14 @@ export const STANDARD_PORTABLE_TEXT_INPUT_TYPES = [
   'simpleBlock',
   'manyEditors',
   'documentWithHoistedPt',
+  'pt_customBlockEditors',
 ]
 
 export const PLUGIN_INPUT_TYPES = [
   'codeTest',
   'colorTest',
   'geopointTest',
+  'hotspotArrayTest',
   //'orderableCategory',
   //'orderableTag',
 ]
@@ -41,6 +43,8 @@ export const DEBUG_INPUT_TYPES = [
   'conditionalFieldsTest',
   'customInputsTest',
   'customInputsWithPatches',
+  'dateValidation',
+  'dateTimeValidation',
   'deprecatedFields',
   'deprecatedDocument',
   'documentActionsTest',
@@ -70,6 +74,7 @@ export const DEBUG_INPUT_TYPES = [
   'recursiveDocument',
   'recursiveObjectTest',
   'recursivePopoverTest',
+  'removeRestoreActionTest',
   'reservedKeywordsTest',
   'scrollBug',
   'select',
@@ -83,7 +88,7 @@ export const DEBUG_INPUT_TYPES = [
   'virtualizationInObject',
 ]
 
-export const CI_INPUT_TYPES = ['conditionalFieldset', 'validationCI', 'textsTest']
+export const CI_INPUT_TYPES = ['conditionalFieldset', 'validationCI', 'textsTest', 'commentsCI']
 export const DEBUG_FIELD_GROUP_TYPES = [
   'fieldGroups',
   'fieldGroupsDefault',

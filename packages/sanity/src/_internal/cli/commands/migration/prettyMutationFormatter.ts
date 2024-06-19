@@ -1,7 +1,9 @@
 import {isatty} from 'node:tty'
-import type {Migration, Mutation, NodePatch, Transaction} from '@sanity/migrate'
-import type {KeyedSegment} from '@sanity/types'
-import type {Chalk} from 'chalk'
+
+import {type Migration, type Mutation, type NodePatch, type Transaction} from '@sanity/migrate'
+import {type KeyedSegment} from '@sanity/types'
+import {type Chalk} from 'chalk'
+
 import {convertToTree, formatTree, maxKeyLength} from '../../util/tree'
 
 type ItemRef = string | number
@@ -176,19 +178,8 @@ function formatPatchMutation(chalk: Chalk, patch: NodePatch): string {
   if (op.type === 'setIfMissing') {
     return `${chalk.green(formattedType)}(${JSON.stringify(op.value)})`
   }
-  if (op.type === 'assign') {
-    return `${chalk.yellow(formattedType)}(${JSON.stringify(op.value)})`
-  }
-  if (op.type === 'unassign') {
-    return `${chalk.red(formattedType)}(${JSON.stringify(op.keys)})`
-  }
   if (op.type === 'insert') {
     return `${chalk.green(formattedType)}(${op.position}, ${encodeItemRef(
-      op.referenceItem,
-    )}, ${JSON.stringify(op.items)})`
-  }
-  if (op.type === 'upsert') {
-    return `${chalk.yellow(formattedType)}(${op.position}, ${encodeItemRef(
       op.referenceItem,
     )}, ${JSON.stringify(op.items)})`
   }

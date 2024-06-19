@@ -1,5 +1,5 @@
-import {getWorkspaceIdentifier, getNamelessWorkspaceIdentifier} from './helpers'
-import type {WorkspaceLike} from './types'
+import {getNamelessWorkspaceIdentifier, getWorkspaceIdentifier} from './helpers'
+import {type WorkspaceLike} from './types'
 import {WorkspaceValidationError} from './WorkspaceValidationError'
 
 /** @internal */
@@ -102,14 +102,14 @@ export function validateBasePaths(workspaces: WorkspaceLike[]): void {
   const [firstWorkspace, ...restOfWorkspaces] = workspaces
   const firstWorkspaceSegmentCount = (firstWorkspace.basePath || '/')
     // remove starting slash before splitting
-    .substring(1)
+    .slice(1)
     .split('/')
     .filter(Boolean).length
 
   restOfWorkspaces.forEach((workspace, index) => {
     const workspaceSegmentCount = (workspace.basePath || '/')
       // remove starting slash before splitting
-      .substring(1)
+      .slice(1)
       .split('/').length
 
     if (firstWorkspaceSegmentCount !== workspaceSegmentCount) {

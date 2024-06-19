@@ -1,17 +1,17 @@
-import {isEqual} from 'lodash'
-import {Node, Element, Text, Descendant} from 'slate'
 import {
-  PathSegment,
-  PortableTextBlock,
-  PortableTextChild,
-  PortableTextObject,
-  PortableTextTextBlock,
+  type PathSegment,
+  type PortableTextBlock,
+  type PortableTextChild,
+  type PortableTextObject,
+  type PortableTextTextBlock,
 } from '@sanity/types'
-import {PortableTextMemberSchemaTypes} from '../types/editor'
-import {defaultKeyGenerator as keyGenerator} from '../editor/hooks/usePortableTextEditorKeyGenerator'
+import {isEqual} from 'lodash'
+import {type Descendant, Element, type Node, Text} from 'slate'
 
-const EMPTY_MARKDEFS: PortableTextObject[] = []
-const EMPTY_MARKS: string[] = []
+import {type PortableTextMemberSchemaTypes} from '../types/editor'
+
+export const EMPTY_MARKDEFS: PortableTextObject[] = []
+export const EMPTY_MARKS: string[] = []
 
 export const VOID_CHILD_KEY = 'void-child'
 
@@ -48,38 +48,29 @@ export function toSlateValue(
         const hasMissingMarkDefs = typeof textBlock.markDefs === 'undefined'
         const hasMissingChildren = typeof textBlock.children === 'undefined'
 
-        const children = hasMissingChildren
-          ? [{_type: schemaTypes.span.name, _key: keyGenerator(), text: '', marks: []}]
-          : textBlock.children.map((child) => {
-              const {_type: cType, _key: cKey, ...cRest} = child
-              // Return 'slate' version of inline object where the actual
-              // value is stored in the `value` property.
-              // In slate, inline objects are represented as regular
-              // children with actual text node in order to be able to
-              // be selected the same way as the rest of the (text) content.
-              if (cType !== 'span') {
-                hasInlines = true
-                return keepObjectEquality(
-                  {
-                    _type: cType,
-                    _key: cKey,
-                    children: voidChildren,
-                    value: cRest,
-                    __inline: true,
-                  },
-                  keyMap,
-                )
-              }
-              // If this is a span, and it's missing 'marks', add an empty marks array
-              if (cType === 'span' && !('marks' in cRest)) {
-                return keepObjectEquality(
-                  {_key: cKey, _type: cType, ...cRest, marks: EMPTY_MARKS},
-                  keyMap,
-                )
-              }
-              // Original child object (span)
-              return child
-            })
+        const children = (textBlock.children || []).map((child) => {
+          const {_type: cType, _key: cKey, ...cRest} = child
+          // Return 'slate' version of inline object where the actual
+          // value is stored in the `value` property.
+          // In slate, inline objects are represented as regular
+          // children with actual text node in order to be able to
+          // be selected the same way as the rest of the (text) content.
+          if (cType !== 'span') {
+            hasInlines = true
+            return keepObjectEquality(
+              {
+                _type: cType,
+                _key: cKey,
+                children: voidChildren,
+                value: cRest,
+                __inline: true,
+              },
+              keyMap,
+            )
+          }
+          // Original child object (span)
+          return child
+        })
         // Return original block
         if (
           !hasMissingStyle &&
@@ -91,11 +82,9 @@ export function toSlateValue(
           // Original object
           return block
         }
+        // TODO: remove this when we have a better way to handle missing style
         if (hasMissingStyle) {
           rest.style = schemaTypes.styles[0].value
-        }
-        if (hasMissingMarkDefs) {
-          rest.markDefs = EMPTY_MARKDEFS
         }
         return keepObjectEquality({_type, _key, ...rest, children}, keyMap)
       }

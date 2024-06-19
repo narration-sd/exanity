@@ -1,5 +1,5 @@
-import type {ArraySchemaType} from '@sanity/types'
-import type {BlockEnabledFeatures, DeserializerRule} from '../../types'
+import {type ArraySchemaType} from '@sanity/types'
+
 import {
   BLOCK_DEFAULT_STYLE,
   DEFAULT_BLOCK,
@@ -8,6 +8,7 @@ import {
   HTML_HEADER_TAGS,
   HTML_LIST_CONTAINER_TAGS,
 } from '../../constants'
+import {type BlockEnabledFeatures, type DeserializerRule} from '../../types'
 import {isElement, tagName} from '../helpers'
 
 const LIST_CONTAINER_TAGS = Object.keys(HTML_LIST_CONTAINER_TAGS)
@@ -36,9 +37,10 @@ function isUnderline(el: Node): boolean {
 }
 
 // text-decoration seems like the most important rule for strike-through in their html
+// allows for line-through regex to be more lineient to allow for other text-decoration before or after
 function isStrikethrough(el: Node): boolean {
   const style = isElement(el) && el.getAttribute('style')
-  return /text-decoration\s*:\s*line-through/.test(style || '')
+  return /text-decoration\s*:\s*(?:.*line-through.*;)/.test(style || '')
 }
 
 // Check for attribute given by the gdocs preprocessor

@@ -1,44 +1,31 @@
-import React, {
-  type KeyboardEvent,
-  type FocusEvent,
-  useCallback,
-  useRef,
-  useState,
-  useMemo,
-} from 'react'
-import {concat, Observable, of} from 'rxjs'
-import {catchError, filter, map, scan, switchMap, tap} from 'rxjs/operators'
-import {Box, Stack, Text, useToast} from '@sanity/ui'
-import {useObservableCallback} from 'react-rx'
+import {Stack, Text, useToast} from '@sanity/ui'
 import {uuid} from '@sanity/uuid'
-import styled from 'styled-components'
-import {set, setIfMissing, unset} from '../../patch'
-import {Alert} from '../../components/Alert'
-import {PreviewCard} from '../../../components'
+import {type FocusEvent, type KeyboardEvent, useCallback, useMemo, useRef, useState} from 'react'
+import {useObservableEvent} from 'react-rx'
+import {concat, type Observable, of} from 'rxjs'
+import {catchError, filter, map, scan, switchMap, tap} from 'rxjs/operators'
+
+import {Button} from '../../../../ui-components'
+import {ReferenceInputPreviewCard} from '../../../components'
+import {Translate, useTranslation} from '../../../i18n'
 import {getPublishedId, isNonNullable} from '../../../util'
+import {Alert} from '../../components/Alert'
 import {useDidUpdate} from '../../hooks/useDidUpdate'
 import {useOnClickOutside} from '../../hooks/useOnClickOutside'
-import {Button} from '../../../../ui-components'
-import {Translate, useTranslation} from '../../../i18n'
-import {useReferenceInput} from './useReferenceInput'
-import type {
-  CreateReferenceOption,
-  ReferenceInputProps,
-  ReferenceSearchHit,
-  ReferenceSearchState,
-} from './types'
-import {OptionPreview} from './OptionPreview'
-import {useReferenceInfo} from './useReferenceInfo'
-import {CreateButton} from './CreateButton'
-import {ReferenceAutocomplete} from './ReferenceAutocomplete'
+import {set, setIfMissing, unset} from '../../patch'
 import {AutocompleteContainer} from './AutocompleteContainer'
+import {CreateButton} from './CreateButton'
+import {OptionPreview} from './OptionPreview'
+import {ReferenceAutocomplete} from './ReferenceAutocomplete'
+import {
+  type CreateReferenceOption,
+  type ReferenceInputProps,
+  type ReferenceSearchHit,
+  type ReferenceSearchState,
+} from './types'
+import {useReferenceInfo} from './useReferenceInfo'
+import {useReferenceInput} from './useReferenceInput'
 import {useReferenceItemRef} from './useReferenceItemRef'
-
-const StyledPreviewCard = styled(PreviewCard)`
-  /* this is a hack to avoid layout jumps while previews are loading
-  there's probably better ways of solving this */
-  min-height: 36px;
-`
 
 const INITIAL_SEARCH_STATE: ReferenceSearchState = {
   hits: [],
@@ -160,40 +147,37 @@ export function ReferenceInput(props: ReferenceInputProps) {
   const {push} = useToast()
   const {t} = useTranslation()
 
-  const handleQueryChange = useObservableCallback(
-    (inputValue$: Observable<string | null>) => {
-      return inputValue$.pipe(
-        filter(nonNullable),
-        switchMap((searchString) =>
-          concat(
-            of({isLoading: true}),
-            onSearch(searchString).pipe(
-              map((hits) => ({hits, searchString, isLoading: false})),
-              catchError((error) => {
-                push({
-                  title: t('inputs.reference.error.search-failed-title'),
-                  description: error.message,
-                  status: 'error',
-                  id: `reference-search-fail-${id}`,
-                })
+  const handleQueryChange = useObservableEvent((inputValue$: Observable<string | null>) => {
+    return inputValue$.pipe(
+      filter(nonNullable),
+      switchMap((searchString) =>
+        concat(
+          of({isLoading: true}),
+          onSearch(searchString).pipe(
+            map((hits) => ({hits, searchString, isLoading: false})),
+            catchError((error) => {
+              push({
+                title: t('inputs.reference.error.search-failed-title'),
+                description: error.message,
+                status: 'error',
+                id: `reference-search-fail-${id}`,
+              })
 
-                console.error(error)
-                return of({hits: []})
-              }),
-            ),
+              console.error(error)
+              return of({hits: []})
+            }),
           ),
         ),
+      ),
 
-        scan(
-          (prevState, nextState): ReferenceSearchState => ({...prevState, ...nextState}),
-          INITIAL_SEARCH_STATE,
-        ),
+      scan(
+        (prevState, nextState): ReferenceSearchState => ({...prevState, ...nextState}),
+        INITIAL_SEARCH_STATE,
+      ),
 
-        tap(setSearchState),
-      )
-    },
-    [id, onSearch, push, t],
-  )
+      tap(setSearchState),
+    )
+  })
 
   const handleAutocompleteOpenButtonClick = useCallback(() => {
     handleQueryChange('')
@@ -213,14 +197,14 @@ export function ReferenceInput(props: ReferenceInputProps) {
       const documentId = option.hit.draft?._id || option.hit.published?._id || option.value
 
       return (
-        <StyledPreviewCard forwardedAs="button" type="button" radius={2} tone="inherit">
+        <ReferenceInputPreviewCard forwardedAs="button" type="button" radius={2} tone="inherit">
           <OptionPreview
             getReferenceInfo={getReferenceInfo}
             id={documentId}
             renderPreview={renderPreview}
             type={schemaType}
           />
-        </StyledPreviewCard>
+        </ReferenceInputPreviewCard>
       )
     },
     [schemaType, getReferenceInfo, renderPreview],

@@ -1,10 +1,9 @@
-import {FieldDefinition, ObjectSchemaType} from '@sanity/types'
-import React from 'react'
+import {jest} from '@jest/globals'
+import {type FieldDefinition, type ObjectSchemaType} from '@sanity/types'
+import {type ReactElement} from 'react'
+
 import {
-  ComplexElementProps,
-  FieldMember,
-  ObjectFormNode,
-  ObjectInputProps,
+  type ComplexElementProps,
   defaultRenderAnnotation,
   defaultRenderBlock,
   defaultRenderField,
@@ -12,16 +11,19 @@ import {
   defaultRenderInput,
   defaultRenderItem,
   defaultRenderPreview,
+  type FieldMember,
+  type ObjectFormNode,
+  type ObjectInputProps,
 } from '../../src/core'
-import {renderInput, TestRenderInputContext, TestRenderInputProps} from './renderInput'
-import {TestRenderProps} from './types'
+import {renderInput, type TestRenderInputContext, type TestRenderInputProps} from './renderInput'
+import {type TestRenderProps} from './types'
 
 const noopRenderDefault = () => <></>
 
 export type TestRenderObjectInputCallback = (
   inputProps: ObjectInputProps,
   context: TestRenderInputContext,
-) => React.ReactElement
+) => ReactElement
 
 export async function renderObjectInput(options: {
   fieldDefinition: FieldDefinition<'object'>
@@ -76,17 +78,11 @@ export async function renderObjectInput(options: {
     }
   }
 
-  const result = await renderInput({
+  const result = await renderInput<ComplexElementProps>({
     fieldDefinition,
     props,
     render: (inputProps, context) => initialRender(transformProps(inputProps, context), context),
   })
 
-  function rerender(subsequentRender: TestRenderObjectInputCallback) {
-    result.rerender((inputProps, context) =>
-      subsequentRender(transformProps(inputProps, context), context),
-    )
-  }
-
-  return {...result, rerender}
+  return result
 }

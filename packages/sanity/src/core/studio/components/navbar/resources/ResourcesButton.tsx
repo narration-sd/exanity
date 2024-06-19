@@ -1,7 +1,7 @@
 import {HelpCircleIcon} from '@sanity/icons'
 import {Menu} from '@sanity/ui'
-import React from 'react'
-import styled from 'styled-components'
+import {styled} from 'styled-components'
+
 import {Button, MenuButton} from '../../../../../ui-components'
 import {useTranslation} from '../../../../i18n'
 import {useGetHelpResources} from './helper-functions/hooks'
@@ -29,7 +29,7 @@ export function ResourcesButton() {
       }
       id="menu-button-resources"
       menu={
-        <StyledMenu>
+        <StyledMenu data-testid="menu-button-resources">
           <ResourcesMenuItems error={error} isLoading={isLoading} value={value} />
         </StyledMenu>
       }

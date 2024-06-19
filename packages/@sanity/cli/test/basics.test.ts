@@ -1,3 +1,7 @@
+import path from 'node:path'
+
+import {describe, expect} from '@jest/globals'
+
 import {describeCliTest, testConcurrent} from './shared/describe'
 import {getCliUserEmail, runSanityCmdCommand, studioVersions} from './shared/environment'
 
@@ -11,12 +15,23 @@ describeCliTest('CLI: basic commands', () => {
 
     testConcurrent('debug', async () => {
       const result = await runSanityCmdCommand(version, ['debug'])
-      expect(result.stdout).toContain(await getCliUserEmail())
+      expect(result.stdout).toContain(
+        `Email: \x1B[1m${(await getCliUserEmail()) || 'null'}\x1B[22m`,
+      )
       expect(result.code).toBe(0)
     })
 
     testConcurrent('help', async () => {
       const result = await runSanityCmdCommand(version, ['help'])
+      expect(result.stdout).toMatch(/usage:/i)
+      expect(result.code).toBe(0)
+    })
+
+    testConcurrent('help (from subdirectory)', async () => {
+      const result = await runSanityCmdCommand(version, ['help'], {
+        cwd: (cwd) => path.join(cwd, 'components'),
+      })
+      expect(result.stdout).toContain('Not in project directory')
       expect(result.stdout).toMatch(/usage:/i)
       expect(result.code).toBe(0)
     })

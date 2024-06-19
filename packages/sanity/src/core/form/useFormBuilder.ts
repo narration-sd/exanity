@@ -1,5 +1,7 @@
 import {useContext} from 'react'
-import {FormBuilderContext, FormBuilderContextValue} from './FormBuilderContext'
+import {FormBuilderContext} from 'sanity/_singletons'
+
+import {type FormBuilderContextValue} from './FormBuilderContext'
 
 /**
  *

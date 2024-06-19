@@ -1,7 +1,9 @@
-import type {PatchMutationOperation} from '@sanity/types'
-import type {Mut} from '../src/document/types'
-import {SquashingBuffer} from '../src/document/SquashingBuffer'
+import {expect, test} from '@jest/globals'
+import {type PatchMutationOperation} from '@sanity/types'
+
 import {Mutation} from '../src/document/Mutation'
+import {SquashingBuffer} from '../src/document/SquashingBuffer'
+import {type Mut} from '../src/document/types'
 
 function add(sb: SquashingBuffer, op: Mut) {
   const mut = new Mutation({

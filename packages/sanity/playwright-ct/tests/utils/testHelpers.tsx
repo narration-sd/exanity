@@ -1,15 +1,9 @@
-import {type ComponentFixtures} from '@playwright/experimental-ct-react'
-import type {PlaywrightTestArgs, Locator} from '@playwright/test'
+import {readFileSync} from 'node:fs'
+import path from 'node:path'
+
+import {type Locator, type PlaywrightTestArgs} from '@playwright/test'
 
 export const DEFAULT_TYPE_DELAY = 20
-
-/**
- * The delay between key presses in milliseconds for fast typing. This is usually used for typing in the PTE.
- * The PTE normally need some time to process the input and sync its internal state with the document
- */
-export const TYPE_DELAY_HIGH = 150
-
-export type MountResult = Awaited<ReturnType<ComponentFixtures['mount']>>
 
 export function testHelpers({page}: {page: PlaywrightTestArgs['page']}) {
   const activatePTInputOverlay = async ($pteField: Locator) => {
@@ -18,11 +12,56 @@ export function testHelpers({page}: {page: PlaywrightTestArgs['page']}) {
       await $overlay.focus()
       await page.keyboard.press('Space')
     }
-    await $pteField
-      .locator(`[data-testid='pt-editor__toolbar-card']`)
-      .waitFor({state: 'visible', timeout: 1000})
+    await $overlay.waitFor({state: 'detached', timeout: 1000})
   }
   return {
+    /**
+     * Drags and drops the source element to the target element position
+     *
+     * @param testId The data-testid attribute of the Portable Text Input
+     * @returns The Portable Text Input element
+     */
+    dragAndDrop: async (sourceSelector: string, targetSelector: string) => {
+      const source = await page.locator(sourceSelector)
+      const target = await page.locator(targetSelector)
+
+      const box = await source.boundingBox()
+      if (box) {
+        const {x, y, width, height} = box
+        await page.mouse.move(x + width / 2, y + height / 2)
+        await page.mouse.down()
+      }
+
+      const targetBox = await target.boundingBox()
+      if (targetBox) {
+        const {x, y, width, height} = targetBox
+        await page.mouse.move(x + width / 2, y + height / 2)
+        await page.mouse.up()
+      }
+    },
+    /**
+     * Drags the source element to the target element position without dropping
+     *
+     * @param testId The data-testid attribute of the Portable Text Input
+     * @returns The Portable Text Input element
+     */
+    dragWithoutDrop: async (sourceSelector: string, targetSelector: string) => {
+      const source = await page.locator(sourceSelector)
+      const target = await page.locator(targetSelector)
+
+      const box = await source.boundingBox()
+      if (box) {
+        const {x, y, width, height} = box
+        await page.mouse.move(x + width / 2, y + height / 2)
+        await page.mouse.down()
+      }
+
+      const targetBox = await target.boundingBox()
+      if (targetBox) {
+        const {x, y, width, height} = targetBox
+        await page.mouse.move(x + width / 2, y + height / 2)
+      }
+    },
     /**
      * Returns the DOM element of a focused Portable Text Input ready to typed into
      *
@@ -126,6 +165,120 @@ export function testHelpers({page}: {page: PlaywrightTestArgs['page']}) {
       }, htmlOrText)
 
       await locator.getByText(firstTextContent).waitFor()
+    },
+    /**
+     * Emulate dragging a file over an focused Portable Text Editor's editable element
+     * @param text - The string to be pasted.
+     * @param locator - editable element of a Portable Text Editor (as returned by getFocusedPortableTextEditorElement)
+     */
+    hoverFileOverPortableTextEditor: async (
+      filePath: string,
+      fileType: string,
+      locator: Locator,
+    ) => {
+      const fileName = path.basename(filePath)
+      const buffer = readFileSync(filePath).toString('base64')
+
+      await locator.focus()
+      await locator.evaluate(
+        async (el, {bufferData, localFileName, localFileType}) => {
+          const response = await fetch(bufferData)
+          const blob = await response.blob()
+
+          const image = new File([blob], localFileName, {type: localFileType})
+
+          const dataTransfer = new DataTransfer()
+          dataTransfer.items.add(image)
+
+          el.dispatchEvent(
+            new DragEvent('dragenter', {
+              dataTransfer,
+              bubbles: true,
+            }),
+          )
+        },
+        {
+          bufferData: `data:application/octet-stream;base64,${buffer}`,
+          localFileName: fileName,
+          localFileType: fileType,
+        },
+      )
+    },
+    /**
+     * Emulate dropping a file over an focused Portable Text Editor's editable element
+     * @param filePath - Absolute path to the file to be dropped.
+     * @param fileType - Mime type of the file to be dropped.
+     * @param locator - editable element of a Portable Text Editor (as returned by getFocusedPortableTextEditorElement)
+     */
+    dropFileOverPortableTextEditor: async (
+      imagePath: string,
+      fileType: string,
+      locator: Locator,
+    ) => {
+      const fileName = path.basename(imagePath)
+      const buffer = readFileSync(imagePath).toString('base64')
+
+      await locator.focus()
+      await locator.evaluate(
+        async (el, {bufferData, localFileName, localFileType}) => {
+          const response = await fetch(bufferData)
+          const blob = await response.blob()
+          const image = new File([blob], localFileName, {type: localFileType})
+
+          const dataTransfer = new DataTransfer()
+          dataTransfer.items.add(image)
+
+          el.dispatchEvent(
+            new DragEvent('drop', {
+              dataTransfer,
+              bubbles: true,
+            }),
+          )
+        },
+        {
+          bufferData: `data:application/octet-stream;base64,${buffer}`,
+          localFileName: fileName,
+          localFileType: fileType,
+        },
+      )
+    },
+    /**
+     * Emulate pasting a file over an focused Portable Text Editor's editable element
+     * @param filePath - Absolute path to the file to be pasted.
+     * @param fileType - Mime type of the file to be pasted.
+     * @param locator - editable element of a Portable Text Editor (as returned by getFocusedPortableTextEditorElement)
+     */
+    pasteFileOverPortableTextEditor: async (
+      filePath: string,
+      fileType: string,
+      locator: Locator,
+    ) => {
+      const fileName = path.basename(filePath)
+      const buffer = readFileSync(filePath).toString('base64')
+
+      await locator.focus()
+      await locator.evaluate(
+        async (el, {bufferData, localFileName, localFileType}) => {
+          const response = await fetch(bufferData)
+          const blob = await response.blob()
+          const image = new File([blob], localFileName, {type: localFileType})
+
+          const dataTransfer = new DataTransfer()
+          dataTransfer.items.add(image)
+
+          el.dispatchEvent(
+            new ClipboardEvent('paste', {
+              clipboardData: dataTransfer,
+              bubbles: true,
+            }),
+          )
+        },
+        {
+          bufferData: `data:application/octet-stream;base64,${buffer}`,
+          localFileName: fileName,
+          localFileType: fileType,
+        },
+      )
     },
     /**
      * Will create a keyboard event of a given hotkey combination that can be activated with a modifier key

@@ -1,6 +1,8 @@
-import {request} from './shared/request'
+import {expect} from '@jest/globals'
+
 import {describeCliTest, testConcurrent} from './shared/describe'
 import {getTestRunArgs, runSanityCmdCommand, studioVersions, testClient} from './shared/environment'
+import {request} from './shared/request'
 
 describeCliTest('CLI: `sanity graphql`', () => {
   describeCliTest.each(studioVersions)('%s', (version) => {
@@ -31,7 +33,7 @@ describeCliTest('CLI: `sanity graphql`', () => {
       const response = await request(graphqlUrl, {
         method: 'POST',
         body: JSON.stringify({query: '{allPerson {_id, name}}'}),
-        headers: {'content-type': 'application/json', accept: 'application/json'},
+        headers: {'content-type': 'application/json', 'accept': 'application/json'},
       }).then(
         (res) =>
           JSON.parse(res.body.toString('utf8')) as Promise<{

@@ -18,16 +18,15 @@ const devAliases = {
   // because they will be escaped by the jest config
   '@sanity/block-tools': './packages/@sanity/block-tools/src',
   '@sanity/diff': './packages/@sanity/diff/src',
+  '@sanity/cli': './packages/@sanity/cli/src',
   '@sanity/mutator': './packages/@sanity/mutator/src',
   '@sanity/portable-text-editor': './packages/@sanity/portable-text-editor/src',
   '@sanity/schema': './packages/@sanity/schema/src/_exports',
   '@sanity/migrate': './packages/@sanity/migrate/src/_exports',
   '@sanity/types': './packages/@sanity/types/src',
-  '@sanity/types/parts': './packages/@sanity/types/parts',
-  '@sanity/util/fs': './packages/@sanity/util/src/fsTools.ts',
-  '@sanity/util': './packages/@sanity/util/src',
+  '@sanity/util': './packages/@sanity/util/src/_exports',
   '@sanity/vision': './packages/@sanity/vision/src',
-  sanity: './packages/sanity/exports',
+  'sanity': './packages/sanity/src/_exports',
 }
 
 module.exports = devAliases

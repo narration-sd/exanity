@@ -1,9 +1,9 @@
 /* eslint-disable react/jsx-no-bind */
-import {Path, defineArrayMember, defineField, defineType} from '@sanity/types'
-import React from 'react'
-import {SanityDocument} from '@sanity/client'
-import {TestWrapper} from '../../utils/TestWrapper'
+import {type SanityDocument} from '@sanity/client'
+import {defineArrayMember, defineField, defineType, type Path} from '@sanity/types'
+
 import {TestForm} from '../../utils/TestForm'
+import {TestWrapper} from '../../utils/TestWrapper'
 
 const SCHEMA_TYPES = [
   defineType({
@@ -57,14 +57,16 @@ const SCHEMA_TYPES = [
 
 export function FocusTrackingStory({
   focusPath,
+  onPathFocus,
   document,
 }: {
   focusPath?: Path
+  onPathFocus?: (path: Path) => void
   document?: SanityDocument
 }) {
   return (
     <TestWrapper schemaTypes={SCHEMA_TYPES}>
-      <TestForm document={document} focusPath={focusPath} />
+      <TestForm document={document} focusPath={focusPath} onPathFocus={onPathFocus} />
     </TestWrapper>
   )
 }

@@ -1,6 +1,7 @@
 import {useContext} from 'react'
-import {PaneRouterContext} from './PaneRouterContext'
-import {PaneRouterContextValue} from './types'
+import {PaneRouterContext} from 'sanity/_singletons'
+
+import {type PaneRouterContextValue} from './types'
 
 /**
  *

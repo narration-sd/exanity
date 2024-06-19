@@ -1,3 +1,4 @@
+import {describe, expect, it, jest} from '@jest/globals'
 /**
  * SSR Hydration is hard to get right.
  * It's not a concern when using `sanity dev`, `sanity build` or `sanity deploy` as we ship a client-only application
@@ -16,15 +17,14 @@
  * b) https://beta.reactjs.org/apis/react-dom/server/renderToString
  * c) https://styled-components.com/docs/advanced#server-side-rendering
  */
-
-import React from 'react'
+import {type SanityClient} from '@sanity/client'
+import {act} from 'react'
+import {hydrateRoot} from 'react-dom/client'
 import {renderToStaticMarkup, renderToString} from 'react-dom/server'
 import {ServerStyleSheet} from 'styled-components'
-import {act} from 'react-dom/test-utils'
-import {hydrateRoot} from 'react-dom/client'
-import {SanityClient} from '@sanity/client'
-import {createMockAuthStore} from '../store/_legacy/authStore/createMockAuthStore'
+
 import {createMockSanityClient} from '../../../test/mocks/mockSanityClient'
+import {createMockAuthStore} from '../store/_legacy/authStore/createMockAuthStore'
 import {Studio} from './Studio'
 
 const client = createMockSanityClient() as any as SanityClient
@@ -39,14 +39,10 @@ jest.mock('./components/navbar/presence/PresenceMenu')
 
 describe('Studio', () => {
   it(`SSR to static markup doesn't throw or warn`, () => {
-    const spy = jest.spyOn(console, 'error').mockImplementation()
+    const spy = jest.spyOn(console, 'error')
     const sheet = new ServerStyleSheet()
     try {
-      const html = renderToStaticMarkup(sheet.collectStyles(<Studio config={config} />))
-
-      expect(html).toMatchInlineSnapshot(
-        `"<div class=\\"sc-eZURai djZwVw\\"><div data-ui=\\"Spinner\\" class=\\"sc-ipEzrc eJGegB sc-ksBlXE dyLnEw sc-ciFRdn fsffuA\\"><span><svg data-sanity-icon=\\"spinner\\" width=\\"1em\\" height=\\"1em\\" viewBox=\\"0 0 25 25\\" fill=\\"none\\" xmlns=\\"http://www.w3.org/2000/svg\\"><path d=\\"M4.5 12.5C4.5 16.9183 8.08172 20.5 12.5 20.5C16.9183 20.5 20.5 16.9183 20.5 12.5C20.5 8.08172 16.9183 4.5 12.5 4.5\\" stroke=\\"currentColor\\" stroke-width=\\"1.2\\" stroke-linejoin=\\"round\\"></path></svg></span></div></div>"`,
-      )
+      renderToStaticMarkup(sheet.collectStyles(<Studio config={config} />))
     } finally {
       sheet.seal()
     }
@@ -57,35 +53,16 @@ describe('Studio', () => {
     spy.mockRestore()
   })
   it(`SSR to markup for hydration doesn't throw`, () => {
-    const spy = jest.spyOn(console, 'error').mockImplementation()
-    const sheet = new ServerStyleSheet()
-    try {
-      const html = renderToString(sheet.collectStyles(<Studio config={config} />))
-      expect(html).toMatchInlineSnapshot(
-        `"<div class=\\"sc-eZURai djZwVw\\"><div data-ui=\\"Spinner\\" class=\\"sc-ipEzrc eJGegB sc-ksBlXE dyLnEw sc-ciFRdn fsffuA\\"><span><svg data-sanity-icon=\\"spinner\\" width=\\"1em\\" height=\\"1em\\" viewBox=\\"0 0 25 25\\" fill=\\"none\\" xmlns=\\"http://www.w3.org/2000/svg\\"><path d=\\"M4.5 12.5C4.5 16.9183 8.08172 20.5 12.5 20.5C16.9183 20.5 20.5 16.9183 20.5 12.5C20.5 8.08172 16.9183 4.5 12.5 4.5\\" stroke=\\"currentColor\\" stroke-width=\\"1.2\\" stroke-linejoin=\\"round\\"></path></svg></span></div></div>"`,
-      )
-    } finally {
-      sheet.seal()
-    }
-
-    expect(console.error).not.toHaveBeenCalled()
-
-    spy.mockReset()
-    spy.mockRestore()
-  })
-  it('SSR hydrateRoot finishes without warnings', () => {
-    const spy = jest.spyOn(console, 'error').mockImplementation()
+    const spy = jest.spyOn(console, 'error')
     const node = document.createElement('div')
     document.body.appendChild(node)
+
     const sheet = new ServerStyleSheet()
     try {
       const html = renderToString(sheet.collectStyles(<Studio config={config} />))
       node.innerHTML = html
-      expect(html).toMatchInlineSnapshot(
-        `"<div class=\\"sc-eZURai djZwVw\\"><div data-ui=\\"Spinner\\" class=\\"sc-ipEzrc eJGegB sc-ksBlXE dyLnEw sc-ciFRdn fsffuA\\"><span><svg data-sanity-icon=\\"spinner\\" width=\\"1em\\" height=\\"1em\\" viewBox=\\"0 0 25 25\\" fill=\\"none\\" xmlns=\\"http://www.w3.org/2000/svg\\"><path d=\\"M4.5 12.5C4.5 16.9183 8.08172 20.5 12.5 20.5C16.9183 20.5 20.5 16.9183 20.5 12.5C20.5 8.08172 16.9183 4.5 12.5 4.5\\" stroke=\\"currentColor\\" stroke-width=\\"1.2\\" stroke-linejoin=\\"round\\"></path></svg></span></div></div>"`,
-      )
-      document.head.innerHTML += sheet.getStyleTags()
 
+      document.head.innerHTML += sheet.getStyleTags()
       act(() => hydrateRoot(node, <Studio config={config} />))
     } finally {
       sheet.seal()

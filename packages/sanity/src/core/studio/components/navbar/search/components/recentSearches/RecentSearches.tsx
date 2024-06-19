@@ -1,16 +1,17 @@
 import {Box, Card, Text, useMediaIndex} from '@sanity/ui'
-import React, {useCallback, useMemo, useRef} from 'react'
-import styled from 'styled-components'
+import {useCallback, useMemo, useRef} from 'react'
+import {styled} from 'styled-components'
+
+import {Button} from '../../../../../../../ui-components'
 import {
   CommandList,
-  CommandListHandle,
-  CommandListRenderItemCallback,
+  type CommandListHandle,
+  type CommandListRenderItemCallback,
 } from '../../../../../../components'
-import {Button} from '../../../../../../../ui-components'
-import {useSearchState} from '../../contexts/search/useSearchState'
-import {RecentSearch} from '../../datastores/recentSearches'
-import {Instructions} from '../Instructions'
 import {useTranslation} from '../../../../../../i18n'
+import {useSearchState} from '../../contexts/search/useSearchState'
+import {type RecentSearch, useRecentSearchesStore} from '../../datastores/recentSearches'
+import {Instructions} from '../Instructions'
 import {RecentSearchItem} from './item/RecentSearchItem'
 
 const VIRTUAL_LIST_RECENT_SEARCH_ITEM_HEIGHT = 36 // px
@@ -32,9 +33,14 @@ interface RecentSearchesProps {
 export function RecentSearches({inputElement}: RecentSearchesProps) {
   const {
     dispatch,
-    recentSearchesStore,
-    state: {filtersVisible, fullscreen, recentSearches},
+    state: {filtersVisible, fullscreen},
   } = useSearchState()
+  const recentSearchesStore = useRecentSearchesStore()
+  const recentSearches = useMemo(
+    () => recentSearchesStore?.getRecentSearches(),
+    [recentSearchesStore],
+  )
+
   const commandListRef = useRef<CommandListHandle | null>(null)
 
   const {t} = useTranslation()
@@ -45,11 +51,10 @@ export function RecentSearches({inputElement}: RecentSearchesProps) {
    */
   const handleClearRecentSearchesClick = useCallback(() => {
     if (recentSearchesStore) {
-      const updatedRecentSearches = recentSearchesStore.removeSearch()
-      dispatch({recentSearches: updatedRecentSearches, type: 'RECENT_SEARCHES_SET'})
+      recentSearchesStore.removeSearch()
     }
     commandListRef?.current?.focusInputElement()
-  }, [dispatch, recentSearchesStore])
+  }, [recentSearchesStore])
 
   const mediaIndex = useMediaIndex()
 

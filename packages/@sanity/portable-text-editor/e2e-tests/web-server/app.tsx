@@ -1,9 +1,10 @@
 /* eslint-disable i18next/no-literal-string */
-import {PortableTextBlock} from '@sanity/types'
-import {Box, Card, Heading, Stack, studioTheme, ThemeProvider, Text, Inline} from '@sanity/ui'
-import React, {useCallback, useMemo, useState} from 'react'
+import {type PortableTextBlock} from '@sanity/types'
+import {Box, Card, Heading, Inline, Stack, studioTheme, Text, ThemeProvider} from '@sanity/ui'
+import {useCallback, useMemo, useState} from 'react'
 import {Subject} from 'rxjs'
-import {EditorSelection, Patch} from '../../src'
+
+import {type EditorSelection, type Patch} from '../../src'
 import {Editor} from './components/Editor'
 import {Value} from './components/Value'
 
@@ -22,7 +23,7 @@ export function App() {
   const {editorId, testId} = useMemo(() => {
     const params = new URLSearchParams(document.location.search)
     return {
-      editorId: params.get('editorId') || (Math.random() + 1).toString(36).substring(7),
+      editorId: params.get('editorId') || (Math.random() + 1).toString(36).slice(7),
       testId: params.get('testId') || 'noTestIdGiven',
     }
   }, [])

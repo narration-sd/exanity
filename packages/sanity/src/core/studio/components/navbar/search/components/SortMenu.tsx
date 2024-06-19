@@ -1,27 +1,19 @@
 import {SortIcon} from '@sanity/icons'
 import {Card, Flex, Menu, MenuDivider} from '@sanity/ui'
-import isEqual from 'lodash/isEqual'
-import React, {useCallback, useId, useMemo} from 'react'
-import styled from 'styled-components'
-import {useTranslation} from '../../../../../i18n'
-import {ORDERINGS} from '../definitions/orderings'
+import {isEqual} from 'lodash'
+import {useCallback, useId, useMemo} from 'react'
+import {useWorkspace} from 'sanity'
+import {styled} from 'styled-components'
+
 import {Button, MenuButton, MenuItem} from '../../../../../../ui-components'
+import {useTranslation} from '../../../../../i18n'
 import {useSearchState} from '../contexts/search/useSearchState'
-import type {SearchOrdering} from '../types'
+import {getOrderings} from '../definitions/getOrderings'
+import {type SearchOrdering} from '../types'
 
 interface SearchDivider {
   type: 'divider'
 }
-
-const MENU_ORDERINGS: (SearchDivider | SearchOrdering)[] = [
-  ORDERINGS.relevance,
-  {type: 'divider'},
-  ORDERINGS.createdAsc,
-  ORDERINGS.createdDesc,
-  {type: 'divider'},
-  ORDERINGS.updatedAsc,
-  ORDERINGS.updatedDesc,
-]
 
 const SortMenuContentFlex = styled(Flex)`
   box-sizing: border-box;
@@ -56,13 +48,27 @@ function CustomMenuItem({ordering}: {ordering: SearchOrdering}) {
 
 export function SortMenu() {
   const {t} = useTranslation()
+  const {enableLegacySearch = false} = useWorkspace().search
   const {
     state: {ordering},
   } = useSearchState()
 
   const menuButtonId = useId()
 
-  const currentMenuItem = MENU_ORDERINGS.find(
+  const menuOrderings: (SearchDivider | SearchOrdering)[] = useMemo(() => {
+    const orderings = getOrderings({enableLegacySearch})
+    return [
+      orderings.relevance,
+      {type: 'divider'},
+      orderings.createdAsc,
+      orderings.createdDesc,
+      {type: 'divider'},
+      orderings.updatedAsc,
+      orderings.updatedDesc,
+    ]
+  }, [enableLegacySearch])
+
+  const currentMenuItem = menuOrderings.find(
     (item): item is SearchOrdering => isEqual(ordering, item) && !isSearchDivider(item),
   )
 
@@ -78,7 +84,7 @@ export function SortMenu() {
           id={menuButtonId || ''}
           menu={
             <Menu>
-              {MENU_ORDERINGS.map((item, index) => {
+              {menuOrderings.map((item, index) => {
                 if (isSearchDivider(item)) {
                   // eslint-disable-next-line react/no-array-index-key
                   return <MenuDivider key={index} />

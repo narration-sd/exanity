@@ -1,10 +1,11 @@
-import React, {useCallback} from 'react'
+import {type Asset as AssetType, type SanityDocument} from '@sanity/types'
 import {Card, Flex, Text} from '@sanity/ui'
-import {Asset as AssetType, SanityDocument} from '@sanity/types'
-import {useSchema} from '../../../../hooks'
-import {Preview} from '../../../../preview/components/Preview'
-import {Translate, useTranslation} from '../../../../i18n'
+import {type HTMLProps, useCallback} from 'react'
 import {IntentLink} from 'sanity/router'
+
+import {useSchema} from '../../../../hooks'
+import {Translate, useTranslation} from '../../../../i18n'
+import {Preview} from '../../../../preview/components/Preview'
 
 export const AssetUsageList = ({
   asset,
@@ -40,7 +41,7 @@ const DocumentLink = ({document}: {document: SanityDocument}) => {
   const schema = useSchema()
 
   const LinkComponent = useCallback(
-    (linkProps: Omit<React.HTMLProps<HTMLAnchorElement>, 'ref'>) => (
+    (linkProps: Omit<HTMLProps<HTMLAnchorElement>, 'ref'>) => (
       <IntentLink {...linkProps} params={{id: document._id, type: document._type}} intent="edit" />
     ),
 

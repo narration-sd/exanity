@@ -1,6 +1,11 @@
 import {useContext} from 'react'
-import {SearchContext, SearchContextValue} from './SearchContext'
+import {SearchContext} from 'sanity/_singletons'
 
+import {type SearchContextValue} from './SearchContext'
+
+/**
+ * @internal
+ */
 export function useSearchState(): SearchContextValue {
   const context = useContext(SearchContext)
 

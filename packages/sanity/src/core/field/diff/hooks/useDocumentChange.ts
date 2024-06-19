@@ -1,8 +1,7 @@
 import {useContext} from 'react'
-import {
-  DocumentChangeContext,
-  DocumentChangeContextInstance,
-} from '../contexts/DocumentChangeContext'
+import {DocumentChangeContext} from 'sanity/_singletons'
+
+import {type DocumentChangeContextInstance} from '../contexts/DocumentChangeContext'
 
 /** @internal */
 export function useDocumentChange(): DocumentChangeContextInstance {

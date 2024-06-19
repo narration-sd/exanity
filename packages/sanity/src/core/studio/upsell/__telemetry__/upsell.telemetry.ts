@@ -1,11 +1,13 @@
 import {defineEvent} from '@sanity/telemetry'
 
 interface UpsellDialogActionsInfo {
-  feature: 'comments' | 'scheduled_publishing' | 'ai_assist'
+  feature: 'comments' | 'scheduled_publishing' | 'ai_assist' | 'tasks'
   type: 'modal' | 'inspector'
 }
-interface UpsellDialogViewedInfo extends UpsellDialogActionsInfo {
-  source: 'field_action' | 'document_toolbar' | 'document_action' | 'navbar' | 'link'
+
+/** @internal */
+export interface UpsellDialogViewedInfo extends UpsellDialogActionsInfo {
+  source: 'field_action' | 'document_toolbar' | 'document_action' | 'navbar' | 'link' | 'pte'
 }
 
 /**

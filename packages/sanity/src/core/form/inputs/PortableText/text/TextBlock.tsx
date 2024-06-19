@@ -1,40 +1,40 @@
-import {Box, Flex, ResponsivePaddingProps, Text} from '@sanity/ui'
-import React, {RefObject, useCallback, useMemo, useState} from 'react'
-import {ObjectSchemaType, Path, PortableTextTextBlock} from '@sanity/types'
 import {
-  EditorSelection,
+  type EditorSelection,
   PortableTextEditor,
   usePortableTextEditor,
 } from '@sanity/portable-text-editor'
+import {type ObjectSchemaType, type Path, type PortableTextTextBlock} from '@sanity/types'
+import {Box, Flex, type ResponsivePaddingProps, Text} from '@sanity/ui'
 import {isEqual} from '@sanity/util/paths'
+import {type ReactNode, type RefObject, useCallback, useMemo, useState} from 'react'
+
 import {Tooltip} from '../../../../../ui-components'
+import {pathToString} from '../../../../field'
+import {EMPTY_ARRAY} from '../../../../util'
+import {useFormCallbacks} from '../../../studio'
+import {useChildPresence} from '../../../studio/contexts/Presence'
 import {
-  BlockProps,
-  RenderAnnotationCallback,
-  RenderArrayOfObjectsItemCallback,
-  RenderBlockCallback,
-  RenderCustomMarkers,
-  RenderFieldCallback,
-  RenderInputCallback,
-  RenderPreviewCallback,
+  type BlockProps,
+  type RenderAnnotationCallback,
+  type RenderArrayOfObjectsItemCallback,
+  type RenderBlockCallback,
+  type RenderCustomMarkers,
+  type RenderFieldCallback,
+  type RenderInputCallback,
+  type RenderPreviewCallback,
 } from '../../../types'
+import {type RenderBlockActionsCallback} from '../../../types/_transitional'
 import {useFormBuilder} from '../../../useFormBuilder'
-import {BlockActions} from '../BlockActions'
 import {ReviewChangesHighlightBlock, StyledChangeIndicatorWithProvidedFullPath} from '../_common'
-import {RenderBlockActionsCallback} from '../../../types/_transitional'
+import {BlockActions} from '../BlockActions'
+import {debugRender} from '../debugRender'
 import {useMemberValidation} from '../hooks/useMemberValidation'
 import {usePortableTextMarkers} from '../hooks/usePortableTextMarkers'
 import {usePortableTextMemberItem} from '../hooks/usePortableTextMembers'
-import {pathToString} from '../../../../field'
-import {debugRender} from '../debugRender'
-import {EMPTY_ARRAY} from '../../../../util'
-import {useChildPresence} from '../../../studio/contexts/Presence'
-import {useFormCallbacks} from '../../../studio'
 import {TEXT_STYLE_PADDING} from './constants'
 import {
   BlockActionsInner,
   BlockActionsOuter,
-  BlockExtrasContainer,
   ChangeIndicatorWrapper,
   ListPrefixWrapper,
   TextBlockFlexWrapper,
@@ -45,7 +45,7 @@ import {
 import {TextContainer} from './textStyles'
 
 export interface TextBlockProps {
-  children: React.ReactNode
+  children: ReactNode
   floatingBoundary: HTMLElement | null
   focused: boolean
   isFullscreen?: boolean
@@ -262,16 +262,24 @@ export function TextBlock(props: TextBlockProps) {
     [Markers, markers, renderCustomMarkers, tooltipEnabled, validation],
   )
 
+  const blockActionsEnabled = renderBlockActions && !readOnly
+  const changeIndicatorVisible = isFullscreen && memberItem
+
   return useMemo(
     () => (
       <Box
-        data-testid="text-block"
         {...outerPaddingProps}
-        style={debugRender()}
+        data-testid="text-block"
+        data-text-block="" // used by create
         ref={memberItem?.elementRef as RefObject<HTMLDivElement>}
+        style={debugRender()}
       >
         <TextBlockFlexWrapper data-testid="text-block__wrapper">
-          <Flex flex={1} {...innerPaddingProps}>
+          <Flex
+            data-text-block-inner="" // used by create
+            flex={1}
+            {...innerPaddingProps}
+          >
             <Box flex={1}>
               <Tooltip
                 content={toolTipContent}
@@ -294,40 +302,43 @@ export function TextBlock(props: TextBlockProps) {
               </Tooltip>
             </Box>
 
-            <BlockExtrasContainer contentEditable={false}>
-              <BlockActionsOuter marginRight={1}>
+            {blockActionsEnabled && (
+              <BlockActionsOuter contentEditable={false} marginRight={3}>
                 <BlockActionsInner>
-                  {renderBlockActions && focused && !readOnly && (
+                  {focused && (
                     <BlockActions
-                      onChange={onChange}
                       block={value}
+                      onChange={onChange}
                       renderBlockActions={renderBlockActions}
                     />
                   )}
                 </BlockActionsInner>
               </BlockActionsOuter>
+            )}
 
-              {isFullscreen && memberItem && (
-                <ChangeIndicatorWrapper
-                  $hasChanges={memberItem.member.item.changed}
-                  onMouseEnter={handleChangeIndicatorMouseEnter}
-                  onMouseLeave={handleChangeIndicatorMouseLeave}
-                >
-                  <StyledChangeIndicatorWithProvidedFullPath
-                    hasFocus={focused}
-                    isChanged={memberItem.member.item.changed}
-                    path={memberItem.member.item.path}
-                    withHoverEffect={false}
-                  />
-                </ChangeIndicatorWrapper>
-              )}
-            </BlockExtrasContainer>
+            {changeIndicatorVisible && (
+              <ChangeIndicatorWrapper
+                $hasChanges={memberItem.member.item.changed}
+                contentEditable={false}
+                onMouseEnter={handleChangeIndicatorMouseEnter}
+                onMouseLeave={handleChangeIndicatorMouseLeave}
+              >
+                <StyledChangeIndicatorWithProvidedFullPath
+                  hasFocus={focused}
+                  isChanged={memberItem.member.item.changed}
+                  path={memberItem.member.item.path}
+                  withHoverEffect={false}
+                />
+              </ChangeIndicatorWrapper>
+            )}
             {reviewChangesHovered && <ReviewChangesHighlightBlock />}
           </Flex>
         </TextBlockFlexWrapper>
       </Box>
     ),
     [
+      blockActionsEnabled,
+      changeIndicatorVisible,
       componentProps,
       focused,
       handleChangeIndicatorMouseEnter,
@@ -336,7 +347,6 @@ export function TextBlock(props: TextBlockProps) {
       hasMarkers,
       hasWarning,
       innerPaddingProps,
-      isFullscreen,
       memberItem,
       onChange,
       outerPaddingProps,

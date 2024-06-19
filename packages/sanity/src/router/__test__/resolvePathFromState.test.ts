@@ -1,6 +1,8 @@
-import {route} from '../route'
-import {Router} from '../types'
+import {expect, test} from '@jest/globals'
+
 import {_resolvePathFromState} from '../_resolvePathFromState'
+import {route} from '../route'
+import {type Router} from '../types'
 
 test('resolves empty state to fixed base path', () => {
   const rootRoute: Router = route.create('/root', [

@@ -1,7 +1,8 @@
 /* eslint-disable no-sync */
-import fs from 'fs'
-import path from 'path'
-import {Package} from '../types'
+import fs from 'node:fs'
+import path from 'node:path'
+
+import {type Package} from '../types'
 import {getManifestPaths} from './getPackagePaths'
 
 const rootPath = path.join(__dirname, '..', '..')

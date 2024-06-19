@@ -1,13 +1,23 @@
-import {FolderIcon, ChevronRightIcon, DocumentIcon} from '@sanity/icons'
-import {isSanityDocument, PreviewValue, SanityDocument, SchemaType} from '@sanity/types'
-import {Box, CardProps, Text} from '@sanity/ui'
-import React, {ReactNode, useCallback, useEffect, useMemo, useState} from 'react'
-import {MissingSchemaType} from '../MissingSchemaType'
-import {usePaneRouter} from '../paneRouter'
-import {PaneItemPreview} from './PaneItemPreview'
+import {ChevronRightIcon, DocumentIcon, FolderIcon} from '@sanity/icons'
 import {
-  FIXME,
-  GeneralPreviewLayoutKey,
+  isSanityDocument,
+  type PreviewValue,
+  type SanityDocument,
+  type SchemaType,
+} from '@sanity/types'
+import {Box, type CardProps, Text} from '@sanity/ui'
+import {
+  type ComponentType,
+  type MouseEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import {
+  type FIXME,
+  type GeneralPreviewLayoutKey,
   PreviewCard,
   SanityDefaultPreview,
   useDocumentPresence,
@@ -15,10 +25,14 @@ import {
   useSchema,
 } from 'sanity'
 
+import {MissingSchemaType} from '../MissingSchemaType'
+import {usePaneRouter} from '../paneRouter'
+import {PaneItemPreview} from './PaneItemPreview'
+
 interface PaneItemProps {
   id: string
   layout?: GeneralPreviewLayoutKey
-  icon?: React.ComponentType<any> | false
+  icon?: ComponentType<any> | false
   pressed?: boolean
   selected?: boolean
   title?: string
@@ -34,10 +48,10 @@ interface PaneItemProps {
  * Otherwise return the passed icon or the schema type icon as a backup.
  */
 export function getIconWithFallback(
-  icon: React.ComponentType<any> | false | undefined,
+  icon: ComponentType<any> | false | undefined,
   schemaType: SchemaType | undefined,
-  defaultIcon: React.ComponentType<any>,
-): React.ComponentType<any> | false {
+  defaultIcon: ComponentType<any>,
+): ComponentType<any> | false {
   if (icon === false) {
     return false
   }
@@ -118,7 +132,7 @@ export function PaneItem(props: PaneItemProps) {
     [ChildLink, id],
   )
 
-  const handleClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
+  const handleClick = useCallback((e: MouseEvent<HTMLElement>) => {
     if (e.metaKey) {
       setClicked(false)
       return
@@ -132,6 +146,7 @@ export function PaneItem(props: PaneItemProps) {
 
   return (
     <PreviewCard
+      data-testid={`pane-item-${title}`}
       __unstable_focusRing
       as={Link as FIXME}
       data-as="a"

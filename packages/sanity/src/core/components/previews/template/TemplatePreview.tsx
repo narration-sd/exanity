@@ -1,22 +1,23 @@
-import React, {createElement, isValidElement} from 'react'
-import {isValidElementType} from 'react-is'
 import {Box, Flex, rem, Stack, Text, TextSkeleton} from '@sanity/ui'
-import styled from 'styled-components'
+import {createElement, type ElementType, isValidElement, type ReactNode} from 'react'
+import {isValidElementType} from 'react-is'
+import {styled} from 'styled-components'
 import {getDevicePixelRatio} from 'use-device-pixel-ratio'
-import {PreviewMediaDimensions} from '../types'
-import {Media, MediaProps} from '../_common/Media'
+
+import {Media, type MediaProps} from '../_common/Media'
 import {PREVIEW_SIZES} from '../constants'
+import {type PreviewMediaDimensions} from '../types'
 
 /**
  * @hidden
  * @beta */
 export interface TemplatePreviewProps {
-  description?: React.ReactNode
+  description?: ReactNode
   isPlaceholder?: boolean
   media?: MediaProps['media']
   mediaDimensions?: PreviewMediaDimensions
-  subtitle?: React.ElementType<{layout: 'default'}> | React.ReactNode
-  title?: React.ElementType<{layout: 'default'}> | React.ReactNode
+  subtitle?: ElementType<{layout: 'default'}> | ReactNode
+  title?: ElementType<{layout: 'default'}> | ReactNode
 }
 
 const DEFAULT_MEDIA_DIMENSION: PreviewMediaDimensions = {

@@ -1,37 +1,41 @@
 import {MenuIcon} from '@sanity/icons'
 import {
   BoundaryElementProvider,
+  Box,
   Card,
   Flex,
+  Grid,
   Layer,
   LayerProvider,
   PortalProvider,
   useMediaIndex,
-  Box,
-  Grid,
 } from '@sanity/ui'
-import {useCallback, useState, useMemo, useEffect, useRef, useContext} from 'react'
-import styled from 'styled-components'
-import {isDev} from '../../../environment'
-import {useWorkspace} from '../../workspace'
+import {useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react'
+import {NavbarContext} from 'sanity/_singletons'
+import {type RouterState, useRouterState} from 'sanity/router'
+import {styled} from 'styled-components'
+
 import {Button, TooltipDelayGroupProvider} from '../../../../ui-components'
-import {NavbarContext} from '../../StudioLayout'
-import {useToolMenuComponent} from '../../studio-components-hooks'
+import {type NavbarProps} from '../../../config/studio/types'
+import {isDev} from '../../../environment'
 import {useTranslation} from '../../../i18n'
-import {UserMenu} from './userMenu'
-import {NewDocumentButton, useNewDocumentOptions} from './new-document'
-import {PresenceMenu} from './presence'
-import {NavDrawer} from './navDrawer'
-import {WorkspaceMenuButton} from './workspace'
+import {useToolMenuComponent} from '../../studio-components-hooks'
+import {useWorkspace} from '../../workspace'
 import {ConfigIssuesButton} from './configIssues/ConfigIssuesButton'
-import {SearchButton, SearchDialog} from './search'
-import {SearchProvider} from './search/contexts/search/SearchProvider'
-import {ResourcesButton} from './resources/ResourcesButton'
 import {FreeTrial} from './free-trial'
 import {FreeTrialProvider} from './free-trial/FreeTrialProvider'
 import {HomeButton} from './home/HomeButton'
+import {NavDrawer} from './navDrawer'
+import {NewDocumentButton, useNewDocumentOptions} from './new-document'
+import {PresenceMenu} from './presence'
+import {ResourcesButton} from './resources/ResourcesButton'
+import {SearchButton, SearchDialog} from './search'
 import {SearchPopover} from './search/components/SearchPopover'
-import {RouterState, useRouterState} from 'sanity/router'
+import {SearchProvider} from './search/contexts/search/SearchProvider'
+import {UserMenu} from './userMenu'
+import {WorkspaceMenuButton} from './workspace'
+
+const EMPTY_ARRAY: [] = []
 
 const RootLayer = styled(Layer)`
   min-height: auto;
@@ -57,7 +61,12 @@ const NavGrid = styled(Grid)`
 /**
  * @hidden
  * @beta */
-export function StudioNavbar() {
+export function StudioNavbar(props: Omit<NavbarProps, 'renderDefault'>) {
+  const {
+    // eslint-disable-next-line camelcase
+    __internal_actions: actions = EMPTY_ARRAY,
+  } = props
+
   const {name, tools} = useWorkspace()
   const routerState = useRouterState()
   const mediaIndex = useMediaIndex()
@@ -149,6 +158,25 @@ export function StudioNavbar() {
     setDrawerOpen(true)
   }, [])
 
+  const actionNodes = useMemo(() => {
+    if (!shouldRender.tools) return null
+
+    return actions
+      ?.filter((v) => v.location === 'topbar')
+      ?.map((action) => {
+        return (
+          <Button
+            iconRight={action?.icon}
+            key={action.name}
+            mode="bleed"
+            onClick={action?.onAction}
+            selected={action.selected}
+            text={action.title}
+          />
+        )
+      })
+  }, [actions, shouldRender.tools])
+
   return (
     <FreeTrialProvider>
       <RootLayer zOffset={100} data-search-open={searchFullscreenOpen}>
@@ -236,7 +264,9 @@ export function StudioNavbar() {
                   {shouldRender.tools && <FreeTrial type="topbar" />}
                   {shouldRender.configIssues && <ConfigIssuesButton />}
                   {shouldRender.resources && <ResourcesButton />}
+
                   <PresenceMenu />
+
                   {/* Search button (mobile) */}
                   {shouldRender.searchFullscreen && (
                     <SearchButton
@@ -244,7 +274,10 @@ export function StudioNavbar() {
                       ref={setSearchOpenButtonEl}
                     />
                   )}
+
+                  {actionNodes}
                 </Flex>
+
                 {shouldRender.tools && (
                   <Box flex="none" marginLeft={1}>
                     <UserMenu />
@@ -257,6 +290,7 @@ export function StudioNavbar() {
 
         {!shouldRender.tools && (
           <NavDrawer
+            __internal_actions={actions}
             activeToolName={activeToolName}
             isOpen={drawerOpen}
             onClose={handleCloseDrawer}

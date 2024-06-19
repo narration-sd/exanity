@@ -1,26 +1,27 @@
-import React, {useCallback, useMemo, useState} from 'react'
-import {Text, useClickOutside, Stack, TextInput, TextInputProps, Card, Flex} from '@sanity/ui'
 import {AddIcon, SearchIcon} from '@sanity/icons'
-import ReactFocusLock from 'react-focus-lock'
 import {isDeprecatedSchemaType} from '@sanity/types'
-import {useGetI18nText, useTranslation} from '../../../../i18n'
+import {Card, Flex, Stack, Text, TextInput, type TextInputProps, useClickOutside} from '@sanity/ui'
+import {type ChangeEvent, type KeyboardEvent, useCallback, useMemo, useState} from 'react'
+import ReactFocusLock from 'react-focus-lock'
+
+import {Button, type ButtonProps, Tooltip, type TooltipProps} from '../../../../../ui-components'
 import {InsufficientPermissionsMessage} from '../../../../components'
-import {useCurrentUser} from '../../../../store'
-import {useColorScheme} from '../../../colorScheme'
-import {Button, ButtonProps, Tooltip, TooltipProps} from '../../../../../ui-components'
 import {useSchema} from '../../../../hooks'
-import {NewDocumentList, NewDocumentListProps} from './NewDocumentList'
-import {ModalType, NewDocumentOption} from './types'
+import {useGetI18nText, useTranslation} from '../../../../i18n'
+import {useCurrentUser} from '../../../../store'
+import {useColorSchemeValue} from '../../../colorScheme'
 import {filterOptions} from './filter'
 import {
   DialogHeaderCard,
   PopoverHeaderCard,
+  PopoverListFlex,
   RootFlex,
   StyledDialog,
   StyledPopover,
-  PopoverListFlex,
 } from './NewDocumentButton.style'
+import {NewDocumentList, type NewDocumentListProps} from './NewDocumentList'
 import {INLINE_PREVIEW_HEIGHT} from './NewDocumentListOption'
+import {type ModalType, type NewDocumentOption} from './types'
 
 const MAX_DISPLAYED_ITEMS = 10
 
@@ -46,7 +47,7 @@ export function NewDocumentButton(props: NewDocumentButtonProps) {
   const {t} = useTranslation()
   const getI18nText = useGetI18nText(options)
 
-  const {scheme} = useColorScheme()
+  const scheme = useColorSchemeValue()
   const currentUser = useCurrentUser()
   const schema = useSchema()
 
@@ -71,7 +72,7 @@ export function NewDocumentButton(props: NewDocumentButtonProps) {
     [validOptions, searchQuery, getI18nText],
   )
 
-  const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.currentTarget.value)
   }, [])
 
@@ -85,7 +86,7 @@ export function NewDocumentButton(props: NewDocumentButtonProps) {
 
   // Open popover on arrow down
   const handleOpenButtonKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    (e: KeyboardEvent<HTMLButtonElement>) => {
       if (e.key === 'ArrowDown' && !open) {
         setOpen(true)
       }
@@ -95,7 +96,7 @@ export function NewDocumentButton(props: NewDocumentButtonProps) {
 
   // Close popover on escape or tab
   const handlePopoverKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
+    (e: KeyboardEvent<HTMLDivElement>) => {
       if ((e.key === 'Escape' || e.key === 'Tab') && open) {
         handleClose()
       }
@@ -134,15 +135,15 @@ export function NewDocumentButton(props: NewDocumentButtonProps) {
   // Shared text input props for the popover and dialog
   const sharedTextInputProps: TextInputProps = useMemo(
     () => ({
-      __unstable_disableFocusRing: true,
-      border: false,
+      '__unstable_disableFocusRing': true,
+      'border': false,
       'data-testid': 'new-document-button-search-input',
-      defaultValue: searchQuery,
-      disabled: loading,
-      icon: SearchIcon,
-      onChange: handleSearchChange,
-      placeholder: placeholder,
-      ref: setSearchInputElement,
+      'defaultValue': searchQuery,
+      'disabled': loading,
+      'icon': SearchIcon,
+      'onChange': handleSearchChange,
+      'placeholder': placeholder,
+      'ref': setSearchInputElement,
     }),
     [handleSearchChange, loading, placeholder, searchQuery],
   )
@@ -152,13 +153,13 @@ export function NewDocumentButton(props: NewDocumentButtonProps) {
     () => ({
       'aria-label': openDialogAriaLabel,
       'data-testid': 'new-document-button',
-      disabled: disabled || loading,
-      icon: AddIcon,
-      text: t('new-document.button'),
-      mode: 'ghost',
-      onClick: handleToggleOpen,
-      ref: setButtonElement,
-      selected: open,
+      'disabled': disabled || loading,
+      'icon': AddIcon,
+      'text': t('new-document.button'),
+      'mode': 'ghost',
+      'onClick': handleToggleOpen,
+      'ref': setButtonElement,
+      'selected': open,
     }),
     [disabled, handleToggleOpen, loading, open, openDialogAriaLabel, t],
   )

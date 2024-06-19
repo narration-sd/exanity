@@ -1,8 +1,13 @@
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
-import initProject from '../../actions/init-project/initProject'
+
 import initPlugin from '../../actions/init-plugin/initPlugin'
-import {CliCommandDefinition} from '../../types'
+import initProject from '../../actions/init-project/initProject'
+import {
+  allowedPackageManagersString,
+  type PackageManager,
+} from '../../packageManager/packageManagerChoice'
+import {type CliCommandDefinition} from '../../types'
 
 const helpText = `
 Options
@@ -21,6 +26,7 @@ Options
   --project-plan <name> Optionally select a plan for a new project
   --coupon <name> Optionally select a coupon for a new project (cannot be used with --project-plan)
   --no-typescript Do not use TypeScript for template files
+  --package-manager <name> Specify which package manager to use [allowed: ${allowedPackageManagersString}]
 
 Examples
   # Initialize a new project, prompt for required information along the way
@@ -46,35 +52,47 @@ Examples
 `
 
 export interface InitFlags {
-  y?: boolean
-  yes?: boolean
-  project?: string
-  dataset?: string
-  template?: string
-  visibility?: string
-  typescript?: boolean
-  bare?: boolean
-  env?: boolean | string
-  git?: boolean | string
+  'y'?: boolean
+  'yes'?: boolean
+  'project'?: string
+  'dataset'?: string
+  'template'?: string
+
+  'visibility'?: string
+  'typescript'?: boolean
+  /**
+   * Used for initializing a project from a server schema that is saved in the Journey API
+   * Overrides `project` option.
+   * Overrides `dataset` option.
+   * Overrides `template` option.
+   * Overrides `visibility` option.
+   * @beta
+   */
+  'quickstart'?: string
+  'bare'?: boolean
+  'env'?: boolean | string
+  'git'?: boolean | string
 
   'output-path'?: string
   'project-plan'?: string
   'create-project'?: boolean | string
   'dataset-default'?: boolean
 
-  coupon?: string
+  'coupon'?: string
   /**
    * @deprecated `--reconfigure` is deprecated - manual configuration is now required
    */
-  reconfigure?: boolean
+  'reconfigure'?: boolean
 
-  organization?: string
+  'organization'?: string
+
+  'package-manager'?: PackageManager
 }
 
 export const initCommand: CliCommandDefinition<InitFlags> = {
   name: 'init',
   signature: '',
-  description: 'Initialize a new Sanity Studio project',
+  description: 'Initializes a new Sanity Studio and/or project',
   helpText,
   action: async (args, context) => {
     const {output, chalk, prompt} = context

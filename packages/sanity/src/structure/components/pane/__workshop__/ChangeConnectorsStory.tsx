@@ -1,5 +1,5 @@
 import {AddIcon, CloseIcon, RestoreIcon} from '@sanity/icons'
-import {Path} from '@sanity/types'
+import {type Path} from '@sanity/types'
 import {
   BoundaryElementProvider,
   Card,
@@ -14,15 +14,16 @@ import {
   useTheme,
 } from '@sanity/ui'
 import {useAction} from '@sanity/ui-workshop'
-import React, {useCallback, useState} from 'react'
-import styled from 'styled-components'
+import {type ReactNode, useCallback, useState} from 'react'
+import {ChangeConnectorRoot, ChangeFieldWrapper, ChangeIndicator, ScrollContainer} from 'sanity'
+import {styled} from 'styled-components'
+
 import {Button, Dialog} from '../../../../ui-components'
 import {Pane} from '../Pane'
 import {PaneContent} from '../PaneContent'
 import {PaneFooter} from '../PaneFooter'
 import {PaneHeader} from '../PaneHeader'
 import {PaneLayout} from '../PaneLayout'
-import {ChangeConnectorRoot, ChangeFieldWrapper, ChangeIndicator, ScrollContainer} from 'sanity'
 
 const TestContainer = styled(Container).attrs({
   height: 'fill',
@@ -244,7 +245,7 @@ function StringField(props: {
 }
 
 function DebugFormField(props: {
-  children?: React.ReactNode
+  children?: ReactNode
   focusPath: Path
   path: Path
   value: unknown
@@ -259,7 +260,7 @@ function DebugFormField(props: {
   )
 }
 
-function DebugDiffField(props: {children?: React.ReactNode; path: Path}) {
+function DebugDiffField(props: {children?: ReactNode; path: Path}) {
   const {children, path} = props
   const [hovered, setHovered] = useState(false)
 

@@ -1,8 +1,10 @@
-import type {Expr} from '../src/jsonpath/types'
-import {parseJsonPath} from '../src/jsonpath/parse'
-import {Expression} from '../src/jsonpath/Expression'
+import {expect, test} from '@jest/globals'
+
 import {Descender} from '../src/jsonpath/Descender'
+import {Expression} from '../src/jsonpath/Expression'
+import {parseJsonPath} from '../src/jsonpath/parse'
 import {PlainProbe} from '../src/jsonpath/PlainProbe'
+import {type Expr} from '../src/jsonpath/types'
 
 function inner(jsonpath: string): Expr | null {
   const expr = parseJsonPath(jsonpath)

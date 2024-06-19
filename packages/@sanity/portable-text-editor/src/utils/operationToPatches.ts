@@ -1,23 +1,24 @@
-import {Path, PortableTextSpan, PortableTextTextBlock} from '@sanity/types'
-import {omitBy, isUndefined, get} from 'lodash'
+import {type Path, type PortableTextSpan, type PortableTextTextBlock} from '@sanity/types'
+import {get, isUndefined, omitBy} from 'lodash'
 import {
-  Descendant,
-  InsertNodeOperation,
-  InsertTextOperation,
-  MergeNodeOperation,
-  MoveNodeOperation,
-  RemoveNodeOperation,
-  RemoveTextOperation,
-  SetNodeOperation,
-  SplitNodeOperation,
+  type Descendant,
+  type InsertNodeOperation,
+  type InsertTextOperation,
+  type MergeNodeOperation,
+  type MoveNodeOperation,
+  type RemoveNodeOperation,
+  type RemoveTextOperation,
+  type SetNodeOperation,
+  type SplitNodeOperation,
   Text,
 } from 'slate'
-import {set, insert, unset, diffMatchPatch, setIfMissing} from '../patch/PatchEvent'
-import type {Patch, InsertPosition} from '../types/patch'
-import {PatchFunctions} from '../editor/plugins/createWithPatches'
-import {PortableTextMemberSchemaTypes, PortableTextSlateEditor} from '../types/editor'
-import {fromSlateValue} from './values'
+
+import {type PatchFunctions} from '../editor/plugins/createWithPatches'
+import {diffMatchPatch, insert, set, setIfMissing, unset} from '../patch/PatchEvent'
+import {type PortableTextMemberSchemaTypes, type PortableTextSlateEditor} from '../types/editor'
+import {type InsertPosition, type Patch} from '../types/patch'
 import {debugWithName} from './debug'
+import {fromSlateValue} from './values'
 
 const debug = debugWithName('operationToPatches')
 debug.enabled = false
@@ -96,9 +97,18 @@ export function createOperationToPatches(types: PortableTextMemberSchemaTypes): 
           const blockKey = block._key
           const childKey = child._key
           const patches: Patch[] = []
-          Object.keys(operation.newProperties).forEach((keyName) => {
-            const val = get(operation.newProperties, keyName)
-            patches.push(set(val, [{_key: blockKey}, 'children', {_key: childKey}, keyName]))
+          const keys = Object.keys(operation.newProperties)
+          keys.forEach((keyName) => {
+            // Special case for setting _key on a child. We have to target it by index and not the _key.
+            if (keys.length === 1 && keyName === '_key') {
+              const val = get(operation.newProperties, keyName)
+              patches.push(
+                set(val, [{_key: blockKey}, 'children', block.children.indexOf(child), keyName]),
+              )
+            } else {
+              const val = get(operation.newProperties, keyName)
+              patches.push(set(val, [{_key: blockKey}, 'children', {_key: childKey}, keyName]))
+            }
           })
           return patches
         }

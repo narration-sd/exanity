@@ -1,25 +1,31 @@
-import path from 'path'
-import {promisify} from 'util'
+import path from 'node:path'
+import {promisify} from 'node:util'
+
 import chalk from 'chalk'
+import {info} from 'log-symbols'
+import semver from 'semver'
 import {noopLogger} from '@sanity/telemetry'
 import rimrafCallback from 'rimraf'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore This may not yet be built.
 import type {CliCommandArguments, CliCommandContext} from '@sanity/cli'
+
 import {buildStaticFiles, ChunkModule, ChunkStats} from '../../server'
 import {checkStudioDependencyVersions} from '../../util/checkStudioDependencyVersions'
 import {checkRequiredDependencies} from '../../util/checkRequiredDependencies'
 import {getTimer} from '../../util/timing'
 import {BuildTrace} from './build.telemetry'
+import {buildVendorDependencies} from '../../server/buildVendorDependencies'
+import {compareStudioDependencyVersions} from '../../util/compareStudioDependencyVersions'
+import {getAutoUpdateImportMap} from '../../util/getAutoUpdatesImportMap'
 
 const rimraf = promisify(rimrafCallback)
 
 export interface BuildSanityStudioCommandFlags {
-  yes?: boolean
-  y?: boolean
-  minify?: boolean
-  stats?: boolean
+  'yes'?: boolean
+  'y'?: boolean
+  'minify'?: boolean
+  'stats'?: boolean
   'source-maps'?: boolean
+  'auto-updates'?: boolean
 }
 
 export default async function buildSanityStudio(
@@ -30,12 +36,15 @@ export default async function buildSanityStudio(
   const timer = getTimer()
   const {output, prompt, workDir, cliConfig, telemetry = noopLogger} = context
   const flags: BuildSanityStudioCommandFlags = {
-    minify: true,
-    stats: false,
+    'minify': true,
+    'stats': false,
     'source-maps': false,
     ...args.extOptions,
   }
 
+  /**
+   * Unattended mode means that if there are any prompts it will use `YES` for them but will no change anything that doesn't have a prompt
+   */
   const unattendedMode = Boolean(flags.yes || flags.y)
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
   const outputDir = path.resolve(args.argsWithoutOptions[0] || defaultOutputDir)
@@ -44,8 +53,50 @@ export default async function buildSanityStudio(
 
   // If the check resulted in a dependency install, the CLI command will be re-run,
   // thus we want to exit early
-  if ((await checkRequiredDependencies(context)).didInstall) {
+  const {didInstall, installedSanityVersion} = await checkRequiredDependencies(context)
+  if (didInstall) {
     return {didCompile: false}
+  }
+
+  const autoUpdatesEnabled =
+    flags['auto-updates'] ||
+    (cliConfig && 'autoUpdates' in cliConfig && cliConfig.autoUpdates === true)
+
+  // Get the version without any tags if any
+  const coercedSanityVersion = semver.coerce(installedSanityVersion)?.version
+  if (autoUpdatesEnabled && !coercedSanityVersion) {
+    throw new Error(`Failed to parse installed Sanity version: ${installedSanityVersion}`)
+  }
+  const version = encodeURIComponent(`^${coercedSanityVersion}`)
+  const autoUpdatesImports = getAutoUpdateImportMap(version)
+
+  if (autoUpdatesEnabled) {
+    output.print(`${info} Building with auto-updates enabled`)
+
+    // Check the versions
+    try {
+      const result = await compareStudioDependencyVersions(autoUpdatesImports, workDir)
+
+      // If it is in unattended mode, we don't want to prompt
+      if (result?.length && !unattendedMode) {
+        const shouldContinue = await prompt.single({
+          type: 'confirm',
+          message: chalk.yellow(
+            `The following local package versions are different from the versions currently served at runtime.\n` +
+              `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
+              `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')} \n\n` +
+              `Continue anyway?`,
+          ),
+          default: false,
+        })
+
+        if (!shouldContinue) {
+          return process.exit(0)
+        }
+      }
+    } catch (err) {
+      throw err
+    }
   }
 
   const envVarKeys = getSanityEnvVars()
@@ -103,6 +154,18 @@ export default async function buildSanityStudio(
 
   const trace = telemetry.trace(BuildTrace)
   trace.start()
+
+  let importMap
+
+  if (autoUpdatesEnabled) {
+    importMap = {
+      imports: {
+        ...(await buildVendorDependencies({cwd: workDir, outputDir, basePath})),
+        ...autoUpdatesImports,
+      },
+    }
+  }
+
   try {
     timer.start('bundleStudio')
 
@@ -113,7 +176,9 @@ export default async function buildSanityStudio(
       sourceMap: Boolean(flags['source-maps']),
       minify: Boolean(flags.minify),
       vite: cliConfig && 'vite' in cliConfig ? cliConfig.vite : undefined,
+      importMap,
     })
+
     trace.log({
       outputSize: bundle.chunks
         .flatMap((chunk) => chunk.modules.flatMap((mod) => mod.renderedLength))
@@ -149,7 +214,7 @@ function sortModulesBySize(chunks: ChunkStats[]): ChunkModule[] {
 }
 
 function formatModuleSizes(modules: ChunkModule[]): string {
-  const lines = []
+  const lines: string[] = []
   for (const mod of modules) {
     lines.push(` - ${formatModuleName(mod.name)} (${formatSize(mod.renderedLength)})`)
   }

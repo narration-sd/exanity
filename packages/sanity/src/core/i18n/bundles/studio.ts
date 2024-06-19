@@ -1,6 +1,7 @@
 /* eslint sort-keys: "error" */
-import {defineLocaleResourceBundle, defineLocalesResources} from '../helpers'
+import {defineLocalesResources} from '../helpers'
 import {studioLocaleNamespace} from '../localeNamespaces'
+import {type LocaleResourceBundle} from '../types'
 
 /**
  * The string resources for the studio core.
@@ -31,7 +32,7 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'asset-source.delete-dialog.loading': 'Loading…',
   /** Message confirming to delete *named* file */
   'asset-source.delete-dialog.usage-list.confirm-delete-file_named':
-    'You are about to delete the file <strong>{{filename}}}</strong> and its metadata. Are you sure?',
+    'You are about to delete the file <strong>{{filename}}</strong> and its metadata. Are you sure?',
   /** Message confirming to delete *unnamed* file */
   'asset-source.delete-dialog.usage-list.confirm-delete-file_unnamed':
     'You are about to delete the file and its metadata. Are you sure?',
@@ -315,6 +316,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
 
   /** --- Configuration issues --- */
 
+  /** Default label text on configuration issues button */
+  'configuration-issues.button.label': 'Configuration issues',
   /** Tooltip displayed on configuration issues button */
   'configuration-issues.button.tooltip': 'Found configuration issues',
 
@@ -394,12 +397,18 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   /** Error text shown when form is unable to find an array item at a given keyed path */
   'form.error.no-array-item-at-key':
     'No array item with `_key` <code>"{{key}}"</code> found at path <code>{{path}}</code>',
+  /** The title above the error call stack output related to the crash */
+  'form.error.unhandled-runtime-error.call-stack.title': 'Call Stack:',
+  /** The title above the error component stack provided by React's underlying ErrorBoundary component */
+  'form.error.unhandled-runtime-error.component-stack.title': 'Component Stack:',
+  /** The error message for the unhandled error that crashed the Input component during render */
+  'form.error.unhandled-runtime-error.error-message': 'Error: {{message}}',
+  /** The title for the error card rendered inside a field in place of a crashing input */
+  'form.error.unhandled-runtime-error.title': 'Unhandled Runtime Error',
   /** Form field deprecated label */
   'form.field.deprecated-label': 'deprecated',
   /** Fallback title shown above field if it has no defined title */
   'form.field.untitled-field-label': 'Untitled',
-  /** Fallback title shown above fieldset if it has no defined title */
-  'form.field.untitled-fieldset-label': 'Untitled',
   /** Accessibility label for the icon that indicates the field has a validation error */
   'form.validation.has-error-aria-label': 'Has error',
   /** Accessibility label for the icon that indicates the field has validation information */
@@ -497,12 +506,24 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'inputs.array.error.type-is-incompatible-title': 'Why is this happening?',
   /** Error label for unexpected errors in the Array Input */
   'inputs.array.error.unexpected-error': 'Unexpected Error: {{error}}',
+  /** Label for the array insert menu all items filter  */
+  'inputs.array.insert-menu.filter.all-items': 'All',
+  /** Label for when the array insert menu search shows no items */
+  'inputs.array.insert-menu.search.no-results': 'No items found',
+  /** Placeholder for the array insert menu search field */
+  'inputs.array.insert-menu.search.placeholder': 'Search',
+  /** Tooltip for the array insert menu grid view toggle */
+  'inputs.array.insert-menu.toggle-grid-view.tooltip': 'Toggle grid view',
+  /** Tooltip for the array insert menu list view toggle */
+  'inputs.array.insert-menu.toggle-list-view.tooltip': 'Toggle list view',
   /** Label for when the array input doesn't have any items */
   'inputs.array.no-items-label': 'No items',
   /** Label for read only array fields */
   'inputs.array.read-only-label': 'This field is read-only',
   /** Label for when the array input is resolving the initial value for the item */
   'inputs.array.resolving-initial-value': 'Resolving initial value…',
+  /** Tooltip content when boolean input is disabled */
+  'inputs.boolean.disabled': 'Disabled',
   /** Placeholder value for datetime input */
   'inputs.datetime.placeholder': 'e.g. {{example}}',
   /** Acessibility label for button to open file options menu */
@@ -1003,15 +1024,27 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   /** The explanation when unable to create a new reference in a document */
   'insufficient-permissions-message.not-authorized-explanation_create-new-reference':
     'You do not have permission to create a new reference.',
+
   /** The explanation when unable to delete a particular document */
   'insufficient-permissions-message.not-authorized-explanation_delete-document':
     'You do not have permission to delete this document.',
+  /** The explanation when unable to delete a schedule on scheduled publishing */
+  'insufficient-permissions-message.not-authorized-explanation_delete-schedules':
+    'You do not have permission to delete schedules.',
+
   /** The explanation when unable to discard changes in a particular document */
   'insufficient-permissions-message.not-authorized-explanation_discard-changes':
     'You do not have permission to discard changes in this document.',
   /** The explanation when unable to duplicate a particular document */
   'insufficient-permissions-message.not-authorized-explanation_duplicate-document':
     'You do not have permission to duplicate this document.',
+  /** The explanation when unable to edit a schedule on scheduled publishing */
+  'insufficient-permissions-message.not-authorized-explanation_edit-schedules':
+    'You do not have permission to edit schedules.',
+
+  /** The explanation when unable to execute a schedule on scheduled publishing */
+  'insufficient-permissions-message.not-authorized-explanation_execute-schedules':
+    'You do not have permission to execute schedules.',
   /** The explanation when unable to publish a particular document */
   'insufficient-permissions-message.not-authorized-explanation_publish-document':
     'You do not have permission to publish this document.',
@@ -1034,7 +1067,7 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
    */
   'new-document.create-new-document-label': 'New document…',
   /** Placeholder for the "filter" input within the new document menu */
-  'new-document.filter-placeholder': 'Filter',
+  'new-document.filter-placeholder': 'Search document types',
   /** Loading indicator text within the new document menu */
   'new-document.loading': 'Loading…',
   /** Accessibility label for the list displaying options in the new document menu */
@@ -1052,17 +1085,24 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'new-document.open-dialog-aria-label': 'Create new document',
   /** Title for "Create new document" dialog */
   'new-document.title': 'Create new document',
-
+  /** More detailed alert text letting user know they have an out-of-date version and should reload */
+  'package-version.new-package-available.description': 'Simply reload to use the new version.',
+  /** Label for button that will make the browser reload when users' studio version is out-of-date */
+  'package-version.new-package-available.reload-button': 'Reload',
+  /** Title of the alert for studio users when packages in their studio are out-of-date */
+  'package-version.new-package-available.title': 'Sanity Studio was updated',
   /** Label for action to manage members of the current studio project */
   'presence.action.manage-members': 'Manage members',
-  /** Accessibility label for Avatar Stack */
-  'presence.aria-label': 'Who is here',
+  /** Accessibility label for presence menu button */
+  'presence.aria-label': 'Global presence',
   /** Message description for when no one else is currently present */
   'presence.no-one-else-description': 'Invite people to the project to see their online status.',
   /** Message title for when no one else is currently present */
   'presence.no-one-else-title': 'No one else is here',
   /** Message for when a user is not in a document (displayed in the global presence menu) */
   'presence.not-in-a-document': 'Not in a document',
+  /** Tooltip content text for presence menu button */
+  'presence.tooltip-content': 'Who is here',
 
   /** Fallback title shown when a preview does not provide a title */
   'preview.default.title-fallback': 'Untitled',
@@ -1524,6 +1564,16 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'search.recent-searches-label': 'Recent searches',
   /** Accessibility label for the search results section, shown when the user has typed valid terms */
   'search.search-results-aria-label': 'Search results',
+  /** Label for the edit columns button to change field visibility in sheet list */
+  'sheet-list.edit-columns': 'Edit columns',
+  /** Label for the header menu option to hide a field from the sheet list */
+  'sheet-list.hide-field': 'Remove from table',
+  /** Label for reset column visibilities button */
+  'sheet-list.reset-columns': 'Reset columns',
+  /** Title for the edit columns menu */
+  'sheet-list.select-fields': 'Select up to 5 field types',
+  /** Accessibility label for the navbar status button */
+  'status-button.aria-label': 'Configuration status',
 
   /** Description for error when the timeline for the given document can't be loaded */
   'timeline.error.load-document-changes-description':
@@ -1540,8 +1590,14 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'timeline.error.unable-to-load-revision': 'Unable to load revision',
   /** Label for when the timeline item is the latest in the history */
   'timeline.latest': 'Latest',
-  /** Label for latest version for timeline menu dropdown */
-  'timeline.latest-version': 'Latest version',
+
+  /** Label for latest revision for timeline menu dropdown */
+  'timeline.latest-revision': 'Latest revision',
+  /**
+   * Label for latest revision for timeline menu dropdown
+   * @deprecated as of `v3.47.0` `timeline.latest-revision` should be used instead. Note: _usage_ of this key is deprecated, but Studios on `< v3.47.0` still require this key to be _defined_
+   * */
+  'timeline.latest-version': 'Latest revision',
   /** The aria-label for the list of revisions in the timeline */
   'timeline.list.aria-label': 'Document revisions',
   /** Label for loading history */
@@ -1585,6 +1641,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'timeline.since': 'Since: {{timestamp, datetime}}',
   /** Label for missing change version for timeline menu dropdown are showing */
   'timeline.since-version-missing': 'Since: unknown version',
+  /**Aria label for the action buttons in the PTE toolbar */
+  'toolbar.portable-text.action-button-aria-label': '{{action}}',
   /** Label for the button showed after trial ended */
   'user-menu.action.free-trial-finished': 'Upgrade from free',
   /** Label for button showing the free trial days left */
@@ -1666,8 +1724,8 @@ export type StudioLocaleResourceKeys = keyof typeof studioLocaleStrings
  * @beta
  * @hidden
  */
-export const studioDefaultLocaleResources = defineLocaleResourceBundle({
+export const studioDefaultLocaleResources: LocaleResourceBundle = {
   locale: 'en-US',
   namespace: studioLocaleNamespace,
   resources: studioLocaleStrings,
-})
+}

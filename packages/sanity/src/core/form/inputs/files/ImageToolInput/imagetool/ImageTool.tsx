@@ -1,9 +1,8 @@
-import React from 'react'
 import {LoadingBlock} from '../../../../../components/loadingBlock'
 import {ImageLoader} from './ImageLoader'
-import {ToolCanvas} from './ToolCanvas'
 import {Resize} from './Resize'
-import type {ToolCanvasProps} from './types'
+import {ToolCanvas} from './ToolCanvas'
+import {type ToolCanvasProps} from './types'
 
 export interface ImageToolProps extends Omit<ToolCanvasProps, 'image'> {
   image?: HTMLCanvasElement

@@ -1,51 +1,77 @@
 import {
-  ArraySchemaType,
-  BooleanSchemaType,
-  CrossDatasetReferenceValue,
-  FileValue,
-  GeopointValue,
-  ImageValue,
-  NumberSchemaType,
-  ObjectSchemaType,
-  Path,
-  PortableTextBlock,
-  ReferenceValue,
-  SchemaType,
-  SlugValue,
-  StringSchemaType,
+  type EditorChange,
+  type EditorSelection,
+  type HotkeyOptions,
+  type OnCopyFn,
+  type OnPasteFn,
+  type PortableTextEditor,
+  type RangeDecoration,
+} from '@sanity/portable-text-editor'
+import {
+  type ArraySchemaType,
+  type BooleanSchemaType,
+  type CrossDatasetReferenceValue,
+  type FileValue,
+  type GeopointValue,
+  type ImageValue,
+  type NumberSchemaType,
+  type ObjectSchemaType,
+  type Path,
+  type PortableTextBlock,
+  type ReferenceValue,
+  type SchemaType,
+  type SlugValue,
+  type StringSchemaType,
 } from '@sanity/types'
-import React, {ComponentType, FocusEventHandler, FormEventHandler} from 'react'
-import {HotkeyOptions, OnCopyFn, OnPasteFn} from '@sanity/portable-text-editor'
-import {FormPatch, PatchEvent} from '../patch'
 import {
-  ArrayOfObjectsFormNode,
-  ArrayOfPrimitivesFormNode,
-  BooleanFormNode,
-  NumberFormNode,
-  ObjectFormNode,
-  StringFormNode,
-} from '../store/types/nodes'
+  type ComponentType,
+  type FocusEventHandler,
+  type FormEventHandler,
+  type MutableRefObject,
+  type ReactElement,
+} from 'react'
 
-import {UploaderResolver} from '../studio'
-import {FormFieldGroup} from '../store'
-import {RenderBlockActionsCallback} from '../types'
+import {type RenderPortableTextInputEditableProps} from '../inputs'
+import {type FormPatch, type PatchEvent} from '../patch'
+import {type FormFieldGroup} from '../store'
 import {
-  RenderAnnotationCallback,
-  RenderArrayOfObjectsItemCallback,
-  RenderArrayOfPrimitivesItemCallback,
-  RenderBlockCallback,
-  RenderFieldCallback,
-  RenderInputCallback,
-  RenderPreviewCallback,
+  type ArrayOfObjectsFormNode,
+  type ArrayOfPrimitivesFormNode,
+  type BooleanFormNode,
+  type NumberFormNode,
+  type ObjectFormNode,
+  type StringFormNode,
+} from '../store/types/nodes'
+import {type UploaderResolver} from '../studio'
+import {type RenderBlockActionsCallback} from '../types'
+import {
+  type ArrayInputFunctionsProps,
+  type PortableTextMarker,
+  type RenderCustomMarkers,
+} from './_transitional'
+import {type ArrayInputInsertEvent, type ArrayInputMoveItemEvent, type UploadEvent} from './event'
+import {
+  type RenderAnnotationCallback,
+  type RenderArrayOfObjectsItemCallback,
+  type RenderArrayOfPrimitivesItemCallback,
+  type RenderBlockCallback,
+  type RenderFieldCallback,
+  type RenderInputCallback,
+  type RenderPreviewCallback,
 } from './renderCallback'
-import {ArrayInputInsertEvent, ArrayInputMoveItemEvent, UploadEvent} from './event'
-import {ArrayInputFunctionsProps, PortableTextMarker, RenderCustomMarkers} from './_transitional'
+
+/**
+ * @hidden
+ * @beta */
+export interface OnPathFocusPayload {
+  selection?: EditorSelection
+}
 
 /**
  * @hidden
  * @public */
 export interface BaseInputProps {
-  renderDefault: (props: InputProps) => React.ReactElement
+  renderDefault: (props: InputProps) => ReactElement
 }
 
 /**
@@ -209,7 +235,7 @@ export interface ArrayOfObjectsInputProps<
   /**
    * @hidden
    * @beta */
-  onPathFocus: (path: Path) => void
+  onPathFocus: (path: Path, payload?: OnPathFocusPayload) => void
 
   /**
    * for array inputs using expand/collapse semantics for items
@@ -384,14 +410,14 @@ export interface ArrayOfPrimitivesInputProps<
  * @hidden
  * @public */
 export interface PrimitiveInputElementProps {
-  value?: string
-  id: string
-  readOnly: boolean
-  placeholder?: string
-  onChange: FormEventHandler
-  onFocus: FocusEventHandler
-  onBlur: FocusEventHandler
-  ref: React.MutableRefObject<any>
+  'value'?: string
+  'id': string
+  'readOnly': boolean
+  'placeholder'?: string
+  'onChange': FormEventHandler
+  'onFocus': FocusEventHandler
+  'onBlur': FocusEventHandler
+  'ref': MutableRefObject<any>
   'aria-describedby': string | undefined
 }
 
@@ -399,10 +425,10 @@ export interface PrimitiveInputElementProps {
  * @hidden
  * @beta */
 export interface ComplexElementProps {
-  id: string
-  onFocus: FocusEventHandler
-  onBlur: FocusEventHandler
-  ref: React.MutableRefObject<any>
+  'id': string
+  'onFocus': FocusEventHandler
+  'onBlur': FocusEventHandler
+  'ref': MutableRefObject<any>
   'aria-describedby': string | undefined
 }
 
@@ -479,15 +505,42 @@ export type PrimitiveInputProps = StringInputProps | BooleanInputProps | NumberI
 export interface PortableTextInputProps
   extends ArrayOfObjectsInputProps<PortableTextBlock, ArraySchemaType<PortableTextBlock>> {
   /**
+   * A React Ref that can reference the underlying editor instance
+   */
+  editorRef?: React.MutableRefObject<PortableTextEditor | null>
+  /**
+   * Option to hide the default toolbar
+   */
+  hideToolbar?: boolean
+  /**
    * Assign hotkeys that can be attached to custom editing functions
    */
   hotkeys?: HotkeyOptions
+  /**
+   * Whether the input is activated and should receive events on mount.
+   * By default, PTE inputs need to be manually activated by focusing them.
+   */
+  initialActive?: boolean
+  /**
+   * Whether the input is _initially_ open in fullscreen mode
+   */
+  initialFullscreen?: boolean
   /**
    * Array of {@link PortableTextMarker} with meta data connected to the content.
    * @deprecated will be removed in the next major version of Sanity Studio.
    * Use the `renderBlock` interface instead.
    */
   markers?: PortableTextMarker[]
+  /**
+   * Returns changes from the underlying editor
+   */
+  onEditorChange?: (change: EditorChange, editor: PortableTextEditor) => void
+  /**
+   * Optional callback for when the editor goes into or out of full screen mode
+   * @hidden
+   * @beta
+   */
+  onFullScreenChange?: (isFullScreen: boolean) => void
   /**
    * Custom copy function
    */
@@ -508,6 +561,17 @@ export interface PortableTextInputProps
    * Use the `renderBlock` interface instead.
    */
   renderCustomMarkers?: RenderCustomMarkers
+  /**
+   * Function to render the PortableTextInput's editable component.
+   * This is the actual contentEditable element that users type into.
+   * @hidden
+   * @beta
+   */
+  renderEditable?: (props: RenderPortableTextInputEditableProps) => JSX.Element
+  /**
+   * Array of {@link RangeDecoration} that can be used to decorate the content.
+   */
+  rangeDecorations?: RangeDecoration[]
 }
 
 /**

@@ -1,16 +1,17 @@
 import {CheckmarkIcon} from '@sanity/icons'
-import {Box, ResponsiveMarginProps, ResponsivePaddingProps} from '@sanity/ui'
-import React, {useCallback} from 'react'
-import type {SearchableType} from '../../../../../../../../search'
-import {useSearchState} from '../../../../contexts/search/useSearchState'
+import {type SchemaType} from '@sanity/types'
+import {Box, type ResponsiveMarginProps, type ResponsivePaddingProps} from '@sanity/ui'
+import {memo, useCallback} from 'react'
+
 import {Button} from '../../../../../../../../../ui-components'
+import {useSearchState} from '../../../../contexts/search/useSearchState'
 
 interface DocumentTypeFilterItemProps extends ResponsiveMarginProps, ResponsivePaddingProps {
   selected: boolean
-  type: SearchableType
+  type: SchemaType
 }
 
-export const DocumentTypeFilterItem = React.memo(function TypeFilterItem({
+export const DocumentTypeFilterItem = memo(function TypeFilterItem({
   selected,
   type,
   ...rest

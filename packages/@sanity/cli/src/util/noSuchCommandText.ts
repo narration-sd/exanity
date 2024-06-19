@@ -1,6 +1,7 @@
-import leven from 'leven'
 import chalk from 'chalk'
-import {CliCommandDefinition, CliCommandGroupDefinition} from '../types'
+import leven from 'leven'
+
+import {type CliCommandDefinition, type CliCommandGroupDefinition} from '../types'
 
 const commonMistakes: Record<string, string | undefined> = {get: 'list'}
 const levenThreshold = 3
@@ -16,14 +17,18 @@ const coreCommands = [
   'exec',
   'graphql',
   'hook',
+  'migration',
   'preview',
-  'migrate',
   'schema',
   'start',
   'undeploy',
   'uninstall',
   'users',
 ]
+
+// These are disabled in v3, but still present because of v2.
+// We don't want to suggest them anymore, though.
+const discouragedCommands = ['upgrade', 'check', 'configcheck', 'uninstall']
 
 const helpText = `
 Run the command again within a Sanity project directory, where "sanity"
@@ -53,6 +58,7 @@ function suggestCommand(
 ) {
   // Try to find something similar
   const closest = group
+    .filter((command) => !discouragedCommands.includes(command.name))
     .map((command) => leven(command.name, cmdName))
     .reduce(
       (current: {index: number; distance: number}, distance: number, index: number) =>

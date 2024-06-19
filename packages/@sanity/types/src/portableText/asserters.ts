@@ -1,4 +1,4 @@
-import type {PortableTextTextBlock, PortableTextSpan, PortableTextObject} from './types'
+import {type PortableTextObject, type PortableTextSpan, type PortableTextTextBlock} from './types'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && (typeof value == 'object' || typeof value == 'function')
@@ -23,7 +23,7 @@ export function isPortableTextTextBlock<T = PortableTextSpan | PortableTextObjec
     value.children.every((child) => isRecord(child)) &&
     ('markDefs' in value // optional property
       ? Array.isArray(value.markDefs) && value.markDefs.every((def) => isRecord(def))
-      : false) &&
+      : true) &&
     ('style' in value ? typeof value.style === 'string' : true) // optional property
   )
 }

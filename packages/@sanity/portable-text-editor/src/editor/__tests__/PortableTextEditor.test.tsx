@@ -1,10 +1,11 @@
+import {describe, expect, it, jest} from '@jest/globals'
 /* eslint-disable no-irregular-whitespace */
-
-import React from 'react'
+import {type PortableTextBlock} from '@sanity/types'
 import {render, waitFor} from '@testing-library/react'
-import {PortableTextBlock} from '@sanity/types'
+import {createRef, type RefObject} from 'react'
+
+import {type EditorSelection} from '../..'
 import {PortableTextEditor} from '../PortableTextEditor'
-import {EditorSelection} from '../..'
 import {PortableTextEditorTester, schemaType} from './PortableTextEditorTester'
 
 const helloBlock: PortableTextBlock = {
@@ -18,7 +19,7 @@ const renderPlaceholder = () => 'Jot something down here'
 
 describe('initialization', () => {
   it('receives initial onChange events and has custom placeholder', async () => {
-    const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+    const editorRef: RefObject<PortableTextEditor> = createRef()
     const onChange = jest.fn()
     const {container} = render(
       <PortableTextEditorTester
@@ -63,7 +64,7 @@ describe('initialization', () => {
           >
             <span
               contenteditable="false"
-              style="opacity: 0.5; position: absolute; user-select: none; pointer-events: none; left: 0px; right: 0px;"
+              style="position: absolute; user-select: none; pointer-events: none; left: 0px; right: 0px;"
             >
               Jot something down here
             </span>
@@ -90,7 +91,7 @@ describe('initialization', () => {
   it('takes value from props and confirms it by emitting value change event', async () => {
     const initialValue = [helloBlock]
     const onChange = jest.fn()
-    const editorRef = React.createRef<PortableTextEditor>()
+    const editorRef = createRef<PortableTextEditor>()
     render(
       <PortableTextEditorTester
         ref={editorRef}
@@ -109,11 +110,12 @@ describe('initialization', () => {
   })
 
   it('takes initial selection from props', async () => {
-    const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+    const editorRef: RefObject<PortableTextEditor> = createRef()
     const initialValue = [helloBlock]
     const initialSelection: EditorSelection = {
       anchor: {path: [{_key: '123'}, 'children', {_key: '567'}], offset: 2},
       focus: {path: [{_key: '123'}, 'children', {_key: '567'}], offset: 2},
+      backward: false,
     }
     const onChange = jest.fn()
     render(
@@ -134,15 +136,17 @@ describe('initialization', () => {
   })
 
   it('updates editor selection from new prop and keeps object equality in editor.getSelection()', async () => {
-    const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+    const editorRef: RefObject<PortableTextEditor> = createRef()
     const initialValue = [helloBlock]
     const initialSelection: EditorSelection = {
       anchor: {path: [{_key: '123'}, 'children', {_key: '567'}], offset: 0},
       focus: {path: [{_key: '123'}, 'children', {_key: '567'}], offset: 0},
+      backward: false,
     }
     const newSelection: EditorSelection = {
       anchor: {path: [{_key: '123'}, 'children', {_key: '567'}], offset: 0},
       focus: {path: [{_key: '123'}, 'children', {_key: '567'}], offset: 3},
+      backward: false,
     }
     const onChange = jest.fn()
     const {rerender} = render(
@@ -184,7 +188,7 @@ describe('initialization', () => {
   })
 
   it('handles empty array value', async () => {
-    const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+    const editorRef: RefObject<PortableTextEditor> = createRef()
     const initialValue: PortableTextBlock[] = []
     const initialSelection: EditorSelection = {
       anchor: {path: [{_key: '123'}, 'children', {_key: '567'}], offset: 2},
@@ -223,7 +227,7 @@ describe('initialization', () => {
     })
   })
   it('validates a non-initial value', async () => {
-    const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+    const editorRef: RefObject<PortableTextEditor> = createRef()
     let value: PortableTextBlock[] = [helloBlock]
     const initialSelection: EditorSelection = {
       anchor: {path: [{_key: '123'}, 'children', {_key: '567'}], offset: 2},
@@ -299,14 +303,14 @@ describe('initialization', () => {
     })
   })
   it("doesn't crash when containing a invalid block somewhere inside the content", async () => {
-    const editorRef: React.RefObject<PortableTextEditor> = React.createRef()
+    const editorRef: RefObject<PortableTextEditor> = createRef()
     const initialValue: PortableTextBlock[] = [
       helloBlock,
       {
         _key: 'abc',
         _type: 'myTestBlockType',
         markDefs: [],
-        children: [{_key: 'def', _type: 'span', text: 'Test', marks: ['invalid']}],
+        children: [{_key: 'def', _type: 'span', marks: []}],
       },
     ]
     const initialSelection: EditorSelection = {
@@ -326,47 +330,57 @@ describe('initialization', () => {
     await waitFor(() => {
       if (editorRef.current) {
         expect(onChange).toHaveBeenCalledWith({
+          type: 'invalidValue',
+          value: initialValue,
           resolution: {
-            action: 'Remove invalid marks',
+            action: 'Write an empty text property to the object',
             description:
-              "Block with _key 'abc' contains marks (invalid) not supported by the current content model.",
+              "Child with _key 'def' in block with key 'abc' has missing or invalid text property!",
+            i18n: {
+              action: 'inputs.portable-text.invalid-value.invalid-span-text.action',
+              description: 'inputs.portable-text.invalid-value.invalid-span-text.description',
+              values: {
+                key: 'abc',
+                childKey: 'def',
+              },
+            },
             item: {
               _key: 'abc',
               _type: 'myTestBlockType',
-              children: [{_key: 'def', _type: 'span', marks: ['invalid'], text: 'Test'}],
+              children: [
+                {
+                  _key: 'def',
+                  _type: 'span',
+                  marks: [],
+                },
+              ],
               markDefs: [],
             },
             patches: [
-              {path: [{_key: 'abc'}, 'children', {_key: 'def'}, 'marks'], type: 'set', value: []},
-            ],
-            i18n: {
-              action: 'inputs.portable-text.invalid-value.orphaned-marks.action',
-              description: 'inputs.portable-text.invalid-value.orphaned-marks.description',
-              values: {
-                key: 'abc',
-                orphanedMarks: ['invalid'],
+              {
+                path: [
+                  {
+                    _key: 'abc',
+                  },
+                  'children',
+                  {
+                    _key: 'def',
+                  },
+                ],
+                type: 'set',
+                value: {
+                  _key: 'def',
+                  _type: 'span',
+                  marks: [],
+                  text: '',
+                },
               },
-            },
+            ],
           },
-          type: 'invalidValue',
-          value: [
-            {
-              _key: '123',
-              _type: 'myTestBlockType',
-              children: [{_key: '567', _type: 'span', marks: [], text: 'Hello'}],
-              markDefs: [],
-            },
-            {
-              _key: 'abc',
-              _type: 'myTestBlockType',
-              children: [{_key: 'def', _type: 'span', marks: ['invalid'], text: 'Test'}],
-              markDefs: [],
-            },
-          ],
         })
-        expect(onChange).not.toHaveBeenCalledWith({type: 'value', value: initialValue})
-        expect(onChange).toHaveBeenCalledWith({type: 'ready'})
       }
     })
+    expect(onChange).not.toHaveBeenCalledWith({type: 'value', value: initialValue})
+    expect(onChange).toHaveBeenCalledWith({type: 'ready'})
   })
 })

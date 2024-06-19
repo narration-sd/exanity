@@ -1,14 +1,15 @@
-import {Element, Operation, InsertNodeOperation, Text as SlateText, Transforms} from 'slate'
 import {
-  isPortableTextTextBlock,
-  PortableTextTextBlock,
-  isPortableTextSpan,
-  PortableTextSpan,
-  PortableTextListBlock,
   isPortableTextListBlock,
+  isPortableTextSpan,
+  isPortableTextTextBlock,
+  type PortableTextListBlock,
+  type PortableTextSpan,
+  type PortableTextTextBlock,
 } from '@sanity/types'
+import {type Element, Transforms} from 'slate'
+
+import {type PortableTextMemberSchemaTypes, type PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
-import {PortableTextMemberSchemaTypes, PortableTextSlateEditor} from '../../types/editor'
 
 const debug = debugWithName('plugin:withSchemaTypes')
 /**
@@ -48,16 +49,26 @@ export function createWithSchemaTypes({
       )
     }
 
-    // Extend Slate's default normalization to add `_type: 'span'` to texts if they are inserted without
+    // Extend Slate's default normalization
     const {normalizeNode} = editor
     editor.normalizeNode = (entry) => {
       const [node, path] = entry
+
+      // If text block children node is missing _type, set it to the span type
       if (node._type === undefined && path.length === 2) {
         debug('Setting span type on text node without a type')
         const span = node as PortableTextSpan
         const key = span._key || keyGenerator()
         Transforms.setNodes(editor, {...span, _type: schemaTypes.span.name, _key: key}, {at: path})
       }
+
+      // catches cases when the children are missing keys but excludes it when the normalize is running the node as the editor object
+      if (node._key === undefined && (path.length === 1 || path.length === 2)) {
+        debug('Setting missing key on child node without a key')
+        const key = keyGenerator()
+        Transforms.setNodes(editor, {_key: key}, {at: path})
+      }
+
       normalizeNode(entry)
     }
     return editor

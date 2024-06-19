@@ -1,30 +1,32 @@
-import {SanityClient} from '@sanity/client'
+import {jest} from '@jest/globals'
+import {type SanityClient} from '@sanity/client'
 import {
   defineType,
-  FieldDefinition,
-  FormNodeValidation,
-  ObjectSchemaType,
-  Path,
-  SchemaType,
+  type FieldDefinition,
+  type FormNodeValidation,
+  type ObjectSchemaType,
+  type Path,
+  type SchemaType,
 } from '@sanity/types'
 import {render} from '@testing-library/react'
-import React, {FocusEvent} from 'react'
+import {type FocusEvent, type ReactElement, type RefObject} from 'react'
+
 import {
-  EMPTY_ARRAY,
-  FieldMember,
-  FormNodePresence,
-  FormProvider,
-  FormState,
-  PatchArg,
-  PatchEvent,
   createPatchChannel,
+  EMPTY_ARRAY,
+  type FieldMember,
+  type FormNodePresence,
+  FormProvider,
+  type FormState,
+  type PatchArg,
+  type PatchEvent,
   useFormState,
   useSchema,
 } from '../../src/core'
+import {DocumentFieldActionsProvider} from '../../src/core/form/studio/contexts/DocumentFieldActions'
 import {createMockSanityClient} from '../mocks/mockSanityClient'
 import {createTestProvider} from '../testUtils/TestProvider'
-import {DocumentFieldActionsProvider} from '../../src/core/form/studio/contexts/DocumentFieldActions'
-import {TestRenderProps} from './types'
+import {type TestRenderProps} from './types'
 
 export interface TestRenderInputContext {
   client: SanityClient
@@ -52,13 +54,26 @@ export interface TestRenderInputProps<ElementProps> {
 export type TestRenderInputCallback<ElementProps> = (
   inputProps: TestRenderInputProps<ElementProps>,
   context: TestRenderInputContext,
-) => React.ReactElement
+) => ReactElement
 
-export async function renderInput(props: {
+export type RenderInputResult = {
+  container: Element
+  focusRef: RefObject<HTMLElement>
+  onBlur: jest.Mock<(event: FocusEvent) => void>
+  onFocus: jest.Mock<(event: FocusEvent) => void>
+  onChange: jest.Mock<(path: PatchArg | PatchEvent) => void>
+  onNativeChange: jest.Mock<(event: FocusEvent) => void>
+  onPathBlur: jest.Mock<(path: Path) => void>
+  onPathFocus: jest.Mock<(path: Path) => void>
+  onFieldGroupSelect: jest.Mock<(field: string) => void>
+  onSetFieldSetCollapsed: jest.Mock<(field: string, collapsed: boolean) => void>
+  result: ReturnType<typeof render>
+}
+export async function renderInput<ElementProps>(props: {
   fieldDefinition: FieldDefinition
   props?: TestRenderProps
-  render: TestRenderInputCallback<any>
-}) {
+  render: TestRenderInputCallback<ElementProps>
+}): Promise<RenderInputResult> {
   const {render: initialRender, fieldDefinition, props: initialTestProps} = props
   const name = fieldDefinition.name
 
@@ -198,16 +213,6 @@ export async function renderInput(props: {
     </TestProvider>,
   )
 
-  function rerender(subsequentRender: TestRenderInputCallback<any>) {
-    render(
-      <TestProvider>
-        <div id="__test_container__">
-          <TestForm {...initialTestProps} render={subsequentRender} />
-        </div>
-      </TestProvider>,
-    )
-  }
-
   const container = result.container.querySelector('#__test_container__')!
 
   return {
@@ -221,7 +226,6 @@ export async function renderInput(props: {
     onPathFocus,
     onFieldGroupSelect,
     onSetFieldSetCollapsed,
-    rerender,
     result,
   }
 }

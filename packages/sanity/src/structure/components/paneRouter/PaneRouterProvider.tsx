@@ -1,15 +1,16 @@
-import {omit} from 'lodash'
-import React, {useCallback, useMemo} from 'react'
 import {toString as pathToString} from '@sanity/util/paths'
-import {RouterPaneGroup, RouterPanes, RouterPaneSibling} from '../../types'
-import {usePaneLayout} from '../pane/usePaneLayout'
-import {ChildLink} from './ChildLink'
-import {BackLink} from './BackLink'
-import {ReferenceChildLink} from './ReferenceChildLink'
-import {PaneRouterContext} from './PaneRouterContext'
-import {ParameterizedLink} from './ParameterizedLink'
-import {PaneRouterContextValue} from './types'
+import {omit} from 'lodash'
+import {type ReactNode, useCallback, useMemo} from 'react'
+import {PaneRouterContext} from 'sanity/_singletons'
 import {useRouter, useRouterState} from 'sanity/router'
+
+import {type RouterPaneGroup, type RouterPanes, type RouterPaneSibling} from '../../types'
+import {usePaneLayout} from '../pane/usePaneLayout'
+import {BackLink} from './BackLink'
+import {ChildLink} from './ChildLink'
+import {ParameterizedLink} from './ParameterizedLink'
+import {ReferenceChildLink} from './ReferenceChildLink'
+import {type PaneRouterContextValue} from './types'
 
 const emptyArray: never[] = []
 
@@ -17,7 +18,7 @@ const emptyArray: never[] = []
  * @internal
  */
 export function PaneRouterProvider(props: {
-  children: React.ReactNode
+  children: ReactNode
   flatIndex: number
   index: number
   params: Record<string, string | undefined>
@@ -147,7 +148,8 @@ export function PaneRouterProvider(props: {
       ChildLink,
 
       // Curried StateLink that pops off the last pane group
-      BackLink,
+      // Only pass if this is not the first pane
+      BackLink: flatIndex ? BackLink : undefined,
 
       // A specialized `ChildLink` that takes in the needed props to open a
       // referenced document to the right
@@ -178,12 +180,9 @@ export function PaneRouterProvider(props: {
         if (expandLast && lastPane) {
           expand(lastPane.element)
         }
-        navigate(
-          {
-            panes: [...routerPaneGroups.slice(0, groupIndex)],
-          },
-          {replace: true},
-        )
+        navigate({
+          panes: [...routerPaneGroups.slice(0, groupIndex)],
+        })
       },
 
       // Duplicate the current pane, with optional overrides for payload, parameters

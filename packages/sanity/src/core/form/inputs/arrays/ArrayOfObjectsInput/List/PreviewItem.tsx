@@ -1,25 +1,26 @@
-import {Box, Card, CardTone, Menu} from '@sanity/ui'
-import React, {useCallback, useMemo, useRef} from 'react'
-import {SchemaType} from '@sanity/types'
 import {CopyIcon as DuplicateIcon, TrashIcon} from '@sanity/icons'
+import {type SchemaType} from '@sanity/types'
+import {Box, Card, type CardTone, Menu} from '@sanity/ui'
+import {useCallback, useMemo, useRef} from 'react'
+
 import {MenuButton, MenuItem} from '../../../../../../ui-components'
-import {ContextMenuButton} from '../../../../../components/contextMenuButton'
-import {getSchemaTypeTitle} from '../../../../../schema'
-import {ObjectItem, ObjectItemProps} from '../../../../types'
-import {useScrollIntoViewOnFocusWithin} from '../../../../hooks/useScrollIntoViewOnFocusWithin'
-import {useDidUpdate} from '../../../../hooks/useDidUpdate'
-import {useChildPresence} from '../../../../studio/contexts/Presence'
-import {randomKey} from '../../../../utils/randomKey'
-import {FormFieldValidationStatus} from '../../../../components'
-import {FieldPresence} from '../../../../../presence'
-import {useChildValidation} from '../../../../studio/contexts/Validation'
 import {ChangeIndicator} from '../../../../../changeIndicators'
-import {RowLayout} from '../../layouts/RowLayout'
-import {createProtoArrayValue} from '../createProtoArrayValue'
-import {InsertMenu} from '../InsertMenu'
-import {EditPortal} from '../../../../components/EditPortal'
+import {ContextMenuButton} from '../../../../../components/contextMenuButton'
 import {LoadingBlock} from '../../../../../components/loadingBlock'
 import {useTranslation} from '../../../../../i18n'
+import {FieldPresence} from '../../../../../presence'
+import {getSchemaTypeTitle} from '../../../../../schema'
+import {FormFieldValidationStatus} from '../../../../components'
+import {EditPortal} from '../../../../components/EditPortal'
+import {useDidUpdate} from '../../../../hooks/useDidUpdate'
+import {useScrollIntoViewOnFocusWithin} from '../../../../hooks/useScrollIntoViewOnFocusWithin'
+import {useChildPresence} from '../../../../studio/contexts/Presence'
+import {useChildValidation} from '../../../../studio/contexts/Validation'
+import {type ObjectItem, type ObjectItemProps} from '../../../../types'
+import {randomKey} from '../../../../utils/randomKey'
+import {RowLayout} from '../../layouts/RowLayout'
+import {createProtoArrayValue} from '../createProtoArrayValue'
+import {InsertMenuGroups} from '../InsertMenuGroups'
 
 type PreviewItemProps<Item extends ObjectItem> = Omit<ObjectItemProps<Item>, 'renderDefault'>
 
@@ -64,7 +65,7 @@ export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: Preview
   } = props
   const {t} = useTranslation()
 
-  const sortable = !readOnly && parentSchemaType.options?.sortable !== false
+  const sortable = parentSchemaType.options?.sortable !== false
   const insertableTypes = parentSchemaType.of
 
   const previewCardRef = useRef<HTMLDivElement | null>(null)
@@ -121,7 +122,7 @@ export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: Preview
     () =>
       readOnly ? null : (
         <MenuButton
-          button={<ContextMenuButton paddingY={3} />}
+          button={<ContextMenuButton />}
           id={`${props.inputId}-menuButton`}
           menu={
             <Menu>
@@ -136,7 +137,7 @@ export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: Preview
                 icon={DuplicateIcon}
                 onClick={handleDuplicate}
               />
-              <InsertMenu types={insertableTypes} onInsert={handleInsert} />
+              <InsertMenuGroups types={insertableTypes} onInsert={handleInsert} />
             </Menu>
           }
           popover={MENU_POPOVER_PROPS}
@@ -155,6 +156,7 @@ export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: Preview
       focused={focused}
       dragHandle={sortable}
       selected={open}
+      readOnly={!!readOnly}
     >
       <Card
         as="button"

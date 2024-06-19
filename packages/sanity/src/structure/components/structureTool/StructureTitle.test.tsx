@@ -1,14 +1,17 @@
+import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {render} from '@testing-library/react'
-import {Panes} from '../../structureResolvers'
-import * as USE_STRUCTURE_TOOL from '../../useStructureTool'
-import {createTestProvider} from '../../../../test/testUtils/TestProvider'
-import {structureUsEnglishLocaleBundle} from '../../i18n'
-import {createMockSanityClient} from '../../../../test/mocks/mockSanityClient'
-import {StructureTitle} from './StructureTitle'
 import * as SANITY from 'sanity'
 
+import {createMockSanityClient} from '../../../../test/mocks/mockSanityClient'
+import {createTestProvider} from '../../../../test/testUtils/TestProvider'
+import {structureUsEnglishLocaleBundle} from '../../i18n'
+import {type StructureContext} from '../../structureBuilder'
+import {type Panes} from '../../structureResolvers'
+import * as USE_STRUCTURE_TOOL from '../../useStructureTool'
+import {StructureTitle} from './StructureTitle'
+
 jest.mock('sanity', () => {
-  const actual = jest.requireActual('sanity')
+  const actual: typeof SANITY = jest.requireActual('sanity')
   return {
     ...actual,
     useEditState: jest.fn(),
@@ -34,7 +37,7 @@ describe('StructureTitle', () => {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore  it's a minimal mock implementation of useStructureTool
   jest.spyOn(USE_STRUCTURE_TOOL, 'useStructureTool').mockImplementation(() => ({
-    structureContext: {title: 'My Structure Tool'},
+    structureContext: {title: 'My Structure Tool'} as StructureContext,
   }))
   describe('Non document panes', () => {
     const mockPanes: Panes['resolvedPanes'] = [

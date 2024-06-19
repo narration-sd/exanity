@@ -1,13 +1,14 @@
 import {ChevronDownIcon} from '@sanity/icons'
-import {Placement, useClickOutside, useGlobalKeyDown, useToast} from '@sanity/ui'
-import React, {useCallback, useState} from 'react'
-import styled from 'styled-components'
-import {useDocumentPane} from '../useDocumentPane'
+import {type Placement, useClickOutside, useGlobalKeyDown, useToast} from '@sanity/ui'
+import {useCallback, useState} from 'react'
+import {type Chunk, useTimelineSelector, useTranslation} from 'sanity'
+import {styled} from 'styled-components'
+
 import {Button, Popover} from '../../../../ui-components'
-import {TimelineError} from './TimelineError'
+import {useDocumentPane} from '../useDocumentPane'
 import {Timeline} from './timeline'
+import {TimelineError} from './TimelineError'
 import {TIMELINE_ITEM_I18N_KEY_MAPPING} from './timelineI18n'
-import {Chunk, useTimelineSelector, useTranslation} from 'sanity'
 
 interface TimelineMenuProps {
   chunk: Chunk | null
@@ -144,7 +145,7 @@ export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
         timestamp: new Date(chunk?.endTimestamp),
         formatParams,
       })
-    : t('timeline.latest-version')
+    : t('timeline.latest-revision')
 
   const sinceLabel = chunk
     ? t('timeline.since', {
@@ -157,6 +158,7 @@ export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
 
   return (
     <Root
+      data-testid="timeline-menu"
       constrainSize
       content={open && content}
       data-ui="versionMenu"
@@ -166,6 +168,7 @@ export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
       ref={setPopover}
     >
       <Button
+        data-testid={open ? 'timeline-menu-close-button' : 'timeline-menu-open-button'}
         disabled={!ready}
         mode="bleed"
         iconRight={ChevronDownIcon}

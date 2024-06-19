@@ -1,9 +1,10 @@
+import {describe, expect, it} from '@jest/globals'
 import {defineField} from '@sanity/types'
 import userEvent from '@testing-library/user-event'
-import React from 'react'
+
 import {renderObjectInput} from '../../../../../../test/form'
+import {type FieldProps} from '../../../types'
 import {ObjectInput} from '../ObjectInput'
-import {FieldProps} from '../../../types'
 
 const fieldsetsTestType = defineField({
   title: 'Fieldsets test',

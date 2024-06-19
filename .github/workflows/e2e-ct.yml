@@ -17,22 +17,35 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+
+      - uses: pnpm/action-setup@v2
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
       - name: Cache node modules
         id: cache-node-modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-node-modules
         with:
-          path: '**/node_modules'
-          key: ${{ runner.os }}-modules-${{ env.cache-name }}-${{ hashFiles('**/yarn.lock') }}
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ env.cache-name }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-modules-${{ env.cache-name }}-
-            ${{ runner.os }}-modules-
-            ${{ runner.os }}-
+            v1-${{ runner.os }}-pnpm-store-${{ env.cache-name }}-
+            v1-${{ runner.os }}-pnpm-store-
+            v1-${{ runner.os }}-
 
       - name: Install project dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: yarn install --immutable --immutable-cache --check-cache
+        run: pnpm install
 
       - name: Store Playwright's Version
         run: |
@@ -41,36 +54,36 @@ jobs:
           echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_ENV
       - name: Cache Playwright Browsers for Playwright's Version
         id: cache-playwright-browsers
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-browsers-${{ env.PLAYWRIGHT_VERSION }}
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
-      - name: Build CLI
-        run: yarn build:cli # Needed for CLI tests
+      - name: Build packages
+        run: pnpm build --output-logs=full --log-order=grouped
       - name: Run end-to-end tests
-        run: yarn workspace sanity test:ct
+        run: pnpm --filter sanity test:ct
         env:
           NODE_OPTIONS: --max_old_space_size=8192
       - name: Get Current Job Log URL
-        uses: Tiryoh/gha-jobid-action@7528cee9716384209bafcbd000d6689e851c5dda # v1
+        uses: Tiryoh/gha-jobid-action@c1d1cf7334b70c29374ae382b91053674c8049a2 # v1
         id: job_html_url
         if: always()
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          job_name: 'test'
+          job_name: "test"
       - name: Parse playwright report
         id: parse-playwright-report
         if: always()
-        run: yarn workspace sanity write:playwright-report-as-pr-comment
+        run: pnpm --filter sanity write:playwright-report-as-pr-comment
         env:
-          GITHUB_WORKFLOW_URL: '${{ steps.job_html_url.outputs.html_url }}'
+          GITHUB_WORKFLOW_URL: "${{ steps.job_html_url.outputs.html_url }}"
       - name: PR comment with report
-        uses: thollander/actions-comment-pull-request@1d3973dc4b8e1399c0620d3f2b1aa5e795465308 # v2
+        uses: thollander/actions-comment-pull-request@fabd468d3a1a0b97feee5f6b9e499eab0dd903f6 # v2
         if: ${{ always() && steps.parse-playwright-report.conclusion == 'success' && github.event_name == 'pull_request' }}
         with:
-          comment_tag: 'playwright-ct-report'
+          comment_tag: "playwright-ct-report"
           filePath: ${{ github.workspace }}/packages/sanity/playwright-ct/results/playwright-report-pr-comment.md
 
       - uses: actions/upload-artifact@v3

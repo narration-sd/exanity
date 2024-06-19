@@ -1,27 +1,28 @@
-import {Box, Card, CardTone, Menu} from '@sanity/ui'
-import React, {useCallback, useMemo, useRef} from 'react'
-import {SchemaType} from '@sanity/types'
 import {CopyIcon as DuplicateIcon, TrashIcon} from '@sanity/icons'
-import styled from 'styled-components'
-import {getSchemaTypeTitle} from '../../../../../schema'
+import {type SchemaType} from '@sanity/types'
+import {Box, Card, type CardTone, Menu} from '@sanity/ui'
+import {useCallback, useMemo, useRef} from 'react'
+import {styled} from 'styled-components'
+
 import {MenuButton, MenuItem} from '../../../../../../ui-components'
-import {ContextMenuButton} from '../../../../../components/contextMenuButton'
-import {ObjectItem, ObjectItemProps} from '../../../../types'
-import {useScrollIntoViewOnFocusWithin} from '../../../../hooks/useScrollIntoViewOnFocusWithin'
-import {useDidUpdate} from '../../../../hooks/useDidUpdate'
-import {useChildPresence} from '../../../../studio/contexts/Presence'
-import {randomKey} from '../../../../utils/randomKey'
-import {FormFieldValidationStatus} from '../../../../components'
-import {FieldPresence} from '../../../../../presence'
-import {useChildValidation} from '../../../../studio/contexts/Validation'
 import {ChangeIndicator} from '../../../../../changeIndicators'
+import {ContextMenuButton} from '../../../../../components/contextMenuButton'
+import {LoadingBlock} from '../../../../../components/loadingBlock'
+import {type FIXME} from '../../../../../FIXME'
+import {useTranslation} from '../../../../../i18n'
+import {FieldPresence} from '../../../../../presence'
+import {getSchemaTypeTitle} from '../../../../../schema'
+import {FormFieldValidationStatus} from '../../../../components'
+import {EditPortal} from '../../../../components/EditPortal'
+import {useDidUpdate} from '../../../../hooks/useDidUpdate'
+import {useScrollIntoViewOnFocusWithin} from '../../../../hooks/useScrollIntoViewOnFocusWithin'
+import {useChildPresence} from '../../../../studio/contexts/Presence'
+import {useChildValidation} from '../../../../studio/contexts/Validation'
+import {type ObjectItem, type ObjectItemProps} from '../../../../types'
+import {randomKey} from '../../../../utils/randomKey'
 import {CellLayout} from '../../layouts/CellLayout'
 import {createProtoArrayValue} from '../createProtoArrayValue'
-import {InsertMenu} from '../InsertMenu'
-import {FIXME} from '../../../../../FIXME'
-import {EditPortal} from '../../../../components/EditPortal'
-import {LoadingBlock} from '../../../../../components/loadingBlock'
-import {useTranslation} from '../../../../../i18n'
+import {InsertMenuGroups} from '../InsertMenuGroups'
 
 type GridItemProps<Item extends ObjectItem> = Omit<ObjectItemProps<Item>, 'renderDefault'>
 
@@ -81,7 +82,7 @@ export function GridItem<Item extends ObjectItem = ObjectItem>(props: GridItemPr
   } = props
   const {t} = useTranslation()
 
-  const sortable = !readOnly && parentSchemaType.options?.sortable !== false
+  const sortable = parentSchemaType.options?.sortable !== false
   const insertableTypes = parentSchemaType.of
 
   const previewCardRef = useRef<FIXME | null>(null)
@@ -138,7 +139,7 @@ export function GridItem<Item extends ObjectItem = ObjectItem>(props: GridItemPr
     () =>
       readOnly ? null : (
         <MenuButton
-          button={<ContextMenuButton paddingY={3} />}
+          button={<ContextMenuButton />}
           id={`${props.inputId}-menuButton`}
           menu={
             <Menu>
@@ -153,7 +154,7 @@ export function GridItem<Item extends ObjectItem = ObjectItem>(props: GridItemPr
                 icon={DuplicateIcon}
                 onClick={handleDuplicate}
               />
-              <InsertMenu types={insertableTypes} onInsert={handleInsert} />
+              <InsertMenuGroups types={insertableTypes} onInsert={handleInsert} />
             </Menu>
           }
           popover={MENU_POPOVER_PROPS}
@@ -174,6 +175,7 @@ export function GridItem<Item extends ObjectItem = ObjectItem>(props: GridItemPr
       border
       dragHandle={sortable}
       selected={open}
+      readOnly={readOnly}
     >
       <PreviewCard
         tone="inherit"

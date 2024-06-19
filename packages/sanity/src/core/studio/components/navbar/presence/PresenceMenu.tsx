@@ -1,12 +1,13 @@
 import {CogIcon, UsersIcon} from '@sanity/icons'
 import {Box, Menu, MenuDivider, Stack, Text} from '@sanity/ui'
-import React, {useCallback, useMemo, useState} from 'react'
-import styled from 'styled-components'
+import {useCallback, useMemo, useState} from 'react'
+import {styled} from 'styled-components'
+
+import {MenuButton, type MenuButtonProps, MenuItem} from '../../../../../ui-components'
 import {StatusButton} from '../../../../components'
-import {useGlobalPresence} from '../../../../store'
-import {useColorScheme} from '../../../colorScheme'
-import {MenuButton, MenuButtonProps, MenuItem} from '../../../../../ui-components'
 import {useTranslation} from '../../../../i18n'
+import {useGlobalPresence} from '../../../../store'
+import {useColorSchemeValue} from '../../../colorScheme'
 import {useWorkspace} from '../../../workspace'
 import {PresenceMenuItem} from './PresenceMenuItem'
 
@@ -23,7 +24,7 @@ const FooterStack = styled(Stack)`
 export function PresenceMenu() {
   const presence = useGlobalPresence()
   const {projectId} = useWorkspace()
-  const {scheme} = useColorScheme()
+  const scheme = useColorSchemeValue()
   const {t} = useTranslation()
   const hasPresence = presence.length > 0
 
@@ -49,11 +50,11 @@ export function PresenceMenu() {
     return (
       <StatusButton
         icon={UsersIcon}
+        aria-label={t('presence.aria-label')}
         mode="bleed"
         tone={hasPresence ? 'positive' : undefined}
         tooltipProps={{
-          // @todo: rename, as its no longer an aria-label
-          content: t('presence.aria-label'),
+          content: t('presence.tooltip-content'),
         }}
       />
     )
@@ -73,6 +74,7 @@ export function PresenceMenu() {
   return (
     <MenuButton
       button={button}
+      aria-label={t('presence.aria-label')}
       id="global-presence-menu"
       menu={
         <StyledMenu>

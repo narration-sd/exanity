@@ -1,7 +1,8 @@
-import React from 'react'
+import {type ComponentProps, type ReactNode} from 'react'
+import {InsufficientPermissionsMessage, useCurrentUser, useTranslation} from 'sanity'
+
 import {Tooltip} from '../../../ui-components'
 import {structureLocaleNamespace} from '../../i18n'
-import {useCurrentUser, InsufficientPermissionsMessage, useTranslation} from 'sanity'
 
 interface InsufficientPermissionsMessageTooltipProps {
   reveal: boolean
@@ -9,9 +10,9 @@ interface InsufficientPermissionsMessageTooltipProps {
    * delegates to `InsufficientPermissionsMessage`'s `context` prop
    * @see InsufficientPermissionsMessage
    */
-  context: React.ComponentProps<typeof InsufficientPermissionsMessage>['context']
+  context: ComponentProps<typeof InsufficientPermissionsMessage>['context']
   loading: boolean
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export function InsufficientPermissionsMessageTooltip({

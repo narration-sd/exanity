@@ -1,30 +1,31 @@
 /* eslint-disable no-process-exit */
-import path from 'path'
-import {hostname} from 'os'
-import {execFileSync, spawnSync} from 'child_process'
-import {mkdir, stat, readFile, rename, writeFile, copyFile} from 'fs/promises'
-import {copy as copyCb} from 'cpx'
-import Configstore from 'configstore'
+import {execFileSync, spawnSync} from 'node:child_process'
+import {copyFile, mkdir, readFile, rename, stat, writeFile} from 'node:fs/promises'
+import {hostname} from 'node:os'
+import path from 'node:path'
+
 import {createClient} from '@sanity/client'
+import Configstore from 'configstore'
+import {copy as copyCb} from 'cpx'
 
 import {
   baseTestPath,
+  cliApiHost,
   cliBinPath,
   cliConfigPath,
   cliInstallPath,
   cliProjectId,
   cliUserToken,
   exec,
+  fixturesPath,
   getTestRunArgs,
   hasBuiltCli,
   nodePath,
   npmPath,
   packPath,
-  fixturesPath,
   studiosPath,
   studioVersions,
   testIdPath,
-  cliApiHost,
 } from './environment'
 
 const SYMLINK_SCRIPT = path.resolve(__dirname, '../../../../../scripts/symlinkDependencies.js')
@@ -175,6 +176,9 @@ async function installAndVerifyPackedCli({
     await readFile(path.join(__dirname, '..', '..', 'package.json'), 'utf8'),
     await exec(npmPath, ['install', packedFilePath], {cwd: cliInstallPath}),
   ])
+  await exec(nodePath, [SYMLINK_SCRIPT, cliInstallPath], {
+    cwd: cliInstallPath,
+  })
 
   // Ensure the referenced binary exists
   const version = execFileSync(cliBinPath, ['--version'], {encoding: 'utf8'}).trim()

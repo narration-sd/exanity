@@ -1,20 +1,17 @@
 import {RestoreIcon} from '@sanity/icons'
-import {SanityDocument} from '@sanity/types'
+import {type SanityDocument} from '@sanity/types'
 import {Box, Card, Code, Flex, Inline, Stack, Text} from '@sanity/ui'
 import {format} from 'date-fns'
 import {omit} from 'lodash'
-import React, {useCallback, useMemo, useState} from 'react'
+import {useCallback, useMemo, useState} from 'react'
+import {DocumentChangeContext} from 'sanity/_singletons'
+
 import {Button} from '../../../../ui-components'
 import {ChangeFieldWrapper} from '../../../changeIndicators'
-import {
-  ChangeList,
-  Chunk,
-  DocumentChangeContext,
-  DocumentChangeContextInstance,
-} from '../../../field'
+import {ChangeList, type Chunk, type DocumentChangeContextInstance} from '../../../field'
 import {useConnectionState, useEditState, useSchema} from '../../../hooks'
 import {useInitialValue} from '../document'
-import {useTimelineStore, useTimelineSelector} from '../history'
+import {useTimelineSelector, useTimelineStore} from '../history'
 
 export default function HistoryTimelineStory() {
   const schema = useSchema()

@@ -1,15 +1,16 @@
-import React, {useCallback, useMemo} from 'react'
-import {Box, Flex, Menu} from '@sanity/ui'
-import {SchemaType} from '@sanity/types'
 import {CopyIcon as DuplicateIcon, TrashIcon} from '@sanity/icons'
-import {FormFieldValidationStatus} from '../../../components/formField'
-import {InsertMenu} from '../ArrayOfObjectsInput/InsertMenu'
-import {useTranslation} from '../../../../i18n'
-import {PrimitiveItemProps} from '../../../types/itemProps'
-import {RowLayout} from '../layouts/RowLayout'
-import {FieldPresence} from '../../../../presence'
+import {type SchemaType} from '@sanity/types'
+import {Box, Flex, Menu} from '@sanity/ui'
+import {type ForwardedRef, forwardRef, useCallback, useMemo} from 'react'
+
 import {MenuButton, MenuItem} from '../../../../../ui-components'
 import {ContextMenuButton} from '../../../../components/contextMenuButton'
+import {useTranslation} from '../../../../i18n'
+import {FieldPresence} from '../../../../presence'
+import {FormFieldValidationStatus} from '../../../components/formField'
+import {type PrimitiveItemProps} from '../../../types/itemProps'
+import {InsertMenuGroups} from '../ArrayOfObjectsInput/InsertMenuGroups'
+import {RowLayout} from '../layouts/RowLayout'
 import {getEmptyValue} from './getEmptyValue'
 
 export type DefaultItemProps = Omit<PrimitiveItemProps, 'renderDefault'> & {
@@ -19,9 +20,9 @@ export type DefaultItemProps = Omit<PrimitiveItemProps, 'renderDefault'> & {
 
 const MENU_BUTTON_POPOVER_PROPS = {portal: true, tone: 'default'} as const
 
-export const ItemRow = React.forwardRef(function ItemRow(
+export const ItemRow = forwardRef(function ItemRow(
   props: DefaultItemProps,
-  ref: React.ForwardedRef<HTMLDivElement>,
+  ref: ForwardedRef<HTMLDivElement>,
 ) {
   const {
     sortable,
@@ -66,7 +67,7 @@ export const ItemRow = React.forwardRef(function ItemRow(
 
   const menu = (
     <MenuButton
-      button={<ContextMenuButton paddingY={3} />}
+      button={<ContextMenuButton />}
       id={`${inputId}-menuButton`}
       popover={MENU_BUTTON_POPOVER_PROPS}
       menu={
@@ -82,7 +83,7 @@ export const ItemRow = React.forwardRef(function ItemRow(
             icon={DuplicateIcon}
             onClick={handleDuplicate}
           />
-          <InsertMenu types={insertableTypes} onInsert={handleInsert} />
+          <InsertMenuGroups types={insertableTypes} onInsert={handleInsert} />
         </Menu>
       }
     />
@@ -91,8 +92,9 @@ export const ItemRow = React.forwardRef(function ItemRow(
   return (
     <RowLayout
       tone={tone}
+      readOnly={!!readOnly}
       menu={!readOnly && menu}
-      dragHandle={!readOnly && sortable}
+      dragHandle={sortable}
       presence={presence.length === 0 ? null : <FieldPresence presence={presence} maxAvatars={1} />}
       validation={
         validation.length > 0 ? (

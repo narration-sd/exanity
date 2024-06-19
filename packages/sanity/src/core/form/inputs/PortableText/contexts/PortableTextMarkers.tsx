@@ -1,11 +1,11 @@
-import React, {createContext} from 'react'
-import {PortableTextMarker} from '../../../types'
+import {type ReactNode} from 'react'
+import {PortableTextMarkersContext} from 'sanity/_singletons'
 
-export const PortableTextMarkersContext = createContext<PortableTextMarker[]>([])
+import {type PortableTextMarker} from '../../../types'
 
 export function PortableTextMarkersProvider(props: {
   markers: PortableTextMarker[]
-  children: React.ReactNode
+  children: ReactNode
 }) {
   return (
     <PortableTextMarkersContext.Provider value={props.markers}>

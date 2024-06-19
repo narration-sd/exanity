@@ -1,6 +1,6 @@
 import {hues} from '@sanity/color'
-import {Card, Theme, Flex, Box} from '@sanity/ui'
-import styled, {css} from 'styled-components'
+import {Box, Card, Flex, type Theme} from '@sanity/ui'
+import {css, styled} from 'styled-components'
 
 export const Root = styled(Card)((props: {theme: Theme}) => {
   const {color, radius, space} = props.theme.sanity
@@ -70,8 +70,9 @@ export const Root = styled(Card)((props: {theme: Theme}) => {
   `
 })
 
-export const PreviewContainer = styled(Box)`
+export const PreviewContainer = styled(Flex)`
   display: block;
+  position: relative;
   width: 100%;
   user-select: none;
   pointer-events: all;
@@ -88,6 +89,7 @@ export const ChangeIndicatorWrapper = styled.div<{$hasChanges: boolean}>(
       top: 0;
       bottom: 0;
       padding-left: ${space[1]}px;
+      padding-right: ${space[2]}px;
       user-select: none;
 
       ${!$hasChanges &&
@@ -113,6 +115,8 @@ export const InnerFlex = styled(Flex)`
 export const BlockActionsOuter = styled(Box)`
   width: 25px;
   position: relative;
+  flex-shrink: 0;
+  user-select: none;
 
   [data-dragged] & {
     visibility: hidden;

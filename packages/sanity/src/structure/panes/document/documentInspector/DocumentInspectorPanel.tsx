@@ -1,5 +1,6 @@
-import React, {ReactElement, createElement, useCallback} from 'react'
 import {Box} from '@sanity/ui'
+import {createElement, type ReactElement, useCallback} from 'react'
+
 import {usePane} from '../../../components'
 import {useStructureTool} from '../../../useStructureTool'
 import {DOCUMENT_INSPECTOR_MAX_WIDTH, DOCUMENT_INSPECTOR_MIN_WIDTH} from '../constants'

@@ -1,12 +1,13 @@
-import React from 'react'
+import {type Asset} from '@sanity/types'
 import {Box, Card, Flex, Grid, Spinner, Stack, Text, useMediaIndex} from '@sanity/ui'
-import {Asset} from '@sanity/types'
+import {type KeyboardEvent, type MouseEvent} from 'react'
+
 import {useTranslation} from '../../../../i18n'
 import {AssetRow} from './AssetRow'
 
 interface Props {
-  onClick?: (event: React.MouseEvent) => void
-  onKeyPress?: (event: React.KeyboardEvent) => void
+  onClick?: (event: MouseEvent) => void
+  onKeyPress?: (event: KeyboardEvent) => void
   onDeleteFinished: (assetId: string) => void
   assets: Asset[]
   isLoading?: boolean

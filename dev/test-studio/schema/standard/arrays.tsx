@@ -1,4 +1,3 @@
-import React from 'react'
 import {ImageIcon, OlistIcon} from '@sanity/icons'
 import {defineField, defineType} from 'sanity'
 
@@ -105,6 +104,40 @@ export default defineType({
               title: 'field C',
               type: 'string',
               group: ['c'],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'arrayWithNoTitle',
+      title: 'Array with no title',
+      type: 'array',
+      components: {
+        field: (props: any) => {
+          return (
+            <div style={{border: '1px solid palegreen', borderRadius: 4}}>
+              {props.renderDefault({
+                ...props,
+                title: undefined,
+              })}
+            </div>
+          )
+        },
+      },
+      of: [
+        {
+          type: 'object',
+          name: 'obj',
+          title: 'Some object',
+          fields: [
+            {
+              name: 'title',
+              type: 'string',
+            },
+            {
+              name: 'description',
+              type: 'string',
             },
           ],
         },

@@ -1,11 +1,12 @@
-import {TextArea, Theme} from '@sanity/ui'
-import React, {forwardRef, useImperativeHandle, useRef} from 'react'
-import styled, {css} from 'styled-components'
-import {SchemaType} from '@sanity/types'
-import {PortableTextInput} from '../../PortableTextInput'
+import {type SchemaType} from '@sanity/types'
+import {TextArea, type Theme} from '@sanity/ui'
+import {type ComponentType, forwardRef, useImperativeHandle, useRef} from 'react'
+import {css, styled} from 'styled-components'
+
+import {type SanityFormConfig} from '../../../../../config'
 import {defaultResolveInputComponent} from '../../../../studio/inputResolver/inputResolver'
-import {InputProps} from '../../../../types'
-import {SanityFormConfig} from '../../../../../config'
+import {type InputProps} from '../../../../types'
+import {PortableTextInput} from '../../PortableTextInput'
 
 const DebugTextArea = styled(TextArea)(({theme}: {theme: Theme}) => {
   return css`
@@ -36,7 +37,7 @@ const DebugInput = forwardRef(function DebugInput(props: InputProps, ref) {
 export function inputResolver(
   input: SchemaType,
   form: SanityFormConfig,
-): React.ComponentType<Omit<InputProps, 'renderDefault'>> {
+): ComponentType<Omit<InputProps, 'renderDefault'>> {
   if (!input.type) {
     throw new Error('inputResolver: missing subtype')
   }

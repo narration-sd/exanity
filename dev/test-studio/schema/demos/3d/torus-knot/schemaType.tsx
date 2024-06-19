@@ -1,8 +1,8 @@
-import React from 'react'
 import {defineType} from 'sanity'
+
 import {structureGroupOptions} from '../../../../structure/groupByOption'
 import TorusKnotInput from './TorusKnotInput'
-import {LazyPreviewMedia, LazyColorInput} from './TorusKnotLazyComponents'
+import {LazyColorInput, LazyPreviewMedia} from './TorusKnotLazyComponents'
 
 const initialBase = '#ff4eb8'
 const initialColorA = '#00ffff'

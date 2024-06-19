@@ -5,7 +5,8 @@
  */
 
 import {flatten} from 'lodash'
-import {FIXME} from '../../../../../FIXME'
+
+import {type FIXME} from '../../../../../FIXME'
 
 export function extractPastedFiles(dataTransfer: DataTransfer): Promise<File[]> {
   if (dataTransfer.files && dataTransfer.files.length > 0) {
@@ -104,4 +105,8 @@ function walk(entry: Entry): Promise<File[]> {
       .then((entries) => Promise.all(entries.map(walk)).then(flatten))
   }
   return Promise.resolve([])
+}
+
+export function isPortableTextItem(item: {type: string; kind: string}) {
+  return item.type === 'application/portable-text'
 }

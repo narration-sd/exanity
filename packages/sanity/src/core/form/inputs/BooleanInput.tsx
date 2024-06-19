@@ -1,8 +1,11 @@
-import styled from 'styled-components'
-import {Box, Card, CardTone, Checkbox, Flex, Switch} from '@sanity/ui'
-import {BooleanInputProps} from '../types'
+import {Box, Card, type CardTone, Checkbox, Flex, Switch} from '@sanity/ui'
+import {styled} from 'styled-components'
+
+import {Tooltip} from '../../../ui-components'
+import {useTranslation} from '../../i18n/hooks/useTranslation'
 import {FormFieldHeaderText} from '../components/formField/FormFieldHeaderText'
 import {FormFieldStatus} from '../components/formField/FormFieldStatus'
+import {type BooleanInputProps} from '../types'
 
 const Root = styled(Card)`
   line-height: 1;
@@ -22,6 +25,7 @@ const ZeroLineHeightBox = styled(Box)`
  * @beta
  */
 export function BooleanInput(props: BooleanInputProps) {
+  const {t} = useTranslation()
   const {id, value, schemaType, readOnly, elementProps, validation} = props
   const layout = schemaType.options?.layout || 'switch'
 
@@ -32,19 +36,23 @@ export function BooleanInput(props: BooleanInputProps) {
 
   const tone: CardTone | undefined = readOnly ? 'transparent' : undefined
 
+  const input = (
+    <ZeroLineHeightBox padding={3}>
+      <LayoutSpecificInput
+        label={schemaType.title}
+        {...elementProps}
+        checked={checked}
+        readOnly={readOnly}
+        indeterminate={indeterminate}
+        style={{margin: -4}}
+      />
+    </ZeroLineHeightBox>
+  )
+
   return (
     <Root border data-testid="boolean-input" radius={2} tone={tone}>
       <Flex>
-        <ZeroLineHeightBox padding={3}>
-          <LayoutSpecificInput
-            label={schemaType.title}
-            {...elementProps}
-            checked={checked}
-            disabled={readOnly}
-            indeterminate={indeterminate}
-            style={{margin: -4}}
-          />
-        </ZeroLineHeightBox>
+        {readOnly ? <Tooltip content={t('inputs.boolean.disabled')}>{input}</Tooltip> : input}
         <Box flex={1} paddingY={2}>
           <FormFieldHeaderText
             deprecated={schemaType.deprecated}

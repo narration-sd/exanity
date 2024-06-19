@@ -1,34 +1,28 @@
-import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import type {ObjectSchemaType, Path, SanityDocument, SanityDocumentLike} from '@sanity/types'
-import {omit} from 'lodash'
+/* eslint-disable camelcase */
+import {isActionEnabled} from '@sanity/schema/_internal'
+import {
+  type ObjectSchemaType,
+  type Path,
+  type SanityDocument,
+  type SanityDocumentLike,
+} from '@sanity/types'
 import {useToast} from '@sanity/ui'
 import {fromString as pathFromString, resolveKeyedPath} from '@sanity/util/paths'
-import {isActionEnabled} from '@sanity/schema/_internal'
-import {usePaneRouter} from '../../components'
-import type {PaneMenuItem} from '../../types'
-import {useStructureTool} from '../../useStructureTool'
-import {structureLocaleNamespace} from '../../i18n'
-import {DocumentPaneContext, type DocumentPaneContextValue} from './DocumentPaneContext'
-import type {DocumentPaneProviderProps} from './types'
-import {usePreviewUrl} from './usePreviewUrl'
-import {getInitialValueTemplateOpts} from './getInitialValueTemplateOpts'
-import {
-  DEFAULT_MENU_ITEM_GROUPS,
-  EMPTY_PARAMS,
-  HISTORY_INSPECTOR_NAME,
-  INSPECT_ACTION_PREFIX,
-} from './constants'
+import {omit, throttle} from 'lodash'
+import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import deepEquals from 'react-fast-compare'
 import {
   type DocumentFieldAction,
   type DocumentInspector,
   type DocumentPresence,
-  type PatchEvent,
-  type StateTree,
   EMPTY_ARRAY,
   getDraftId,
   getExpandOperations,
   getPublishedId,
+  type OnPathFocusPayload,
+  type PatchEvent,
   setAtPath,
+  type StateTree,
   toMutationPatches,
   useConnectionState,
   useDocumentOperation,
@@ -46,6 +40,22 @@ import {
   useUnique,
   useValidationStatus,
 } from 'sanity'
+import {DocumentPaneContext} from 'sanity/_singletons'
+
+import {usePaneRouter} from '../../components'
+import {structureLocaleNamespace} from '../../i18n'
+import {type PaneMenuItem} from '../../types'
+import {useStructureTool} from '../../useStructureTool'
+import {
+  DEFAULT_MENU_ITEM_GROUPS,
+  EMPTY_PARAMS,
+  HISTORY_INSPECTOR_NAME,
+  INSPECT_ACTION_PREFIX,
+} from './constants'
+import {type DocumentPaneContextValue} from './DocumentPaneContext'
+import {getInitialValueTemplateOpts} from './getInitialValueTemplateOpts'
+import {type DocumentPaneProviderProps} from './types'
+import {usePreviewUrl} from './usePreviewUrl'
 
 /**
  * @internal
@@ -56,12 +66,15 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
   const schema = useSchema()
   const templates = useTemplates()
   const {
-    actions: documentActions,
-    badges: documentBadges,
-    unstable_fieldActions: fieldActionsResolver,
-    unstable_languageFilter: languageFilterResolver,
-    inspectors: inspectorsResolver,
-  } = useSource().document
+    __internal_tasks,
+    document: {
+      actions: documentActions,
+      badges: documentBadges,
+      unstable_fieldActions: fieldActionsResolver,
+      unstable_languageFilter: languageFilterResolver,
+      inspectors: inspectorsResolver,
+    },
+  } = useSource()
   const presenceStore = usePresenceStore()
   const paneRouter = usePaneRouter()
   const setPaneParams = paneRouter.setParams
@@ -129,11 +142,27 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
   const [focusPath, setFocusPath] = useState<Path>(() =>
     params.path ? pathFromString(params.path) : EMPTY_ARRAY,
   )
-  const focusPathRef = useRef(focusPath)
+  const focusPathRef = useRef<Path>([])
   const activeViewId = params.view || (views[0] && views[0].id) || null
   const [timelineMode, setTimelineMode] = useState<'since' | 'rev' | 'closed'>('closed')
 
   const [timelineError, setTimelineError] = useState<Error | null>(null)
+
+  /**
+   * The `preferLatestPublished` parameter can be used to "force" viewing the revision
+   * of the last published document. This is not a permanent function, and will likely
+   * be removed when we move to a more robust way of viewing "releases".
+   */
+  useEffect(() => {
+    if (params.prefersLatestPublished && editState.published) {
+      setPaneParams({
+        //ensure we only run on first load
+        ...omit(params, 'prefersLatestPublished'),
+        rev: `${editState.published._updatedAt}/${editState.published._rev}`,
+      })
+    }
+  }, [editState, setPaneParams, params])
+
   /**
    * Create an intermediate store which handles document Timeline + TimelineController
    * creation, and also fetches pre-requsite document snapshots. Compatible with `useSyncExternalStore`
@@ -250,27 +279,6 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       })
     },
     [params, setPaneParams],
-  )
-
-  const handleFocus = useCallback(
-    (nextFocusPath: Path) => {
-      setFocusPath(nextFocusPath)
-
-      if (focusPathRef.current !== nextFocusPath) {
-        focusPathRef.current = nextFocusPath
-        onFocusPath?.(nextFocusPath)
-      }
-
-      presenceStore.setLocation([
-        {
-          type: 'document',
-          documentId,
-          path: nextFocusPath,
-          lastActiveAt: new Date().toISOString(),
-        },
-      ])
-    },
-    [documentId, onFocusPath, presenceStore, setFocusPath],
   )
 
   const handleBlur = useCallback(
@@ -557,6 +565,39 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
     [formStateRef],
   )
 
+  const updatePresence = useCallback(
+    (nextFocusPath: Path, payload?: OnPathFocusPayload) => {
+      presenceStore.setLocation([
+        {
+          type: 'document',
+          documentId,
+          path: nextFocusPath,
+          lastActiveAt: new Date().toISOString(),
+          selection: payload?.selection,
+        },
+      ])
+    },
+    [documentId, presenceStore],
+  )
+
+  const updatePresenceThrottled = useMemo(
+    () => throttle(updatePresence, 1000, {leading: true, trailing: true}),
+    [updatePresence],
+  )
+
+  const handleFocus = useCallback(
+    (nextFocusPath: Path, payload?: OnPathFocusPayload) => {
+      setFocusPath(nextFocusPath)
+      if (!deepEquals(focusPathRef.current, nextFocusPath)) {
+        setOpenPath(nextFocusPath.slice(0, -1))
+        focusPathRef.current = nextFocusPath
+        onFocusPath?.(nextFocusPath)
+      }
+      updatePresenceThrottled(nextFocusPath, payload)
+    },
+    [onFocusPath, setOpenPath, updatePresenceThrottled],
+  )
+
   const documentPane: DocumentPaneContextValue = useMemo(
     () => ({
       actions,
@@ -577,6 +618,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       focusPath,
       inspector: currentInspector || null,
       inspectors,
+      __internal_tasks,
       onBlur: handleBlur,
       onChange: handleChange,
       onFocus: handleFocus,
@@ -616,6 +658,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       unstable_languageFilter: languageFilter,
     }),
     [
+      __internal_tasks,
       actions,
       activeViewId,
       badges,
@@ -693,10 +736,9 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       disableBlurRef.current = true
 
       // Reset focus path when url params path changes
-      setFocusPath(pathFromUrl)
-      setOpenPath(pathFromUrl)
-
-      if (focusPathRef.current !== pathFromUrl) {
+      if (!deepEquals(focusPathRef.current, pathFromUrl)) {
+        setFocusPath(pathFromUrl)
+        setOpenPath(pathFromUrl)
         focusPathRef.current = pathFromUrl
         onFocusPath?.(pathFromUrl)
       }

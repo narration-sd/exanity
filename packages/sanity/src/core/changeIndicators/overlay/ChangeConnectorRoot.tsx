@@ -1,14 +1,15 @@
-import React, {useMemo} from 'react'
-import {Path} from '@sanity/types'
+import {type Path} from '@sanity/types'
+import {type ReactNode, useMemo, useState} from 'react'
+import {ConnectorContext} from 'sanity/_singletons'
+
 import {ScrollContainer} from '../../components/scroll'
-import {ConnectorContext} from '../ConnectorContext'
 import {ENABLED} from '../constants'
 import {Tracker} from '../tracker'
 import {ConnectorsOverlay} from './ConnectorsOverlay'
 
 /** @internal */
 export interface EnabledChangeConnectorRootProps {
-  children: React.ReactNode
+  children: ReactNode
   className?: string
   isReviewChangesOpen: boolean
   onOpenReviewChanges: () => void
@@ -24,7 +25,7 @@ export function EnabledChangeConnectorRoot({
   onSetFocus,
   ...restProps
 }: EnabledChangeConnectorRootProps) {
-  const [rootElement, setRootElement] = React.useState<HTMLDivElement | null>()
+  const [rootElement, setRootElement] = useState<HTMLDivElement | null>()
 
   const contextValue = useMemo(
     () => ({
@@ -50,7 +51,7 @@ export function EnabledChangeConnectorRoot({
 /** @internal */
 export interface DisabledChangeConnectorRootProps {
   className?: string
-  children: React.ReactNode
+  children: ReactNode
 }
 
 /** @internal */

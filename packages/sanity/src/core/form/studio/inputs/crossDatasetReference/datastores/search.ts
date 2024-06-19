@@ -1,10 +1,13 @@
-import {SanityClient} from '@sanity/client'
-import {CrossDatasetReferenceSchemaType, ReferenceFilterSearchOptions} from '@sanity/types'
-import {Observable} from 'rxjs'
+import {type SanityClient} from '@sanity/client'
+import {
+  type CrossDatasetReferenceSchemaType,
+  type ReferenceFilterSearchOptions,
+} from '@sanity/types'
+import {type Observable} from 'rxjs'
 import {map} from 'rxjs/operators'
-import {createWeightedSearch} from '../../../../../search'
+
+import {createSearch} from '../../../../../search'
 import {collate} from '../../../../../util'
-import {resolveSearchConfigForBaseFieldPaths} from '@sanity/schema/_internal'
 
 interface SearchHit {
   id: string
@@ -18,23 +21,16 @@ export function search(
   type: CrossDatasetReferenceSchemaType,
   options: ReferenceFilterSearchOptions,
 ): Observable<SearchHit[]> {
-  const searchWeighted = createWeightedSearch(
-    type.to.map((crossDatasetType) => ({
-      name: crossDatasetType.type,
-      // eslint-disable-next-line camelcase
-      __experimental_search: resolveSearchConfigForBaseFieldPaths(
-        crossDatasetType,
-        options.maxFieldDepth,
-      ),
-    })),
+  const searchStrategy = createSearch(type.to, client, {
+    ...options,
+    maxDepth: options.maxFieldDepth,
+  })
 
-    client,
-    options,
-  )
-
-  return searchWeighted(textTerm, {includeDrafts: false}).pipe(
-    // pick the 100 best matches
-    map((results) => results.map((result) => result.hit)),
+  return searchStrategy(textTerm, {
+    includeDrafts: false,
+    isCrossDataset: true,
+  }).pipe(
+    map(({hits}) => hits.map(({hit}) => hit)),
     map(collate),
     map((collated) =>
       collated.map((entry) => ({

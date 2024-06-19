@@ -1,12 +1,13 @@
-import React, {createContext, useContext} from 'react'
-import {Workspace} from '../config'
+import {type ReactChild, useContext} from 'react'
+import {WorkspaceContext} from 'sanity/_singletons'
+
+import {type Workspace} from '../config'
 
 /** @internal */
 export interface WorkspaceProviderProps {
   workspace: Workspace
-  children?: React.ReactChild
+  children?: ReactChild
 }
-const WorkspaceContext = createContext<Workspace | null>(null)
 
 /** @internal */
 export function WorkspaceProvider({children, workspace}: WorkspaceProviderProps) {

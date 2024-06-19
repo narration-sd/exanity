@@ -1,11 +1,12 @@
 /* eslint-disable react/no-unused-prop-types */
-import {ArraySchemaType, isReferenceSchemaType} from '@sanity/types'
 import {AddIcon} from '@sanity/icons'
-import React, {useMemo, useId} from 'react'
+import {type ArraySchemaType, isReferenceSchemaType} from '@sanity/types'
 import {Grid, Menu} from '@sanity/ui'
-import {ArrayInputFunctionsProps} from '../../../types'
-import {Tooltip, Button, MenuButton, MenuItem} from '../../../../../ui-components'
+import {useCallback, useId, useMemo} from 'react'
+
+import {Button, MenuButton, MenuItem, Tooltip} from '../../../../../ui-components'
 import {useTranslation} from '../../../../i18n'
+import {type ArrayInputFunctionsProps} from '../../../types'
 
 /**
  * @hidden
@@ -18,14 +19,14 @@ export function ArrayOfPrimitivesFunctions<
   const menuButtonId = useId()
   const {t} = useTranslation()
 
-  const insertItem = React.useCallback(
+  const insertItem = useCallback(
     (itemType: any) => {
       onItemAppend(onValueCreate(itemType))
     },
     [onValueCreate, onItemAppend],
   )
 
-  const handleAddBtnClick = React.useCallback(() => {
+  const handleAddBtnClick = useCallback(() => {
     insertItem(schemaType.of[0])
   }, [schemaType, insertItem])
 

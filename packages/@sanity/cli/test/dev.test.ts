@@ -1,6 +1,9 @@
-import path from 'path'
-import {createHash} from 'crypto'
-import {readFile} from 'fs/promises'
+import {createHash} from 'node:crypto'
+import {readFile} from 'node:fs/promises'
+import path from 'node:path'
+
+import {describe, expect, test} from '@jest/globals'
+
 import {describeCliTest} from './shared/describe'
 import {testServerCommand} from './shared/devServer'
 import {getTestRunArgs, studiosPath, studioVersions} from './shared/environment'

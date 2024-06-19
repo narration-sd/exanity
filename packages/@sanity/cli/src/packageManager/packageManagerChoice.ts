@@ -1,11 +1,18 @@
 /* eslint-disable no-process-env */
-import path from 'path'
-import which from 'which'
+import path from 'node:path'
+
 import preferredPM from 'preferred-pm'
+import which from 'which'
+
+import {type CliPrompter} from '../types'
 import {isInteractive} from '../util/isInteractive'
-import {CliPrompter} from '../types'
 
 export type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun' | 'manual'
+
+export const ALLOWED_PACKAGE_MANAGERS: PackageManager[] = ['npm', 'yarn', 'pnpm', 'bun', 'manual']
+export const allowedPackageManagersString = ALLOWED_PACKAGE_MANAGERS.map((pm) => `"${pm}"`).join(
+  ' | ',
+)
 
 const EXPERIMENTAL = ['bun']
 

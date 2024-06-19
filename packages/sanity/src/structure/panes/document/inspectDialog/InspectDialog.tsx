@@ -1,17 +1,18 @@
-import {SanityDocument} from '@sanity/types'
-import {Card, Code, Flex, TabList, TabPanel} from '@sanity/ui'
-import React, {useCallback} from 'react'
 import JSONInspector from '@rexxars/react-json-inspector'
+import {type SanityDocument} from '@sanity/types'
+import {Card, Code, Flex, TabList, TabPanel} from '@sanity/ui'
+import {useCallback} from 'react'
+import {Translate, useTranslation} from 'sanity'
+
 import {Dialog, Tab} from '../../../../ui-components'
 import {DocTitle} from '../../../components'
-import {useStructureToolSetting} from '../../../useStructureToolSetting'
 import {structureLocaleNamespace} from '../../../i18n'
+import {useStructureToolSetting} from '../../../useStructureToolSetting'
 import {useDocumentPane} from '../useDocumentPane'
 import {VIEW_MODE_PARSED, VIEW_MODE_RAW, VIEW_MODES} from './constants'
 import {isDocumentLike, isExpanded, maybeSelectAll, select, toggleExpanded} from './helpers'
 import {JSONInspectorWrapper} from './InspectDialog.styles'
 import {Search} from './Search'
-import {Translate, useTranslation} from 'sanity'
 
 interface InspectDialogProps {
   value: Partial<SanityDocument> | null
@@ -26,8 +27,8 @@ export function InspectDialog(props: InspectDialogProps) {
   where the inspect dialog lives.
   This also means that when a page is loaded, the state of the tabs remains and doesn't revert to the pane tab */
   const [viewModeId, onViewModeChange] = useStructureToolSetting(
-    'structure-tool',
-    `inspect-view-preferred-view-mode-${paneKey}`,
+    'inspect-view-mode',
+    null,
     'parsed',
   )
 
@@ -110,6 +111,7 @@ export function InspectDialog(props: InspectDialogProps) {
                 isExpanded={isExpanded}
                 onClick={toggleExpanded}
                 search={Search}
+                filterOptions={{ignoreCase: true}}
               />
             </JSONInspectorWrapper>
           )}

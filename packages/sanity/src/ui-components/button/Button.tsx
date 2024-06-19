@@ -1,10 +1,14 @@
 /* eslint-disable no-restricted-imports */
 
-import {Button as UIButton, ButtonProps as UIButtonProps} from '@sanity/ui'
-import React, {forwardRef, useCallback} from 'react'
-import styled from 'styled-components'
-import {Tooltip, TooltipProps} from '..'
-import {ConditionalWrapper, ConditionalWrapperRenderWrapperCallback} from '../conditionalWrapper'
+import {Button as UIButton, type ButtonProps as UIButtonProps} from '@sanity/ui'
+import {type ForwardedRef, forwardRef, type HTMLProps, useCallback} from 'react'
+import {styled} from 'styled-components'
+
+import {Tooltip, type TooltipProps} from '..'
+import {
+  ConditionalWrapper,
+  type ConditionalWrapperRenderWrapperCallback,
+} from '../conditionalWrapper'
 
 type BaseButtonProps = Pick<
   UIButtonProps,
@@ -66,8 +70,8 @@ export const Button = forwardRef(function Button(
     tone = 'default',
     tooltipProps,
     ...rest
-  }: ButtonProps & Omit<React.HTMLProps<HTMLButtonElement>, 'as' | 'size' | 'title'>,
-  ref: React.ForwardedRef<HTMLButtonElement>,
+  }: ButtonProps & Omit<HTMLProps<HTMLButtonElement>, 'as' | 'size' | 'title'>,
+  ref: ForwardedRef<HTMLButtonElement>,
 ) {
   const renderWrapper = useCallback<ConditionalWrapperRenderWrapperCallback>(
     (children) => {

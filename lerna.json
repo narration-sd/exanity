@@ -1,15 +1,16 @@
 {
-  "npmClient": "yarn",
-  "useWorkspaces": true,
+  "$schema": "node_modules/lerna/schemas/lerna-schema.json",
+  "npmClient": "pnpm",
   "packages": [
     "dev/*",
     "perf/tests",
     "perf/studio",
     "examples/*",
+    "packages/@repo/*",
     "packages/@sanity/*",
     "packages/create-sanity",
     "packages/groq",
     "packages/sanity"
   ],
-  "version": "3.28.0"
+  "version": "3.47.0"
 }

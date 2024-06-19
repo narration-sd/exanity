@@ -1,0 +1,11 @@
+packages:
+  - 'dev/*'
+  - 'perf/studio'
+  - 'perf/tests'
+  - 'examples/*'
+  - 'packages/@repo/*'
+  - 'packages/@sanity/*'
+  - 'packages/create-sanity'
+  - 'packages/groq'
+  - 'packages/sanity'
+  - 'packages/sanity/fixtures/examples/*'

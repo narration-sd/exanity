@@ -1,8 +1,10 @@
 import {Card, Portal, useClickOutside, useLayer} from '@sanity/ui'
-import {AnimatePresence, motion, Transition, Variants} from 'framer-motion'
-import React, {useCallback, useRef, useState} from 'react'
+import {AnimatePresence, motion, type Transition, type Variants} from 'framer-motion'
+import {useCallback, useRef, useState} from 'react'
 import FocusLock from 'react-focus-lock'
-import styled from 'styled-components'
+import {styled} from 'styled-components'
+
+import {useTranslation} from '../../../../../i18n'
 import {supportsTouch} from '../../../../../util'
 import {
   POPOVER_INPUT_PADDING,
@@ -12,17 +14,25 @@ import {
 } from '../constants'
 import {useSearchState} from '../contexts/search/useSearchState'
 import {hasSearchableTerms} from '../utils/hasSearchableTerms'
-import {useTranslation} from '../../../../../i18n'
 import {SearchWrapper} from './common/SearchWrapper'
 import {Filters} from './filters/Filters'
 import {RecentSearches} from './recentSearches/RecentSearches'
 import {SearchHeader} from './SearchHeader'
+import {type ItemSelectHandler} from './searchResults/item/SearchResultItem'
 import {SearchResults} from './searchResults/SearchResults'
 
+/**
+ * @internal
+ */
 export interface SearchPopoverProps {
   disableFocusLock?: boolean
+  disableIntentLink?: boolean
   onClose: () => void
-  onOpen: () => void
+  onItemSelect?: ItemSelectHandler
+  /**
+   * If provided, will trigger to open the search popover when user types hotkey + k
+   */
+  onOpen?: () => void
   open: boolean
 }
 
@@ -65,7 +75,17 @@ const SearchMotionCard = styled(motion(Card))`
   width: min(calc(100vw - ${POPOVER_INPUT_PADDING * 2}px), ${POPOVER_MAX_WIDTH}px);
 `
 
-export function SearchPopover({disableFocusLock, onClose, onOpen, open}: SearchPopoverProps) {
+/**
+ * @internal
+ */
+export function SearchPopover({
+  disableFocusLock,
+  disableIntentLink,
+  onClose,
+  onItemSelect,
+  onOpen,
+  open,
+}: SearchPopoverProps) {
   const [inputElement, setInputElement] = useState<HTMLInputElement | null>(null)
 
   const popoverElement = useRef<HTMLElement | null>(null)
@@ -118,22 +138,18 @@ export function SearchPopover({disableFocusLock, onClose, onOpen, open}: SearchP
                 transition={ANIMATION_TRANSITION}
                 variants={CARD_VARIANTS}
               >
-                <SearchHeader
-                  ariaInputLabel={
-                    hasValidTerms
-                      ? t('search.search-results-aria-label')
-                      : t('search.recent-searches-aria-label')
-                  }
-                  onClose={onClose}
-                  ref={setInputElement}
-                />
+                <SearchHeader onClose={onClose} ref={setInputElement} />
                 {filtersVisible && (
                   <Card borderTop flex="none">
                     <Filters />
                   </Card>
                 )}
                 {hasValidTerms ? (
-                  <SearchResults inputElement={inputElement} />
+                  <SearchResults
+                    inputElement={inputElement}
+                    onItemSelect={onItemSelect}
+                    disableIntentLink={disableIntentLink}
+                  />
                 ) : (
                   <RecentSearches inputElement={inputElement} />
                 )}

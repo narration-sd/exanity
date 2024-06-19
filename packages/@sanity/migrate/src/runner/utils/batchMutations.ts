@@ -1,6 +1,7 @@
-import {Mutation as SanityMutation} from '@sanity/client'
+import {type Mutation as SanityMutation} from '@sanity/client'
 import arrify from 'arrify'
-import {TransactionPayload} from './toSanityMutations'
+
+import {type TransactionPayload} from './toSanityMutations'
 
 // We're working on "raw" mutations, e.g what will be put into the mutations array in the request body
 const PADDING_SIZE = '{"mutations":[]}'.length
@@ -13,7 +14,8 @@ function isTransactionPayload(payload: any): payload is TransactionPayload {
  *
  * @param mutations - Async iterable of either single values or arrays of values
  * @param maxBatchSize - Max batch size in bytes
- * Todo: add support for transaction ids too
+ * @public
+ *
  */
 export async function* batchMutations(
   mutations: AsyncIterableIterator<TransactionPayload | SanityMutation | SanityMutation[]>,

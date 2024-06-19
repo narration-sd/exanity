@@ -1,19 +1,20 @@
 import {ClockIcon, CloseIcon} from '@sanity/icons'
 import {
   Box,
+  // eslint-disable-next-line no-restricted-imports
+  Button, // Button with specific styling and children behavior.
   Flex,
   Inline,
   rem,
-  ResponsiveMarginProps,
-  ResponsivePaddingProps,
+  type ResponsiveMarginProps,
+  type ResponsivePaddingProps,
   Text,
-  // eslint-disable-next-line no-restricted-imports
-  Button, // Button with specific styling and children behavior.
 } from '@sanity/ui'
-import React, {MouseEvent, useCallback} from 'react'
-import styled from 'styled-components'
+import {type MouseEvent, useCallback} from 'react'
+import {styled} from 'styled-components'
+
 import {useSearchState} from '../../../contexts/search/useSearchState'
-import type {RecentSearch} from '../../../datastores/recentSearches'
+import {type RecentSearch, useRecentSearchesStore} from '../../../datastores/recentSearches'
 import {DocumentTypesPill} from '../../common/DocumentTypesPill'
 import {FilterPill} from '../../common/FilterPill'
 
@@ -59,7 +60,8 @@ export function RecentSearchItem({
   value,
   ...rest
 }: RecentSearchesProps) {
-  const {dispatch, recentSearchesStore} = useSearchState()
+  const {dispatch} = useSearchState()
+  const recentSearchesStore = useRecentSearchesStore()
 
   // Determine how many characters are left to render type pills
   const availableCharacters = maxVisibleTypePillChars - value.query.length
@@ -69,8 +71,7 @@ export function RecentSearchItem({
 
     // Add to Local Storage
     if (recentSearchesStore) {
-      const updatedRecentSearches = recentSearchesStore?.addSearch(value, value?.filters)
-      dispatch({recentSearches: updatedRecentSearches, type: 'RECENT_SEARCHES_SET'})
+      recentSearchesStore?.addSearch(value, value?.filters)
     }
   }, [dispatch, recentSearchesStore, value])
 
@@ -79,11 +80,10 @@ export function RecentSearchItem({
       event.stopPropagation()
       // Remove from Local Storage
       if (recentSearchesStore) {
-        const updatedRecentSearches = recentSearchesStore?.removeSearchAtIndex(index)
-        dispatch({recentSearches: updatedRecentSearches, type: 'RECENT_SEARCHES_SET'})
+        recentSearchesStore?.removeSearchAtIndex(index)
       }
     },
-    [dispatch, index, recentSearchesStore],
+    [index, recentSearchesStore],
   )
 
   return (

@@ -1,32 +1,41 @@
 /* eslint-disable complexity, max-nested-callbacks, no-nested-ternary */
-import React, {useCallback, useMemo, useRef, useState, useId} from 'react'
-import type {CrossDatasetReferenceValue, CrossDatasetReferenceSchemaType} from '@sanity/types'
 import {ResetIcon as ClearIcon, SyncIcon as ReplaceIcon} from '@sanity/icons'
-import {concat, of, type Observable} from 'rxjs'
-import {catchError, distinctUntilChanged, filter, map, scan, switchMap, tap} from 'rxjs/operators'
+import {type CrossDatasetReferenceSchemaType, type CrossDatasetReferenceValue} from '@sanity/types'
 import {Box, Card, Flex, Inline, Menu, Stack, useToast} from '@sanity/ui'
-import {useObservableCallback} from 'react-rx'
 import {FOCUS_TERMINATOR} from '@sanity/util/paths'
-import type {ObjectInputProps} from '../../types'
-import {set, unset} from '../../patch'
-import {useOnClickOutside} from '../../hooks/useOnClickOutside'
-import {getPublishedId, isNonNullable} from '../../../util'
-import {FIXME} from '../../../FIXME'
+import {
+  type FocusEvent,
+  type KeyboardEvent,
+  useCallback,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import {useObservableEvent} from 'react-rx'
+import {concat, type Observable, of} from 'rxjs'
+import {catchError, distinctUntilChanged, filter, map, scan, switchMap, tap} from 'rxjs/operators'
+
 import {MenuButton, MenuItem} from '../../../../ui-components'
-import {ContextMenuButton} from '../../../components/contextMenuButton'
 import {ChangeIndicator} from '../../../changeIndicators'
 import {PreviewCard} from '../../../components'
-import {useDidUpdate} from '../../hooks/useDidUpdate'
+import {ContextMenuButton} from '../../../components/contextMenuButton'
+import {type FIXME} from '../../../FIXME'
 import {useFeatureEnabled} from '../../../hooks'
 import {useTranslation} from '../../../i18n'
-import {ReferenceStrengthMismatchAlertStrip} from '../ReferenceInput/ReferenceStrengthMismatchAlertStrip'
+import {getPublishedId, isNonNullable} from '../../../util'
+import {useDidUpdate} from '../../hooks/useDidUpdate'
+import {useOnClickOutside} from '../../hooks/useOnClickOutside'
+import {set, unset} from '../../patch'
+import {type ObjectInputProps} from '../../types'
 import {ReferenceMetadataLoadErrorAlertStrip} from '../ReferenceInput/ReferenceMetadataLoadFailure'
-import type {CrossDatasetReferenceInfo, CrossDatasetSearchHit, SearchState} from './types'
+import {ReferenceStrengthMismatchAlertStrip} from '../ReferenceInput/ReferenceStrengthMismatchAlertStrip'
+import {DisabledFeatureWarning} from './DisabledFeatureWarning'
 import {OptionPreview} from './OptionPreview'
-import {GetReferenceInfoFn, useReferenceInfo} from './useReferenceInfo'
 import {PreviewReferenceValue} from './PreviewReferenceValue'
 import {ReferenceAutocomplete} from './ReferenceAutocomplete'
-import {DisabledFeatureWarning} from './DisabledFeatureWarning'
+import {type CrossDatasetReferenceInfo, type CrossDatasetSearchHit, type SearchState} from './types'
+import {type GetReferenceInfoFn, useReferenceInfo} from './useReferenceInfo'
 import {useProjectId} from './utils/useProjectId'
 
 const INITIAL_SEARCH_STATE: SearchState = {
@@ -117,7 +126,7 @@ export function CrossDatasetReferenceInput(props: CrossDatasetReferenceInputProp
   }, [onChange])
 
   const handleAutocompleteKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLInputElement>) => {
+    (event: KeyboardEvent<HTMLInputElement>) => {
       if (event.key === 'Escape') {
         onPathFocus?.([])
       }
@@ -166,7 +175,7 @@ export function CrossDatasetReferenceInput(props: CrossDatasetReferenceInputProp
   const errors = useMemo(() => validation.filter((item) => item.level === 'error'), [validation])
 
   const handleFocus = useCallback(
-    (event: React.FocusEvent<HTMLDivElement>) => {
+    (event: FocusEvent<HTMLDivElement>) => {
       if (event.currentTarget === elementProps.ref.current) {
         onPathFocus?.([FOCUS_TERMINATOR])
       }
@@ -175,7 +184,7 @@ export function CrossDatasetReferenceInput(props: CrossDatasetReferenceInputProp
   )
 
   const handleAutocompleteFocus = useCallback(
-    (event: React.FocusEvent<HTMLInputElement>) => {
+    (event: FocusEvent<HTMLInputElement>) => {
       if (event.currentTarget === elementProps.ref.current) {
         onPathFocus?.(REF_PATH)
       }
@@ -188,41 +197,38 @@ export function CrossDatasetReferenceInput(props: CrossDatasetReferenceInputProp
 
   const inputId = useId()
 
-  const handleQueryChange = useObservableCallback(
-    (inputValue$: Observable<string | null>) => {
-      return inputValue$.pipe(
-        filter(isNonNullable),
-        distinctUntilChanged(),
-        switchMap((searchString) =>
-          concat(
-            of({isLoading: true}),
-            onSearch(searchString).pipe(
-              map((hits) => ({hits, searchString, isLoading: false})),
-              catchError((error) => {
-                push({
-                  title: 'Reference search failed',
-                  description: error.message,
-                  status: 'error',
-                  id: `reference-search-fail-${inputId}`,
-                })
+  const handleQueryChange = useObservableEvent((inputValue$: Observable<string | null>) => {
+    return inputValue$.pipe(
+      filter(isNonNullable),
+      distinctUntilChanged(),
+      switchMap((searchString) =>
+        concat(
+          of({isLoading: true}),
+          onSearch(searchString).pipe(
+            map((hits) => ({hits, searchString, isLoading: false})),
+            catchError((error) => {
+              push({
+                title: 'Reference search failed',
+                description: error.message,
+                status: 'error',
+                id: `reference-search-fail-${inputId}`,
+              })
 
-                console.error(error)
-                return of({hits: []})
-              }),
-            ),
+              console.error(error)
+              return of({hits: []})
+            }),
           ),
         ),
+      ),
 
-        scan(
-          (prevState, nextState): SearchState => ({...prevState, ...nextState}),
-          INITIAL_SEARCH_STATE,
-        ),
+      scan(
+        (prevState, nextState): SearchState => ({...prevState, ...nextState}),
+        INITIAL_SEARCH_STATE,
+      ),
 
-        tap(setSearchState),
-      )
-    },
-    [inputId, onSearch, push],
-  )
+      tap(setSearchState),
+    )
+  })
 
   const handleAutocompleteOpenButtonClick = useCallback(() => {
     handleQueryChange('')

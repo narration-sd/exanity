@@ -1,7 +1,8 @@
 import {SearchIcon} from '@sanity/icons'
-import React, {forwardRef} from 'react'
-import {useTranslation} from 'react-i18next'
+import {type ForwardedRef, forwardRef} from 'react'
+
 import {Button} from '../../../../../ui-components'
+import {useTranslation} from '../../../../i18n'
 import {GLOBAL_SEARCH_KEY, GLOBAL_SEARCH_KEY_MODIFIER} from './constants'
 
 interface SearchButtonProps {
@@ -13,7 +14,7 @@ interface SearchButtonProps {
  */
 export const SearchButton = forwardRef(function SearchButton(
   {onClick}: SearchButtonProps,
-  ref: React.ForwardedRef<HTMLButtonElement>,
+  ref: ForwardedRef<HTMLButtonElement>,
 ) {
   const {t} = useTranslation()
 

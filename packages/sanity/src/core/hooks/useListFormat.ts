@@ -1,5 +1,7 @@
+import {useContext} from 'react'
+import {LocaleContext} from 'sanity/_singletons'
+
 import {intlCache} from '../i18n/intlCache'
-import {useCurrentLocale} from '../i18n/hooks/useLocale'
 
 /**
  * Options for the `useListFormat` hook
@@ -34,6 +36,13 @@ export interface UseListFormatOptions {
  * @public
  */
 export function useListFormat(options: UseListFormatOptions = {}): Intl.ListFormat {
-  const currentLocale = useCurrentLocale().id
-  return intlCache.listFormat(currentLocale, options)
+  /*
+   * Certain components using this hook (such as the <Translate/> in toasts)
+   * may not have access to the LocaleProvider that lets us use useCurrentLocale.
+   * In that case, we fall back to a default, unobstrusive list format.
+   */
+  const currentLocale = useContext(LocaleContext)?.currentLocale.id
+  return currentLocale
+    ? intlCache.listFormat(currentLocale, options)
+    : intlCache.listFormat('en-US', {...options, style: 'narrow'})
 }

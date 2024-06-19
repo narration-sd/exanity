@@ -1,70 +1,83 @@
-import {existsSync, readFileSync} from 'fs'
-import fs from 'fs/promises'
-import path from 'path'
+import {existsSync, readFileSync} from 'node:fs'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+
+import {type DatasetAclMode, type SanityProject} from '@sanity/client'
+import {type Framework} from '@vercel/frameworks'
 import dotenv from 'dotenv'
-import deburr from 'lodash/deburr'
-import noop from 'lodash/noop'
+import execa, {type CommonOptions} from 'execa'
+import {deburr, noop} from 'lodash'
 import pFilter from 'p-filter'
 import resolveFrom from 'resolve-from'
+import {evaluate, patch} from 'silver-fleece'
 import which from 'which'
 
-import type {DatasetAclMode} from '@sanity/client'
-import {type Framework} from '@vercel/frameworks'
-import execa, {CommonOptions} from 'execa'
-import {evaluate, patch} from 'golden-fleece'
-import type {InitFlags} from '../../commands/init/initCommand'
+import {CLIInitStepCompleted} from '../../__telemetry__/init.telemetry'
+import {type InitFlags} from '../../commands/init/initCommand'
 import {debug} from '../../debug'
 import {
   getPackageManagerChoice,
   installDeclaredPackages,
   installNewPackages,
 } from '../../packageManager'
-import {getPartialEnvWithNpmPath, PackageManager} from '../../packageManager/packageManagerChoice'
 import {
-  CliApiClient,
-  CliCommandArguments,
-  CliCommandContext,
-  CliCommandDefinition,
-  SanityCore,
-  SanityModuleInternal,
+  ALLOWED_PACKAGE_MANAGERS,
+  allowedPackageManagersString,
+  getPartialEnvWithNpmPath,
+  type PackageManager,
+} from '../../packageManager/packageManagerChoice'
+import {
+  type CliApiClient,
+  type CliCommandArguments,
+  type CliCommandContext,
+  type CliCommandDefinition,
+  type SanityCore,
+  type SanityModuleInternal,
 } from '../../types'
 import {getClientWrapper} from '../../util/clientWrapper'
 import {dynamicRequire} from '../../util/dynamicRequire'
-import {getProjectDefaults, ProjectDefaults} from '../../util/getProjectDefaults'
+import {getProjectDefaults, type ProjectDefaults} from '../../util/getProjectDefaults'
 import {getUserConfig} from '../../util/getUserConfig'
 import {isCommandGroup} from '../../util/isCommandGroup'
 import {isInteractive} from '../../util/isInteractive'
-import {login, LoginFlags} from '../login/login'
+import {fetchJourneyConfig} from '../../util/journeyConfig'
+import {login, type LoginFlags} from '../login/login'
 import {createProject} from '../project/createProject'
-import {CLIInitStepCompleted} from '../../__telemetry__/init.telemetry'
-import {BootstrapOptions, bootstrapTemplate} from './bootstrapTemplate'
-import {GenerateConfigOptions} from './createStudioConfig'
+import {type BootstrapOptions, bootstrapTemplate} from './bootstrapTemplate'
+import {type GenerateConfigOptions} from './createStudioConfig'
 import {absolutify, validateEmptyPath} from './fsUtils'
 import {tryGitInit} from './git'
 import {promptForDatasetName} from './promptForDatasetName'
 import {promptForAclMode, promptForDefaultConfig, promptForTypeScript} from './prompts'
+import {
+  promptForAppendEnv,
+  promptForEmbeddedStudio,
+  promptForNextTemplate,
+  promptForStudioPath,
+} from './prompts/nextjs'
 import {reconfigureV2Project} from './reconfigureV2Project'
 import templates from './templates'
 import {
   sanityCliTemplate,
   sanityConfigTemplate,
   sanityFolder,
-  sanityStudioAppTemplate,
-  sanityStudioPagesTemplate,
+  sanityStudioTemplate,
 } from './templates/nextjs'
-import {
-  promptForAppDir,
-  promptForAppendEnv,
-  promptForEmbeddedStudio,
-  promptForNextTemplate,
-  promptForStudioPath,
-} from './prompts/nextjs'
 
 // eslint-disable-next-line no-process-env
 const isCI = process.env.CI
 
+/**
+ * @deprecated - No longer used
+ */
 export interface InitOptions {
   template: string
+  // /**
+  //  * Used for initializing a project from a server schema that is saved in the Journey API
+  //  * This will override the `template` option.
+  //  * @beta
+  //  */
+  // journeyProjectId?: string
   outputDir: string
   name: string
   displayName: string
@@ -122,6 +135,7 @@ export default async function initSanity(
   const useGit = typeof commitMessage === 'undefined' ? true : Boolean(commitMessage)
   const bareOutput = cliFlags.bare
   const env = cliFlags.env
+  const packageManager = cliFlags['package-manager']
 
   let defaultConfig = cliFlags['dataset-default']
   let showDefaultConfigPrompt = !defaultConfig
@@ -232,7 +246,11 @@ export default async function initSanity(
   }
 
   const usingBareOrEnv = cliFlags.bare || cliFlags.env
-  print(`You're setting up a new project!`)
+  print(
+    cliFlags.quickstart
+      ? "You're ejecting a remote Sanity project!"
+      : `You're setting up a new project!`,
+  )
   print(`We'll make sure you have an account with Sanity.io. ${usingBareOrEnv ? '' : `Then we'll`}`)
   if (!usingBareOrEnv) {
     print('install an open-source JS content editor that connects to')
@@ -257,38 +275,12 @@ export default async function initSanity(
   }
 
   const flags = await prepareFlags()
-
   // We're authenticated, now lets select or create a project
-  debug('Prompting user to select or create a project')
-  const {
-    projectId,
-    displayName,
-    isFirstProject,
-    userAction: getOrCreateUserAction,
-  } = await getOrCreateProject()
-  trace.log({step: 'createOrSelectProject', projectId, selectedOption: getOrCreateUserAction})
+  const {projectId, displayName, isFirstProject, datasetName, schemaUrl} = await getProjectDetails()
+
   const sluggedName = deburr(displayName.toLowerCase())
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
-
-  debug(`Project with name ${displayName} selected`)
-
-  // Now let's pick or create a dataset
-  debug('Prompting user to select or create a dataset')
-  const {datasetName, userAction: getOrCreateDatasetUserAction} = await getOrCreateDataset({
-    projectId,
-    displayName,
-    dataset: flags.dataset,
-    aclMode: flags.visibility,
-    defaultConfig: flags['dataset-default'],
-  })
-  trace.log({
-    step: 'createOrSelectDataset',
-    selectedOption: getOrCreateDatasetUserAction,
-    datasetName,
-    visibility: flags.visibility as 'private' | 'public',
-  })
-  debug(`Dataset with name ${datasetName} selected`)
 
   // If user doesn't want to output any template code
   if (bareOutput) {
@@ -339,12 +331,8 @@ export default async function initSanity(
     const embeddedStudio = unattended ? true : await promptForEmbeddedStudio(prompt)
 
     if (embeddedStudio) {
-      // this one is trickier on unattended, as we should probably scan for which one
-      // they're using, but they can also use both
-      const useAppDir = unattended ? false : await promptForAppDir(prompt)
-
-      // find source path (app or pages dir)
-      const srcDir = useAppDir ? 'app' : 'pages'
+      // find source path (app or src/app)
+      const srcDir = 'app'
       let srcPath = path.join(workDir, srcDir)
 
       if (!existsSync(srcPath)) {
@@ -361,7 +349,7 @@ export default async function initSanity(
       const embeddedStudioRouteFilePath = path.join(
         srcPath,
         `${studioPath}/`,
-        useAppDir ? `[[...index]]/page.${fileExtension}x` : `[[...index]].${fileExtension}x`,
+        `[[...tool]]/page.${fileExtension}x`,
       )
 
       // this selects the correct template string based on whether the user is using the app or pages directory and
@@ -370,7 +358,7 @@ export default async function initSanity(
       // relative paths to reach the root level of the project
       await writeOrOverwrite(
         embeddedStudioRouteFilePath,
-        (useAppDir ? sanityStudioAppTemplate : sanityStudioPagesTemplate).replace(
+        sanityStudioTemplate.replace(
           ':configPath:',
           new Array(countNestedFolders(embeddedStudioRouteFilePath.slice(workDir.length)))
             .join('../')
@@ -460,11 +448,11 @@ export default async function initSanity(
     }
 
     if (chosen === 'npm') {
-      await execa('npm', ['install', 'next-sanity@7'], execOptions)
+      await execa('npm', ['install', 'next-sanity@9'], execOptions)
     } else if (chosen === 'yarn') {
-      await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@7'], execOptions)
+      await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@9'], execOptions)
     } else if (chosen === 'pnpm') {
-      await execa('pnpm', ['install', 'next-sanity@7'], execOptions)
+      await execa('pnpm', ['install', 'next-sanity@9'], execOptions)
     }
 
     print(
@@ -473,8 +461,6 @@ export default async function initSanity(
 
     // eslint-disable-next-line no-process-exit
     process.exit(0)
-
-    return
   }
 
   // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -539,6 +525,7 @@ export default async function initSanity(
     outputPath,
     packageName: sluggedName,
     templateName,
+    schemaUrl,
     useTypeScript,
     variables: {
       dataset: datasetName,
@@ -556,15 +543,53 @@ export default async function initSanity(
   // Bootstrap Sanity, creating required project files, manifests etc
   await bootstrapTemplate(templateOptions, context)
 
+  // update that files were initialized locally; do not halt flow for request
+  apiClient({api: {projectId: projectId}})
+    .request<SanityProject>({uri: `/projects/${projectId}`})
+    .then((project: SanityProject) => {
+      if (!project?.metadata?.cliInitializedAt) {
+        return apiClient({api: {projectId}}).request({
+          method: 'PATCH',
+          uri: `/projects/${projectId}`,
+          body: {metadata: {cliInitializedAt: new Date().toISOString()}},
+        })
+      }
+      return Promise.resolve()
+    })
+    .catch(() => {
+      // Non-critical update
+      debug('Failed to update cliInitializedAt metadata')
+    })
+
+  let pkgManager: PackageManager
+
+  // If the user has specified a package manager, and it's allowed use that
+  if (packageManager && ALLOWED_PACKAGE_MANAGERS.includes(packageManager)) {
+    pkgManager = packageManager
+  } else {
+    // Otherwise, try to find the most optimal package manager to use
+    pkgManager = (
+      await getPackageManagerChoice(outputPath, {
+        prompt,
+        interactive: unattended ? false : isInteractive,
+      })
+    ).chosen
+
+    // only log warning if a package manager flag is passed
+    if (packageManager) {
+      output.warn(
+        chalk.yellow(
+          `Given package manager "${packageManager}" is not supported. Supported package managers are ${allowedPackageManagersString}.`,
+        ),
+      )
+      output.print(`Using ${pkgManager} as package manager`)
+    }
+  }
+
+  trace.log({step: 'selectPackageManager', selectedOption: pkgManager})
+
   // Now for the slow part... installing dependencies
-  const pkgManager = await getPackageManagerChoice(outputPath, {
-    prompt,
-    interactive: unattended ? false : isInteractive,
-  })
-
-  trace.log({step: 'selectPackageManager', selectedOption: pkgManager.chosen})
-
-  await installDeclaredPackages(outputPath, pkgManager.chosen, context)
+  await installDeclaredPackages(outputPath, pkgManager, context)
 
   // Try initializing a git repository
   if (useGit) {
@@ -599,7 +624,7 @@ export default async function initSanity(
     bun: 'bun dev',
     manual: 'npm run dev',
   }
-  const devCommand = devCommandMap[pkgManager.chosen]
+  const devCommand = devCommandMap[pkgManager]
 
   const isCurrentDir = outputPath === process.cwd()
   if (isCurrentDir) {
@@ -651,6 +676,57 @@ export default async function initSanity(
 
     print("Good stuff, you're now authenticated. You'll need a project to keep your")
     print('datasets and collaborators safe and snug.')
+  }
+
+  async function getProjectDetails(): Promise<{
+    projectId: string
+    datasetName: string
+    displayName: string
+    isFirstProject: boolean
+    schemaUrl?: string
+  }> {
+    // If we're doing a quickstart, we don't need to prompt for project details
+    if (flags.quickstart) {
+      debug('Fetching project details from Journey API')
+      const data = await fetchJourneyConfig(apiClient, flags.quickstart)
+      trace.log({
+        step: 'fetchJourneyConfig',
+        projectId: data.projectId,
+        datasetName: data.datasetName,
+        displayName: data.displayName,
+        isFirstProject: data.isFirstProject,
+      })
+      return data
+    }
+
+    debug('Prompting user to select or create a project')
+    const project = await getOrCreateProject()
+    debug(`Project with name ${project.displayName} selected`)
+
+    // Now let's pick or create a dataset
+    debug('Prompting user to select or create a dataset')
+    const dataset = await getOrCreateDataset({
+      projectId: project.projectId,
+      displayName: project.displayName,
+      dataset: flags.dataset,
+      aclMode: flags.visibility,
+      defaultConfig: flags['dataset-default'],
+    })
+    debug(`Dataset with name ${dataset.datasetName} selected`)
+
+    trace.log({
+      step: 'createOrSelectDataset',
+      selectedOption: dataset.userAction,
+      datasetName: dataset.datasetName,
+      visibility: flags.visibility as 'private' | 'public',
+    })
+
+    return {
+      projectId: project.projectId,
+      displayName: project.displayName,
+      isFirstProject: project.isFirstProject,
+      datasetName: dataset.datasetName,
+    }
   }
 
   // eslint-disable-next-line complexity
@@ -739,7 +815,7 @@ export default async function initSanity(
         displayName: projectName,
         organizationId: await getOrganizationId(organizations),
         subscription: selectedPlan ? {planId: selectedPlan} : undefined,
-        metadata: {coupon: intendedCoupon},
+        metadata: {coupon: intendedCoupon, integration: 'cli'},
       }).then((response) => ({
         ...response,
         isFirstProject: isUsersFirstProject,
@@ -920,6 +996,11 @@ export default async function initSanity(
   }
 
   function selectProjectTemplate() {
+    // Make sure the --quickstart and --template are not used together
+    if (flags.quickstart) {
+      return 'quickstart'
+    }
+
     const defaultTemplate = unattended || flags.template ? flags.template || 'clean' : null
     if (defaultTemplate) {
       return defaultTemplate
@@ -943,7 +1024,7 @@ export default async function initSanity(
         },
         {
           value: 'clean',
-          name: 'Clean project with no predefined schemas',
+          name: 'Clean project with no predefined schema types',
         },
       ],
     })
@@ -991,6 +1072,16 @@ export default async function initSanity(
       throw new Error(
         'You have specified both a project and an organization. To move a project to an organization please visit https://www.sanity.io/manage',
       )
+    }
+
+    if (
+      cliFlags.quickstart &&
+      (cliFlags.project || cliFlags.dataset || cliFlags.visibility || cliFlags.template)
+    ) {
+      const disallowed = ['project', 'dataset', 'visibility', 'template']
+      const usedDisallowed = disallowed.filter((flag) => cliFlags[flag as keyof InitFlags])
+      const usedDisallowedStr = usedDisallowed.map((flag) => `--${flag}`).join(', ')
+      throw new Error(`\`--quickstart\` cannot be combined with ${usedDisallowedStr}`)
     }
 
     if (createProjectName === true) {

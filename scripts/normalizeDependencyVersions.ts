@@ -1,9 +1,10 @@
 /* eslint-disable no-sync, no-console, id-length */
 import fs from 'node:fs'
 import path from 'node:path'
-import semver from 'semver'
+
 import chalk from 'chalk'
 import glob from 'glob'
+import semver from 'semver'
 
 interface LernaConfig {
   packages: string[]
@@ -169,7 +170,7 @@ if (fixablePackages.length > 0) {
   console.log(
     [
       'Updated version ranges for %d packages,',
-      'you might want to run "yarn bootstrap"',
+      'you might want to run "pnpm bootstrap"',
       'and run some tests before pushing changes',
     ].join(' '),
     fixablePackages.length,

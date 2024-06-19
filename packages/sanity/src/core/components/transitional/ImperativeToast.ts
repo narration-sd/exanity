@@ -1,17 +1,20 @@
 import {useToast} from '@sanity/ui'
-import React, {forwardRef, useImperativeHandle} from 'react'
+import {forwardRef, type ReactNode, useImperativeHandle} from 'react'
 
 /** @internal */
 export interface ToastParams {
   closable?: boolean
-  description?: React.ReactNode
+  description?: ReactNode
   duration?: number
   onClose?: () => void
-  title?: React.ReactNode
+  title?: ReactNode
   status?: 'error' | 'warning' | 'success' | 'info'
 }
 
-/** @internal */
+/**
+ * @internal
+ * @deprecated -- Refactor the component so it can call `useToast` instead
+ */
 export const ImperativeToast = forwardRef((_, ref) => {
   const {push} = useToast()
 

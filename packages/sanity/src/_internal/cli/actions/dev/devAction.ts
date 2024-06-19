@@ -1,10 +1,17 @@
-import path from 'path'
-import type {CliConfig, CliCommandArguments, CliCommandContext, CliOutputter} from '@sanity/cli'
-import {DevServerOptions, startDevServer} from '../../server/devServer'
-import {getTimer} from '../../util/timing'
-import {checkStudioDependencyVersions} from '../../util/checkStudioDependencyVersions'
+import path from 'node:path'
+
+import {
+  type CliCommandArguments,
+  type CliCommandContext,
+  type CliConfig,
+  type CliOutputter,
+} from '@sanity/cli'
+
+import {type DevServerOptions, startDevServer} from '../../server/devServer'
 import {checkRequiredDependencies} from '../../util/checkRequiredDependencies'
+import {checkStudioDependencyVersions} from '../../util/checkStudioDependencyVersions'
 import {getSharedServerConfig, gracefulServerDeath} from '../../util/servers'
+import {getTimer} from '../../util/timing'
 
 export interface StartDevServerCommandFlags {
   host?: string

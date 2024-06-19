@@ -1,10 +1,11 @@
-import {SanityClient, SanityDocument} from '@sanity/client'
+import {type SanityClient} from '@sanity/client'
 import {
   asyncScheduler,
   defer,
+  map,
   merge,
   mergeMap,
-  Observable,
+  type Observable,
   of,
   partition,
   share,
@@ -14,9 +15,12 @@ import {
   timer,
 } from 'rxjs'
 import {exhaustMapWithTrailing} from 'rxjs-exhaustmap-with-trailing'
-import {SortOrder} from './types'
-import {createSearchQuery, Schema, SearchOptions, SearchTerms, WeightedSearchOptions} from 'sanity'
-import {getSearchableTypes, getSearchTypesWithMaxDepth} from 'sanity/_internalBrowser'
+import {createSearch, getSearchableTypes, type SanityDocumentLike, type Schema} from 'sanity'
+
+import {getExtendedProjection} from '../../structureBuilder/util/getExtendedProjection'
+// FIXME
+// eslint-disable-next-line boundaries/element-types
+import {type SortOrder} from './types'
 
 interface ListenQueryOptions {
   client: SanityClient
@@ -26,13 +30,24 @@ interface ListenQueryOptions {
   schema: Schema
   searchQuery: string
   sort: SortOrder
-  staticTypeNames?: string[]
+  staticTypeNames?: string[] | null
   maxFieldDepth?: number
+  enableLegacySearch?: boolean
 }
 
-export function listenSearchQuery(options: ListenQueryOptions): Observable<SanityDocument[]> {
-  const {client, schema, sort, limit, params, filter, searchQuery, staticTypeNames, maxFieldDepth} =
-    options
+export function listenSearchQuery(options: ListenQueryOptions): Observable<SanityDocumentLike[]> {
+  const {
+    client,
+    schema,
+    sort,
+    limit,
+    params,
+    filter,
+    searchQuery,
+    staticTypeNames,
+    maxFieldDepth,
+    enableLegacySearch,
+  } = options
   const sortBy = sort.by
   const extendedProjection = sort?.extendedProjection
 
@@ -81,32 +96,45 @@ export function listenSearchQuery(options: ListenQueryOptions): Observable<Sanit
       // Use the type names to create a search query and fetch the documents that match the query.
       return typeNames$.pipe(
         mergeMap((typeNames: string[]) => {
-          const types = getSearchTypesWithMaxDepth(
-            getSearchableTypes(schema).filter((type) => {
-              return typeNames.includes(type.name) || type.name === 'sanity.previewUrlSecret'
-            }),
-            maxFieldDepth,
-          )
+          const types = getSearchableTypes(schema, staticTypeNames || []).filter((type) => {
+            if (typeNames.includes(type.name)) {
+              // make a call to getExtendedProjection in strict mode to verify that all fields are
+              // known. This method will throw an exception if there are any unknown fields specified
+              // in the sort by list
+              getExtendedProjection(type, sort.by, true)
+              return true
+            }
+            return false
+          })
 
-          const searchTerms: SearchTerms = {
+          const search = createSearch(types, client, {
             filter,
-            query: searchQuery || '',
-            types,
-          }
-
-          const searchOptions: SearchOptions & WeightedSearchOptions = {
-            __unstable_extendedProjection: extendedProjection,
-            comments: [`findability-source: ${searchQuery ? 'list-query' : 'list'}`],
-            limit,
             params,
-            sort: sortBy,
-          }
+            enableLegacySearch,
+            maxDepth: maxFieldDepth,
+          })
 
-          const {query: createdQuery, params: createdParams} = createSearchQuery(
-            searchTerms,
-            searchOptions,
-          )
-          const doFetch = () => client.observable.fetch(createdQuery, createdParams)
+          const doFetch = () => {
+            const searchTerms = {
+              query: searchQuery || '',
+              types,
+            }
+
+            const searchOptions = {
+              __unstable_extendedProjection: extendedProjection,
+              comments: [`findability-source: ${searchQuery ? 'list-query' : 'list'}`],
+              limit,
+              skipSortByScore: true,
+              sort: sortBy,
+            }
+
+            return search(searchTerms, searchOptions).pipe(
+              map((result) =>
+                // eslint-disable-next-line max-nested-callbacks
+                result.hits.map(({hit}) => hit),
+              ),
+            )
+          }
 
           if (event.type === 'mutation' && event.visibility !== 'query') {
             // Even though the listener request specifies visibility=query, the events are not guaranteed to be delivered with visibility=query

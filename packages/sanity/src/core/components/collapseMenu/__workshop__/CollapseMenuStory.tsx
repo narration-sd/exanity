@@ -1,7 +1,7 @@
 import {IceCreamIcon} from '@sanity/icons'
 import {Card, Flex} from '@sanity/ui'
 import {useBoolean, useSelect} from '@sanity/ui-workshop'
-import React from 'react'
+
 import {ContextMenuButton} from '../../contextMenuButton'
 import {CollapseMenu, CollapseMenuButton} from '../'
 

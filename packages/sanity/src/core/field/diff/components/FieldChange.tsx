@@ -1,21 +1,22 @@
-import React, {useCallback, useMemo, useState} from 'react'
+import {type ObjectSchemaType} from '@sanity/types'
 import {Box, Flex, Stack, Text, useClickOutside} from '@sanity/ui'
-import {ObjectSchemaType} from '@sanity/types'
-import {useDocumentOperation} from '../../../hooks'
+import {Fragment, type HTMLAttributes, useCallback, useMemo, useState} from 'react'
+import {DiffContext} from 'sanity/_singletons'
+
 import {Button, Popover} from '../../../../ui-components'
-import {FieldChangeNode, FieldOperationsAPI} from '../../types'
-import {undoChange} from '../changes/undoChange'
-import {DiffContext} from '../contexts/DiffContext'
-import {useDocumentChange} from '../hooks'
-import {useDocumentPairPermissions} from '../../../store'
+import {useDocumentOperation} from '../../../hooks'
 import {useTranslation} from '../../../i18n'
+import {useDocumentPairPermissions} from '../../../store'
+import {type FieldChangeNode, type FieldOperationsAPI} from '../../types'
+import {undoChange} from '../changes/undoChange'
+import {useDocumentChange} from '../hooks'
 import {ChangeBreadcrumb} from './ChangeBreadcrumb'
 import {DiffErrorBoundary} from './DiffErrorBoundary'
 import {DiffInspectWrapper} from './DiffInspectWrapper'
 import {FallbackDiff} from './FallbackDiff'
+import {DiffBorder, FieldChangeContainer} from './FieldChange.styled'
 import {RevertChangesButton} from './RevertChangesButton'
 import {ValueError} from './ValueError'
-import {FieldChangeContainer, DiffBorder} from './FieldChange.styled'
 
 /** @internal */
 export function FieldChange(
@@ -23,7 +24,7 @@ export function FieldChange(
     change: FieldChangeNode
     readOnly?: boolean
     hidden?: boolean
-  } & React.HTMLAttributes<HTMLDivElement>,
+  } & HTMLAttributes<HTMLDivElement>,
 ) {
   const {change, hidden, readOnly} = props
   const DiffComponent = change.diffComponent || FallbackDiff
@@ -32,7 +33,7 @@ export function FieldChange(
     schemaType,
     rootDiff,
     isComparingCurrent,
-    FieldWrapper = React.Fragment,
+    FieldWrapper = Fragment,
   } = useDocumentChange()
   const ops = useDocumentOperation(documentId, schemaType.name) as FieldOperationsAPI
   const [confirmRevertOpen, setConfirmRevertOpen] = useState(false)
@@ -54,7 +55,7 @@ export function FieldChange(
     setConfirmRevertOpen(true)
   }, [])
 
-  const closeRevertChangesConfirmDialog = React.useCallback(() => {
+  const closeRevertChangesConfirmDialog = useCallback(() => {
     setConfirmRevertOpen(false)
   }, [])
 

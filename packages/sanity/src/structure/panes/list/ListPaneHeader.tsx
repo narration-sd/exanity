@@ -1,8 +1,8 @@
 import {ArrowLeftIcon} from '@sanity/icons'
-import React from 'react'
-import {BackLink, PaneHeader, PaneHeaderActions, usePane} from '../../components'
+
 import {Button} from '../../../ui-components'
-import {PaneMenuItem, PaneMenuItemGroup} from '../../types'
+import {BackLink, PaneHeader, PaneHeaderActions, usePane} from '../../components'
+import {type PaneMenuItem, type PaneMenuItemGroup} from '../../types'
 import {useStructureTool} from '../../useStructureTool'
 
 interface ListPaneHeaderProps {

@@ -3,12 +3,13 @@ import {
   Box,
   Flex,
   Hotkeys,
-  HotkeysProps,
+  type HotkeysProps,
   Text,
   Tooltip as UITooltip,
-  TooltipProps as UITooltipProps,
+  type TooltipProps as UITooltipProps,
 } from '@sanity/ui'
-import React, {forwardRef} from 'react'
+import {type ForwardedRef, forwardRef} from 'react'
+
 import {TOOLTIP_DELAY_PROPS} from './constants'
 
 /** @internal */
@@ -38,7 +39,7 @@ const TOOLTIP_SHARED_PROPS: UITooltipProps = {
  */
 export const Tooltip = forwardRef(function Tooltip(
   props: TooltipProps,
-  ref: React.ForwardedRef<HTMLDivElement>,
+  ref: ForwardedRef<HTMLDivElement>,
 ) {
   const {content, hotkeys, ...rest} = props
 

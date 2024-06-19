@@ -1,10 +1,23 @@
 import {CloseIcon} from '@sanity/icons'
-import {Box, Card, Flex, isHTMLElement, rem, Text, type Theme, useForwardedRef} from '@sanity/ui'
-import React, {forwardRef, useCallback, useEffect, useRef, useState} from 'react'
-import styled, {css, type CSSObject} from 'styled-components'
+import {Box, Card, Flex, isHTMLElement, rem, Text, type Theme} from '@sanity/ui'
+import {
+  type ChangeEvent,
+  type FocusEvent,
+  forwardRef,
+  type HTMLProps,
+  type KeyboardEvent,
+  type PointerEvent,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react'
+import {css, type CSSObject, styled} from 'styled-components'
+
+import {Button} from '../../../../ui-components'
 import {useTranslation} from '../../../i18n'
 import {studioLocaleNamespace} from '../../../i18n/localeNamespaces'
-import {Button} from '../../../../ui-components'
 import {focusRingBorderStyle, focusRingStyle} from './styles'
 
 const Root = styled(Card)((props: {theme: Theme}): CSSObject => {
@@ -14,10 +27,10 @@ const Root = styled(Card)((props: {theme: Theme}): CSSObject => {
   const space = rem(theme.sanity.space[1])
 
   return {
-    position: 'relative',
-    borderRadius: `${radius[1]}px`,
-    color: color.default.enabled.fg,
-    boxShadow: focusRingBorderStyle({
+    'position': 'relative',
+    'borderRadius': `${radius[1]}px`,
+    'color': color.default.enabled.fg,
+    'boxShadow': focusRingBorderStyle({
       color: color.default.enabled.border,
       width: input.border.width,
     }),
@@ -75,24 +88,24 @@ const Input = styled.input((props: {theme: Theme}): CSSObject => {
   const size = theme.sanity.fonts.text.sizes[2]
 
   return {
-    appearance: 'none',
-    background: 'none',
-    border: 0,
-    borderRadius: 0,
-    outline: 'none',
-    fontSize: rem(size.fontSize),
-    lineHeight: size.lineHeight / size.fontSize,
-    fontFamily: font.family,
-    fontWeight: font.weights.regular,
-    margin: 0,
-    display: 'block',
-    minWidth: '1px',
-    maxWidth: '100%',
-    boxSizing: 'border-box',
-    paddingTop: rem(p - size.ascenderHeight),
-    paddingRight: rem(p),
-    paddingBottom: rem(p - size.descenderHeight),
-    paddingLeft: rem(p),
+    'appearance': 'none',
+    'background': 'none',
+    'border': 0,
+    'borderRadius': 0,
+    'outline': 'none',
+    'fontSize': rem(size.fontSize),
+    'lineHeight': size.lineHeight / size.fontSize,
+    'fontFamily': font.family,
+    'fontWeight': font.weights.regular,
+    'margin': 0,
+    'display': 'block',
+    'minWidth': '1px',
+    'maxWidth': '100%',
+    'boxSizing': 'border-box',
+    'paddingTop': rem(p - size.ascenderHeight),
+    'paddingRight': rem(p),
+    'paddingBottom': rem(p - size.descenderHeight),
+    'paddingLeft': rem(p),
 
     // enabled
     '&:not(:invalid):not(:disabled)': {
@@ -130,11 +143,11 @@ export const TagInput = forwardRef(
     props: {
       readOnly?: boolean
       onChange?: (newValue: {value: string}[]) => void
-      onFocus?: (event: React.FocusEvent) => void
+      onFocus?: (event: FocusEvent) => void
       placeholder?: string
       value?: {value: string}[]
-    } & Omit<React.HTMLProps<HTMLInputElement>, 'as' | 'onChange' | 'onFocus' | 'ref' | 'value'>,
-    ref: React.Ref<HTMLInputElement>,
+    } & Omit<HTMLProps<HTMLInputElement>, 'as' | 'onChange' | 'onFocus' | 'ref' | 'value'>,
+    forwardedRef: React.ForwardedRef<HTMLInputElement>,
   ) => {
     const {
       disabled,
@@ -150,34 +163,36 @@ export const TagInput = forwardRef(
     const [inputValue, setInputValue] = useState('')
     const enabled = !disabled && !readOnly
     const [focused, setFocused] = useState(false)
-    const forwardedRef = useForwardedRef(ref)
+    const ref = useRef<HTMLInputElement | null>(null)
     const rootRef = useRef<HTMLDivElement | null>(null)
 
-    const handleRootPointerDown = useCallback(
-      (event: React.PointerEvent<HTMLDivElement>) => {
-        const isTagElement = isHTMLElement(event.target) && event.target.closest('[data-ui="Tag"]')
-
-        if (isTagElement) return
-
-        const inputElement = forwardedRef.current
-
-        if (inputElement) {
-          setTimeout(() => inputElement.focus(), 0)
-        }
-      },
-      [forwardedRef],
+    useImperativeHandle<HTMLInputElement | null, HTMLInputElement | null>(
+      forwardedRef,
+      () => ref.current,
     )
+
+    const handleRootPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
+      const isTagElement = isHTMLElement(event.target) && event.target.closest('[data-ui="Tag"]')
+
+      if (isTagElement) return
+
+      const inputElement = ref.current
+
+      if (inputElement) {
+        setTimeout(() => inputElement.focus(), 0)
+      }
+    }, [])
 
     const handleInputBlur = useCallback(() => {
       setFocused(false)
     }, [])
 
-    const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
       setInputValue(event.currentTarget.value)
     }, [])
 
     const handleInputFocus = useCallback(
-      (event: React.FocusEvent) => {
+      (event: FocusEvent) => {
         setFocused(true)
         if (onFocus) onFocus(event)
       },
@@ -185,7 +200,7 @@ export const TagInput = forwardRef(
     )
 
     const handleInputKeyDown = useCallback(
-      (event: React.KeyboardEvent<HTMLInputElement>) => {
+      (event: KeyboardEvent<HTMLInputElement>) => {
         if (event.key === 'Enter') {
           event.preventDefault()
           event.stopPropagation()
@@ -216,13 +231,13 @@ export const TagInput = forwardRef(
     )
 
     useEffect(() => {
-      const inputElement = forwardedRef.current
+      const inputElement = ref.current
 
       if (inputElement) {
         inputElement.style.width = '0'
         inputElement.style.width = `${inputElement.scrollWidth}px`
       }
-    }, [forwardedRef, inputValue])
+    }, [inputValue])
 
     return (
       <Root
@@ -272,7 +287,7 @@ export const TagInput = forwardRef(
               onChange={handleInputChange}
               onFocus={handleInputFocus}
               onKeyDown={handleInputKeyDown}
-              ref={forwardedRef}
+              ref={ref}
               type="text"
               value={inputValue}
             />

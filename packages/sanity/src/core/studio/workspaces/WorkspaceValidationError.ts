@@ -1,5 +1,5 @@
 import {getWorkspaceIdentifier} from './helpers'
-import type {WorkspaceLike} from './types'
+import {type WorkspaceLike} from './types'
 
 export interface WorkspaceValidationErrorOptions {
   workspace: WorkspaceLike
@@ -16,6 +16,7 @@ export class WorkspaceValidationError extends Error {
 
   constructor(message: string, options?: WorkspaceValidationErrorOptions) {
     super(message)
+    this.name = 'WorkspaceValidationError'
     this.index = options?.index
     this.identifier = options?.workspace && getWorkspaceIdentifier(options.workspace, options.index)
   }

@@ -1,10 +1,16 @@
-import {ArraySchemaType, Path, ValidationMarker, PortableTextBlock} from '@sanity/types'
-import React, {useCallback, useEffect, useMemo, useState} from 'react'
-import {PortableTextMarker, RenderCustomMarkers} from '../../../../types'
-import {applyAll} from '../../../../patch/simplePatch'
-import {RenderBlockActionsCallback} from '../../../../types/_transitional'
-import {createPatchChannel} from '../../../../patch/PatchChannel'
+import {
+  type ArraySchemaType,
+  type Path,
+  type PortableTextBlock,
+  type ValidationMarker,
+} from '@sanity/types'
+import {useCallback, useEffect, useMemo, useState} from 'react'
+
 import {useSource} from '../../../../../studio'
+import {createPatchChannel} from '../../../../patch/PatchChannel'
+import {applyAll} from '../../../../patch/simplePatch'
+import {type PortableTextMarker, type RenderCustomMarkers} from '../../../../types'
+import {type RenderBlockActionsCallback} from '../../../../types/_transitional'
 
 interface TestInputProps {
   markers?: PortableTextMarker[]
@@ -47,7 +53,7 @@ export function TestInput(props: TestInputProps) {
   //   [form]
   // )
 
-  const onFocus = useCallback((pathOrEvent?: Path | React.FocusEvent) => {
+  const onFocus = useCallback((pathOrEvent?: Path | FocusEvent) => {
     setFocusPath(Array.isArray(pathOrEvent) ? pathOrEvent : [])
   }, [])
 

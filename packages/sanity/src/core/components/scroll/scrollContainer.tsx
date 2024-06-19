@@ -1,12 +1,22 @@
-import {useForwardedRef} from '@sanity/ui'
 import createPubSub from 'nano-pubsub'
-import React, {useContext, useEffect, useMemo} from 'react'
-import {ScrollContext} from './scrollContext'
+import {
+  createElement,
+  type ElementType,
+  type ForwardedRef,
+  forwardRef,
+  type HTMLProps,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from 'react'
+import {ScrollContext} from 'sanity/_singletons'
 
 /** @internal */
-export interface ScrollContainerProps<T extends React.ElementType>
-  extends Omit<React.HTMLProps<T>, 'as' | 'onScroll'> {
-  as?: React.ElementType | keyof JSX.IntrinsicElements
+export interface ScrollContainerProps<T extends ElementType>
+  extends Omit<HTMLProps<T>, 'as' | 'onScroll'> {
+  as?: ElementType | keyof JSX.IntrinsicElements
   onScroll?: (event: Event) => () => void
 }
 
@@ -21,13 +31,15 @@ const noop = () => undefined
  *
  * @internal
  */
-export const ScrollContainer = React.forwardRef(function ScrollContainer<
-  T extends React.ElementType = 'div',
->(props: ScrollContainerProps<T>, ref: React.ForwardedRef<HTMLDivElement>) {
+export const ScrollContainer = forwardRef(function ScrollContainer<T extends ElementType = 'div'>(
+  props: ScrollContainerProps<T>,
+  forwardedRef: ForwardedRef<HTMLDivElement>,
+) {
   const {as = 'div', onScroll, ...rest} = props
-  const forwardedRef = useForwardedRef(ref)
+  const ref = useRef<HTMLDivElement | null>(null)
 
-  // const selfRef = useRef<HTMLElement | null>(null)
+  useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(forwardedRef, () => ref.current)
+
   const parentContext = useContext(ScrollContext)
   const childContext = useMemo(() => createPubSub<Event>(), [])
 
@@ -52,7 +64,7 @@ export const ScrollContainer = React.forwardRef(function ScrollContainer<
       childContext.publish(event)
     }
 
-    const el = forwardedRef.current
+    const el = ref.current
 
     if (!el) {
       return undefined
@@ -66,11 +78,11 @@ export const ScrollContainer = React.forwardRef(function ScrollContainer<
     return () => {
       el.removeEventListener('scroll', handleScroll)
     }
-  }, [childContext, forwardedRef])
+  }, [childContext, ref])
 
   return (
     <ScrollContext.Provider value={childContext}>
-      {React.createElement(as, {ref: forwardedRef, 'data-testid': 'scroll-container', ...rest})}
+      {createElement(as, {'ref': ref, 'data-testid': 'scroll-container', ...rest})}
     </ScrollContext.Provider>
   )
 })

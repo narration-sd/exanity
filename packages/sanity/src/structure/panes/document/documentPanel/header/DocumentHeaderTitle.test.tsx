@@ -1,12 +1,13 @@
-import React from 'react'
+import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {render, waitFor} from '@testing-library/react'
-import {useDocumentPane} from '../../useDocumentPane'
-import {DocumentPaneContextValue} from '../../DocumentPaneContext'
-import {createTestProvider} from '../../../../../../test/testUtils/TestProvider'
+import {defineConfig, type SanityClient, unstable_useValuePreview as useValuePreview} from 'sanity'
+
 import {createMockSanityClient} from '../../../../../../test/mocks/mockSanityClient'
+import {createTestProvider} from '../../../../../../test/testUtils/TestProvider'
 import {structureUsEnglishLocaleBundle} from '../../../../i18n'
+import {type DocumentPaneContextValue} from '../../DocumentPaneContext'
+import {useDocumentPane} from '../../useDocumentPane'
 import {DocumentHeaderTitle} from './DocumentHeaderTitle'
-import {SanityClient, defineConfig, unstable_useValuePreview as useValuePreview} from 'sanity'
 
 function createWrapperComponent(client: SanityClient) {
   const config = defineConfig({
@@ -23,7 +24,8 @@ function createWrapperComponent(client: SanityClient) {
 
 jest.mock('../../useDocumentPane')
 jest.mock('sanity', () => {
-  const actual = jest.requireActual('sanity')
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+  const actual = jest.requireActual<typeof import('sanity')>('sanity')
   return {
     ...actual,
     unstable_useValuePreview: jest.fn(),

@@ -1,14 +1,14 @@
-import React, {MouseEventHandler, useCallback} from 'react'
-
-import {UploadIcon, CopyIcon, ResetIcon, DownloadIcon} from '@sanity/icons'
+import {CopyIcon, DownloadIcon, ResetIcon, UploadIcon} from '@sanity/icons'
 import {MenuDivider, useToast} from '@sanity/ui'
+import {type MouseEventHandler, type ReactNode, useCallback} from 'react'
+
 import {MenuItem} from '../../../../../ui-components'
 import {useTranslation} from '../../../../i18n'
 import {FileInputMenuItem} from './FileInputMenuItem/FileInputMenuItem'
 
 interface Props {
   onUpload: (files: File[]) => void
-  browse: React.ReactNode
+  browse: ReactNode
   readOnly?: boolean
   onReset: MouseEventHandler<HTMLDivElement>
   accept: string

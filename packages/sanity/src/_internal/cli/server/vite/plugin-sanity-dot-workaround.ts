@@ -1,7 +1,8 @@
-import fs from 'fs'
-import path from 'path'
-import {Plugin} from 'vite'
+import fs from 'node:fs'
+import path from 'node:path'
+
 import history from 'connect-history-api-fallback'
+import {type Plugin} from 'vite'
 
 /**
  * This is a Vite plugin for supporting locations containing `.` in their pathname.

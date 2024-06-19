@@ -1,8 +1,9 @@
 /* eslint-disable no-process-env */
-import path from 'path'
-import {existsSync, readFileSync} from 'fs'
-import {spawn, SpawnOptions} from 'child_process'
-import {platform, tmpdir} from 'os'
+import {spawn, type SpawnOptions} from 'node:child_process'
+import {existsSync, readFileSync} from 'node:fs'
+import {platform, tmpdir} from 'node:os'
+import path from 'node:path'
+
 import {createClient} from '@sanity/client'
 import which from 'which'
 
@@ -125,14 +126,16 @@ export const getTestRunArgs = (version: string) => {
 export function runSanityCmdCommand(
   version: string,
   args: string[],
-  options: {env?: Record<string, string | undefined>} = {},
+  options: {env?: Record<string, string | undefined>; cwd?: (cwd: string) => string} = {},
 ): Promise<{
   code: number | null
   stdout: string
   stderr: string
 }> {
+  const cwd = options.cwd ?? ((currentCwd) => currentCwd)
+
   return exec(process.argv[0], [cliBinPath, ...args], {
-    cwd: path.join(studiosPath, version),
+    cwd: cwd(path.join(studiosPath, version)),
     env: {...sanityEnv, ...options.env},
   })
 }
@@ -192,6 +195,7 @@ class ExecError extends Error {
   stderr: string
   constructor(message: string, code: number, stdout: string, stderr: string) {
     super(message)
+    this.name = 'ExecError'
     this.code = code
     this.stdout = stdout
     this.stderr = stderr

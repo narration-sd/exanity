@@ -1,10 +1,11 @@
-import {ArraySchemaType, FieldDefinition} from '@sanity/types'
-import React from 'react'
+import {jest} from '@jest/globals'
+import {type ArraySchemaType, type FieldDefinition} from '@sanity/types'
+import {type ReactElement} from 'react'
+
 import {
-  ArrayOfObjectsFormNode,
-  ArrayOfObjectsInputProps,
-  ComplexElementProps,
-  FieldMember,
+  type ArrayOfObjectsFormNode,
+  type ArrayOfObjectsInputProps,
+  type ComplexElementProps,
   defaultRenderAnnotation,
   defaultRenderBlock,
   defaultRenderField,
@@ -12,15 +13,16 @@ import {
   defaultRenderInput,
   defaultRenderItem,
   defaultRenderPreview,
+  type FieldMember,
 } from '../../src/core'
-import {renderInput, TestRenderInputContext, TestRenderInputProps} from './renderInput'
-import {TestRenderProps} from './types'
+import {renderInput, type TestRenderInputContext, type TestRenderInputProps} from './renderInput'
+import {type TestRenderProps} from './types'
 
 const noopRenderDefault = () => <></>
 
 export type TestRenderArrayOfObjectInputCallback = (
   inputProps: ArrayOfObjectsInputProps,
-) => React.ReactElement
+) => ReactElement
 
 export async function renderArrayOfObjectsInput(options: {
   fieldDefinition: FieldDefinition<'array'>
@@ -84,20 +86,16 @@ export async function renderArrayOfObjectsInput(options: {
       renderPreview: defaultRenderPreview,
       resolveInitialValue,
       schemaType: schemaType as ArraySchemaType,
-      value: value as any[],
+      value: value as {_key: string}[],
       renderDefault: noopRenderDefault,
     }
   }
 
-  const ret = await renderInput({
+  const ret = await renderInput<ComplexElementProps>({
     fieldDefinition,
     props,
     render: (inputProps, context) => render(transformProps(inputProps, context)),
   })
 
-  function rerender(renderFn: TestRenderArrayOfObjectInputCallback) {
-    return ret.rerender((inputProps, context) => renderFn(transformProps(inputProps, context)))
-  }
-
-  return {...ret, onItemAppend, rerender}
+  return ret
 }

@@ -1,4 +1,4 @@
-import type {PatchExample} from './types'
+import {type PatchExample} from './types'
 
 const examples: PatchExample[] = [
   {
@@ -12,7 +12,7 @@ const examples: PatchExample[] = [
       id: 'a',
       inc: {
         'a[2]': 1,
-        b: 2,
+        'b': 2,
       },
       dec: {
         c: 1,

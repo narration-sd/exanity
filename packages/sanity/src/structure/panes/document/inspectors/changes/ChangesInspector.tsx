@@ -1,26 +1,27 @@
-import {ObjectDiff} from '@sanity/diff'
+import {type ObjectDiff} from '@sanity/diff'
 import {AvatarStack, BoundaryElementProvider, Box, Card, Flex} from '@sanity/ui'
-import React, {ReactElement, useRef} from 'react'
-import styled from 'styled-components'
-import {TimelineMenu} from '../../timeline'
-import {useDocumentPane} from '../../useDocumentPane'
-import {DocumentInspectorHeader} from '../../documentInspector'
-import {collectLatestAuthorAnnotations} from './helpers'
+import {type ReactElement, useMemo, useRef} from 'react'
 import {
   ChangeFieldWrapper,
   ChangeList,
   DiffTooltip,
-  DocumentChangeContext,
-  DocumentChangeContextInstance,
-  DocumentInspectorProps,
+  type DocumentChangeContextInstance,
+  type DocumentInspectorProps,
+  LoadingBlock,
   NoChanges,
-  ObjectSchemaType,
+  type ObjectSchemaType,
   ScrollContainer,
   UserAvatar,
   useTimelineSelector,
   useTranslation,
-  LoadingBlock,
 } from 'sanity'
+import {DocumentChangeContext} from 'sanity/_singletons'
+import {styled} from 'styled-components'
+
+import {DocumentInspectorHeader} from '../../documentInspector'
+import {TimelineMenu} from '../../timeline'
+import {useDocumentPane} from '../../useDocumentPane'
+import {collectLatestAuthorAnnotations} from './helpers'
 
 const Scroller = styled(ScrollContainer)`
   height: 100%;
@@ -46,7 +47,7 @@ export function ChangesInspector(props: DocumentInspectorProps): ReactElement {
   // be part of Sanity core (needs to be moved from structure at some point)
   const {t} = useTranslation('studio')
 
-  const documentContext: DocumentChangeContextInstance = React.useMemo(
+  const documentContext: DocumentChangeContextInstance = useMemo(
     () => ({
       documentId,
       schemaType,
@@ -58,7 +59,7 @@ export function ChangesInspector(props: DocumentInspectorProps): ReactElement {
     [documentId, diff, isComparingCurrent, schemaType, value],
   )
 
-  const changeAnnotations = React.useMemo(
+  const changeAnnotations = useMemo(
     () => (diff ? collectLatestAuthorAnnotations(diff) : []),
     [diff],
   )

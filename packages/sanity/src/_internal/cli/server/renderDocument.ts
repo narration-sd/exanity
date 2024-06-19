@@ -6,17 +6,19 @@
  * Then renders using ReactDOM to a string, which is sent back to the parent
  * process over the worker `postMessage` channel.
  */
-import fs from 'fs'
-import path from 'path'
-import {Worker, parentPort, workerData, isMainThread} from 'worker_threads'
+import fs from 'node:fs'
+import path from 'node:path'
+import {isMainThread, parentPort, Worker, workerData} from 'node:worker_threads'
+
 import chalk from 'chalk'
 import importFresh from 'import-fresh'
-import {generateHelpUrl} from '@sanity/generate-help-url'
+import {parse as parseHtml} from 'node-html-parser'
 import {createElement} from 'react'
 import {renderToStaticMarkup} from 'react-dom/server'
+
 import {getAliases} from './aliases'
-import {SanityMonorepo} from './sanityMonorepo'
 import {debug as serverDebug} from './debug'
+import {type SanityMonorepo} from './sanityMonorepo'
 
 const debug = serverDebug.extend('renderDocument')
 
@@ -40,20 +42,25 @@ interface DocumentProps {
   css?: string[]
 }
 
-export function renderDocument(options: {
+interface RenderDocumentOptions {
   monorepo?: SanityMonorepo
   studioRootPath: string
   props?: DocumentProps
-}): Promise<string> {
+  importMap?: {
+    imports?: Record<string, string>
+  }
+}
+
+export function renderDocument(options: RenderDocumentOptions): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!useThreads) {
-      resolve(getDocumentHtml(options.studioRootPath, options.props))
+      resolve(getDocumentHtml(options.studioRootPath, options.props, options.importMap))
       return
     }
 
     debug('Starting worker thread for %s', __filename)
     const worker = new Worker(__filename, {
-      execArgv: __DEV__ ? ['-r', 'esbuild-register'] : undefined,
+      execArgv: __DEV__ ? ['-r', `${__dirname}/esbuild-register.js`] : undefined,
       workerData: {...options, dev: __DEV__, shouldWarn: true},
       // eslint-disable-next-line no-process-env
       env: process.env,
@@ -144,7 +151,7 @@ function renderDocumentFromWorkerData() {
     throw new Error('Must be used as a Worker with a valid options object in worker data')
   }
 
-  const {monorepo, studioRootPath, props} = workerData || {}
+  const {monorepo, studioRootPath, props, importMap}: RenderDocumentOptions = workerData || {}
 
   if (workerData?.dev) {
     // Define `__DEV__` in the worker thread as well
@@ -174,6 +181,7 @@ function renderDocumentFromWorkerData() {
     ? {unregister: () => undefined}
     : require('esbuild-register/dist/node').register({
         target: `node${process.version.slice(1)}`,
+        jsx: 'automatic',
         extensions: ['.jsx', '.ts', '.tsx', '.mjs'],
       })
 
@@ -185,10 +193,11 @@ function renderDocumentFromWorkerData() {
     : require('esbuild-register/dist/node').register({
         target: `node${process.version.slice(1)}`,
         extensions: ['.js'],
+        jsx: 'automatic',
         loader: 'jsx',
       })
 
-  const html = getDocumentHtml(studioRootPath, props)
+  const html = getDocumentHtml(studioRootPath, props, importMap)
 
   parentPort.postMessage({type: 'result', html})
 
@@ -197,7 +206,11 @@ function renderDocumentFromWorkerData() {
   unregisterJs()
 }
 
-function getDocumentHtml(studioRootPath: string, props?: DocumentProps): string {
+function getDocumentHtml(
+  studioRootPath: string,
+  props?: DocumentProps,
+  importMap?: {imports?: Record<string, string>},
+): string {
   const Document = getDocumentComponent(studioRootPath)
 
   // NOTE: Validate the list of CSS paths so implementers of `_document.tsx` don't have to
@@ -213,13 +226,51 @@ function getDocumentHtml(studioRootPath: string, props?: DocumentProps): string 
   })
 
   debug('Rendering document component using React')
-  const result = renderToStaticMarkup(createElement(Document, {...defaultProps, ...props, css}))
+  const result = addImportMapToHtml(
+    renderToStaticMarkup(createElement(Document, {...defaultProps, ...props, css})),
+    importMap,
+  )
+
   return `<!DOCTYPE html>${result}`
+}
+
+/**
+ * @internal
+ */
+export function addImportMapToHtml(
+  html: string,
+  importMap?: {imports?: Record<string, string>},
+): string {
+  if (!importMap) return html
+
+  let root = parseHtml(html)
+  let htmlEl = root.querySelector('html')
+  if (!htmlEl) {
+    const oldRoot = root
+    root = parseHtml('<html></html>')
+    htmlEl = root.querySelector('html')!
+    htmlEl.appendChild(oldRoot)
+  }
+
+  let headEl = htmlEl.querySelector('head')
+
+  if (!headEl) {
+    htmlEl.insertAdjacentHTML('afterbegin', '<head></head>')
+    headEl = root.querySelector('head')!
+  }
+
+  headEl.insertAdjacentHTML(
+    'beforeend',
+    `<script type="importmap">${JSON.stringify(importMap)}</script>`,
+  )
+  return root.outerHTML
 }
 
 function getDocumentComponent(studioRootPath: string) {
   debug('Loading default document component from `sanity` module')
-  const {DefaultDocument} = require('sanity')
+  const {DefaultDocument} = __DEV__
+    ? require('../../../core/components/DefaultDocument')
+    : require('sanity')
 
   debug('Attempting to load user-defined document component from %s', studioRootPath)
   const userDefined = tryLoadDocumentComponent(studioRootPath)

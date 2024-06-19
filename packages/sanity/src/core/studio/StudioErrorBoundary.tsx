@@ -1,29 +1,69 @@
 /* eslint-disable i18next/no-literal-string */
 /* eslint-disable @sanity/i18n/no-attribute-string-literals */
-import React, {useCallback, useState} from 'react'
-import {Card, Code, Container, ErrorBoundary, Heading, Stack} from '@sanity/ui'
+import {
+  Card,
+  Code,
+  Container,
+  ErrorBoundary,
+  type ErrorBoundaryProps,
+  Heading,
+  Stack,
+} from '@sanity/ui'
+import {type ErrorInfo, type ReactNode, useCallback, useState} from 'react'
 import {useHotModuleReload} from 'use-hot-module-reload'
+
 import {Button} from '../../ui-components'
 import {SchemaError} from '../config'
-import {isRecord} from '../util'
+import {errorReporter} from '../error/errorReporter'
 import {CorsOriginError} from '../store'
+import {isRecord} from '../util'
 import {CorsOriginErrorScreen, SchemaErrorsScreen} from './screens'
 
 interface StudioErrorBoundaryProps {
-  children: React.ReactNode
+  children: ReactNode
   heading?: string
 }
+
+type ErrorBoundaryState =
+  | {
+      componentStack: null
+      error: null
+      eventId: null
+    }
+  | {
+      componentStack: ErrorInfo['componentStack']
+      error: Error
+      eventId: string | null
+    }
+
+const INITIAL_STATE = {
+  componentStack: null,
+  error: null,
+  eventId: null,
+} satisfies ErrorBoundaryState
 
 export function StudioErrorBoundary({
   children,
   heading = 'An error occured',
 }: StudioErrorBoundaryProps) {
-  const [{error}, setError] = useState<{error: unknown}>({error: null})
+  const [{error, eventId}, setError] = useState<ErrorBoundaryState>(INITIAL_STATE)
 
   const message = isRecord(error) && typeof error.message === 'string' && error.message
   const stack = isRecord(error) && typeof error.stack === 'string' && error.stack
 
-  const handleResetError = useCallback(() => setError({error: null}), [setError])
+  const handleResetError = useCallback(() => setError(INITIAL_STATE), [])
+  const handleCatchError: ErrorBoundaryProps['onCatch'] = useCallback((params) => {
+    const report = errorReporter.reportError(params.error, {
+      reactErrorInfo: params.info,
+      errorBoundary: 'StudioErrorBoundary',
+    })
+
+    setError({
+      error: params.error,
+      componentStack: params.info.componentStack,
+      eventId: report?.eventId || null,
+    })
+  }, [])
 
   useHotModuleReload(handleResetError)
 
@@ -36,7 +76,7 @@ export function StudioErrorBoundary({
   }
 
   if (!error) {
-    return <ErrorBoundary onCatch={setError}>{children}</ErrorBoundary>
+    return <ErrorBoundary onCatch={handleCatchError}>{children}</ErrorBoundary>
   }
 
   return (
@@ -66,6 +106,7 @@ export function StudioErrorBoundary({
                 </Code>
               )}
               {stack && <Code size={1}>{stack}</Code>}
+              {eventId && <Code size={1}>Event ID: {eventId}</Code>}
             </Stack>
           </Card>
         </Stack>

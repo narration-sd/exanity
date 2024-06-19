@@ -1,3 +1,5 @@
+import {describe, expect, test} from '@jest/globals'
+
 import {simpleParser} from '../simpleParser'
 
 describe('simpleParser', () => {
@@ -96,16 +98,29 @@ describe('simpleParser', () => {
       {type: 'tagOpen', name: 'Icon', selfClosing: true},
       {type: 'text', text: ' Your search for "'},
       {type: 'tagOpen', name: 'Red'},
-      {type: 'text', text: '{{keyword}}'},
+      {type: 'interpolation', variable: 'keyword'},
       {type: 'tagClose', name: 'Red'},
       {type: 'text', text: '" took '},
       {type: 'tagOpen', name: 'Bold'},
-      {type: 'text', text: '{{time}}ms'},
+      {type: 'interpolation', variable: 'time'},
+      {type: 'text', text: 'ms'},
       {type: 'tagClose', name: 'Bold'},
+    ])
+  })
+  test('interpolations with allowed formatters', () => {
+    expect(simpleParser('{{count}} people signed up: {{people, list}}')).toMatchObject([
+      {type: 'interpolation', variable: 'count'},
+      {type: 'text', text: ' people signed up: '},
+      {type: 'interpolation', variable: 'people', formatters: ['list']},
     ])
   })
 })
 describe('simpleParser - errors', () => {
+  test('other formatters in interpolations', () => {
+    expect(() => simpleParser('This is not allowed: {{count, number}}')).toThrow(
+      `Interpolations with formatters are not supported when using <Translate>. Found "{{count, number}}". Utilize "useTranslation" instead, or format the values passed to <Translate> ahead of time.`,
+    )
+  })
   test('unpaired tags', () => {
     expect(() =>
       simpleParser('<Icon/> Your search for "<Red>{{keyword}}" took <Bold>{{time}}ms</Bold>'),

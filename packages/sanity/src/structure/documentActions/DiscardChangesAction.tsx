@@ -1,17 +1,18 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 import {ResetIcon} from '@sanity/icons'
-import React, {useCallback, useMemo, useState} from 'react'
-import {structureLocaleNamespace} from '../i18n'
+import {useCallback, useMemo, useState} from 'react'
 import {
-  DocumentActionComponent,
-  DocumentActionDialogProps,
+  type DocumentActionComponent,
+  type DocumentActionDialogProps,
   InsufficientPermissionsMessage,
   useCurrentUser,
   useDocumentOperation,
   useDocumentPairPermissions,
   useTranslation,
 } from 'sanity'
+
+import {structureLocaleNamespace} from '../i18n'
 
 const DISABLED_REASON_KEY = {
   NO_CHANGES: 'action.discard-changes.disabled.no-changes',

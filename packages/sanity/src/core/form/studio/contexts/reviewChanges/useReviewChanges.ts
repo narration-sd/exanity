@@ -1,6 +1,7 @@
 import {useContext} from 'react'
-import {ReviewChangesContext} from './ReviewChangesContext'
-import {ReviewChangesContextValue} from './types'
+import {ReviewChangesContext} from 'sanity/_singletons'
+
+import {type ReviewChangesContextValue} from './types'
 
 /**
  * @internal

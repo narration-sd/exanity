@@ -1,44 +1,49 @@
 import {useCallback, useEffect, useMemo, useState} from 'react'
-import {useSettingsStore} from 'sanity'
+import {map, startWith} from 'rxjs/operators'
+import {useKeyValueStore} from 'sanity'
+
+const STRUCTURE_TOOL_NAMESPACE = 'studio.structure-tool'
 
 /**
  * @internal
  */
 export function useStructureToolSetting<ValueType>(
-  namespace: string | null,
-  key: string,
+  namespace: string,
+  key: string | null,
   defaultValue?: ValueType,
 ): [ValueType | undefined, (_value: ValueType) => void] {
-  const settingsStore = useSettingsStore()
+  const keyValueStore = useKeyValueStore()
   const [value, setValue] = useState<ValueType | undefined>(defaultValue)
 
-  const structureToolSettings = useMemo(
-    () => settingsStore.forNamespace('structure-tool'),
-    [settingsStore],
-  )
+  const keyValueStoreKey = [STRUCTURE_TOOL_NAMESPACE, namespace, key].filter(Boolean).join('.')
 
   const settings = useMemo(() => {
-    if (namespace) {
-      return structureToolSettings.forNamespace(namespace).forKey(key)
-    }
-
-    return structureToolSettings.forKey(key)
-  }, [structureToolSettings, namespace, key])
+    return keyValueStore.getKey(keyValueStoreKey)
+  }, [keyValueStore, keyValueStoreKey])
 
   useEffect(() => {
-    const sub = settings.listen(defaultValue).subscribe({
-      next: setValue as any,
-    })
+    const sub = settings
+      .pipe(
+        startWith(defaultValue),
+        map((fetchedValue) => {
+          return fetchedValue === null ? defaultValue : fetchedValue
+        }),
+      )
+      .subscribe({
+        next: setValue as any,
+      })
 
     return () => sub?.unsubscribe()
-  }, [defaultValue, key, namespace, settings])
+  }, [defaultValue, keyValueStoreKey, settings])
 
   const set = useCallback(
     (newValue: ValueType) => {
-      setValue(newValue)
-      settings.set(newValue as any)
+      if (newValue !== value) {
+        setValue(newValue)
+        keyValueStore.setKey(keyValueStoreKey, newValue as string)
+      }
     },
-    [settings],
+    [keyValueStore, keyValueStoreKey, value],
   )
 
   return useMemo(() => [value, set], [set, value])

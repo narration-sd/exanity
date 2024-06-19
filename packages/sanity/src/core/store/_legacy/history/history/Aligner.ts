@@ -1,8 +1,9 @@
-import type {SanityDocument, TransactionLogEventWithEffects} from '@sanity/types'
+import {type SanityDocument, type TransactionLogEventWithEffects} from '@sanity/types'
 import {applyPatch} from 'mendoza'
-import {RemoteSnapshotVersionEvent} from '../../document/document-pair/checkoutPair'
-import {Timeline} from './Timeline'
-import type {DocumentRemoteMutationVersionEvent, CombinedDocument} from './types'
+
+import {type RemoteSnapshotVersionEvent} from '../../document/document-pair/checkoutPair'
+import {type Timeline} from './Timeline'
+import {type CombinedDocument, type DocumentRemoteMutationVersionEvent} from './types'
 
 type VersionState = {
   id: string
@@ -78,7 +79,7 @@ function startFromSnapshot(state: VersionState, doc: SanityDocument) {
  * - Internally this class will then try to align the history event to the received
  *   mutations and then dispatch to the timeline.
  *
- * - The aligner also maintains the latest version for both the draft and the published version.
+ * - The aligner also maintains the latest revision for both the draft and the published version.
  *
  *
  */

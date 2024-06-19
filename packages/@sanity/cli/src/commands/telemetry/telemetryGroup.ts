@@ -1,10 +1,10 @@
-import type {CliCommandGroupDefinition} from '../../types'
+import {type CliCommandGroupDefinition} from '../../types'
 
 const telemetryGroup: CliCommandGroupDefinition = {
   name: 'telemetry',
   signature: '[COMMAND]',
   isGroupRoot: true,
-  description: 'Interact with telemetry settings for your logged in user',
+  description: 'Manages telemetry settings, opting in or out of data collection',
 }
 
 export default telemetryGroup

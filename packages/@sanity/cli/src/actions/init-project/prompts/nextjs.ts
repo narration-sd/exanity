@@ -1,18 +1,10 @@
-import {CliPrompter} from '../../../types'
+import {type CliPrompter} from '../../../types'
 
 export function promptForEmbeddedStudio(prompt: CliPrompter): Promise<string> {
   return prompt.single({
     type: 'confirm',
     message: `Would you like an embedded Sanity Studio?`,
     default: true,
-  })
-}
-
-export function promptForAppDir(prompt: CliPrompter): Promise<string> {
-  return prompt.single({
-    type: 'confirm',
-    message: `Would you like to use the Next.js app directory for routes?`,
-    default: false,
   })
 }
 
@@ -47,7 +39,7 @@ export function promptForNextTemplate(prompt: CliPrompter): Promise<'clean' | 'b
     choices: [
       {
         value: 'clean',
-        name: 'Clean project with no predefined schemas',
+        name: 'Clean project with no predefined schema types',
       },
       {
         value: 'blog',

@@ -1,7 +1,8 @@
-import type {CliCommandAction} from '@sanity/cli'
-import {promptForDatasetName} from '../../../actions/dataset/datasetNamePrompt'
+import {type CliCommandAction} from '@sanity/cli'
+
 import {promptForDatasetAliasName} from '../../../actions/dataset/alias/promptForDatasetAliasName'
 import {validateDatasetAliasName} from '../../../actions/dataset/alias/validateDatasetAliasName'
+import {promptForDatasetName} from '../../../actions/dataset/datasetNamePrompt'
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName'
 import * as aliasClient from './datasetAliasesClient'
 import {ALIAS_PREFIX} from './datasetAliasesClient'
@@ -27,7 +28,7 @@ export const linkAliasHandler: CliCommandAction = async (args, context) => {
   let aliasOutputName = aliasName
 
   if (aliasName.startsWith(ALIAS_PREFIX)) {
-    aliasName = aliasName.substring(1)
+    aliasName = aliasName.slice(1)
   } else {
     aliasOutputName = `${ALIAS_PREFIX}${aliasName}`
   }

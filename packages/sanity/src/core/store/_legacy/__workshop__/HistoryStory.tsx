@@ -1,6 +1,7 @@
-import {SanityDocument} from '@sanity/types'
+import {type SanityDocument} from '@sanity/types'
 import {Box, Code, Text} from '@sanity/ui'
-import React, {useEffect, useState} from 'react'
+import {useEffect, useState} from 'react'
+
 import {useHistoryStore} from '../datastores'
 
 const SECOND = 1000

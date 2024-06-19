@@ -1,5 +1,7 @@
-import {createContext, useContext} from 'react'
-import type {FreeTrialResponse} from './types'
+import {useContext} from 'react'
+import {FreeTrialContext} from 'sanity/_singletons'
+
+import {type FreeTrialResponse} from './types'
 
 /**
  * @internal
@@ -13,11 +15,6 @@ export interface FreeTrialContextProps {
    */
   toggleShowContent: (closeAndReOpen?: boolean) => void
 }
-
-/**
- * @internal
- */
-export const FreeTrialContext = createContext<FreeTrialContextProps | undefined>(undefined)
 
 /**
  * @internal

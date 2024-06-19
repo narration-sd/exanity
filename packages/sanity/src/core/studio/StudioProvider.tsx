@@ -1,32 +1,35 @@
 import {ToastProvider} from '@sanity/ui'
-import React from 'react'
+import {type ReactNode} from 'react'
 import Refractor from 'react-refractor'
-import bash from 'refractor/lang/bash'
-import javascript from 'refractor/lang/javascript'
-import json from 'refractor/lang/json'
-import jsx from 'refractor/lang/jsx'
-import typescript from 'refractor/lang/typescript'
+import bash from 'refractor/lang/bash.js'
+import javascript from 'refractor/lang/javascript.js'
+import json from 'refractor/lang/json.js'
+import jsx from 'refractor/lang/jsx.js'
+import typescript from 'refractor/lang/typescript.js'
+
 import {LoadingBlock} from '../components/loadingBlock'
-import {UserColorManagerProvider} from '../user-color'
 import {ErrorLogger} from '../error/ErrorLogger'
-import {ResourceCacheProvider} from '../store'
+import {errorReporter} from '../error/errorReporter'
 import {LocaleProvider} from '../i18n'
-import {AuthBoundary} from './AuthBoundary'
-import {StudioProps} from './Studio'
-import {StudioThemeProvider} from './StudioThemeProvider'
-import {StudioErrorBoundary} from './StudioErrorBoundary'
+import {ResourceCacheProvider} from '../store'
+import {UserColorManagerProvider} from '../user-color'
 import {ActiveWorkspaceMatcher} from './activeWorkspaceMatcher'
+import {AuthBoundary} from './AuthBoundary'
 import {ColorSchemeProvider} from './colorScheme'
 import {Z_OFFSET} from './constants'
+import {PackageVersionStatusProvider} from './packageVersionStatus/PackageVersionStatusProvider'
 import {
-  ConfigErrorsScreen,
   AuthenticateScreen,
-  NotFoundScreen,
+  ConfigErrorsScreen,
   NotAuthenticatedScreen,
+  NotFoundScreen,
 } from './screens'
+import {type StudioProps} from './Studio'
+import {StudioErrorBoundary} from './StudioErrorBoundary'
+import {StudioTelemetryProvider} from './StudioTelemetryProvider'
+import {StudioThemeProvider} from './StudioThemeProvider'
 import {WorkspaceLoader} from './workspaceLoader'
 import {WorkspacesProvider} from './workspaces'
-import {StudioTelemetryProvider} from './StudioTelemetryProvider'
 
 Refractor.registerLanguage(bash)
 Refractor.registerLanguage(javascript)
@@ -38,7 +41,7 @@ Refractor.registerLanguage(typescript)
  * @hidden
  * @beta */
 export interface StudioProviderProps extends StudioProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
 /**
@@ -53,11 +56,18 @@ export function StudioProvider({
   unstable_history: history,
   unstable_noAuthBoundary: noAuthBoundary,
 }: StudioProviderProps) {
+  // We initialize the error reporter as early as possible in order to catch anything that could
+  // occur during configuration loading, React rendering etc. StudioProvider is often the highest
+  // mounted React component that is shared across embedded and standalone studios.
+  errorReporter.initialize()
+
   const _children = (
     <WorkspaceLoader LoadingComponent={LoadingBlock} ConfigErrorsComponent={ConfigErrorsScreen}>
       <StudioTelemetryProvider config={config}>
         <LocaleProvider>
-          <ResourceCacheProvider>{children}</ResourceCacheProvider>
+          <PackageVersionStatusProvider>
+            <ResourceCacheProvider>{children}</ResourceCacheProvider>
+          </PackageVersionStatusProvider>
         </LocaleProvider>
       </StudioTelemetryProvider>
     </WorkspaceLoader>

@@ -2,7 +2,8 @@ import {
   type ButtonTone,
   type DialogProps, // eslint-disable-line no-restricted-imports
 } from '@sanity/ui'
-import type React from 'react'
+import {type ComponentType, type ReactNode} from 'react'
+
 import {type EditStateFor} from '../../store/_legacy'
 
 /**
@@ -51,12 +52,12 @@ export interface DocumentActionComponent extends ActionComponent<DocumentActionP
 export interface DocumentActionConfirmDialogProps {
   type: 'confirm'
   tone?: ButtonTone
-  message: React.ReactNode
+  message: ReactNode
   onConfirm: () => void
   onCancel: () => void
-  cancelButtonIcon?: React.ComponentType | React.ReactNode
+  cancelButtonIcon?: ComponentType | ReactNode
   cancelButtonText?: string
-  confirmButtonIcon?: React.ComponentType | React.ReactNode
+  confirmButtonIcon?: ComponentType | ReactNode
   confirmButtonText?: string
 }
 
@@ -65,7 +66,7 @@ export interface DocumentActionConfirmDialogProps {
  * @beta */
 export interface DocumentActionModalDialogProps {
   type?: 'dialog'
-  content: React.ReactNode
+  content: ReactNode
   /**
    *
    * @hidden
@@ -77,7 +78,7 @@ export interface DocumentActionModalDialogProps {
    * @hidden
    * @beta
    */
-  header?: React.ReactNode
+  header?: ReactNode
   onClose: () => void
   showCloseButton?: boolean
   /**
@@ -93,7 +94,7 @@ export interface DocumentActionModalDialogProps {
  * @beta */
 export interface DocumentActionPopoverDialogProps {
   type: 'popover'
-  content: React.ReactNode
+  content: ReactNode
   onClose: () => void
 }
 
@@ -102,7 +103,7 @@ export interface DocumentActionPopoverDialogProps {
  * @beta */
 export interface DocumentActionCustomDialogComponentProps {
   type: 'custom'
-  component: React.ReactNode
+  component: ReactNode
 }
 
 /**
@@ -117,13 +118,22 @@ export type DocumentActionDialogProps =
 /**
  * @hidden
  * @beta */
+export type DocumentActionGroup = 'default' | 'paneActions'
+
+/**
+ * @hidden
+ * @beta */
 export interface DocumentActionDescription {
   tone?: ButtonTone
   dialog?: DocumentActionDialogProps | false | null
   disabled?: boolean
-  icon?: React.ReactNode | React.ComponentType
+  icon?: ReactNode | ComponentType
   label: string
   onHandle?: () => void
   shortcut?: string | null
-  title?: React.ReactNode
+  title?: ReactNode
+  /**
+   * @beta
+   */
+  group?: DocumentActionGroup[]
 }

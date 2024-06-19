@@ -1,4 +1,6 @@
-import {prepareTemplates, defaultTemplatesForSchema} from '../'
+import {describe, expect, test} from '@jest/globals'
+
+import {defaultTemplatesForSchema, prepareTemplates} from '../'
 import {schema} from './schema'
 
 describe('getTemplates', () => {

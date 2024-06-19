@@ -1,4 +1,7 @@
-import type {SanityClient} from '@sanity/client'
+import {type SanityClient} from '@sanity/client'
+import {isReference, type Schema, type ValidationMarker} from '@sanity/types'
+import {reduce as reduceJSON} from 'json-reduce'
+import {omit} from 'lodash'
 import {
   asyncScheduler,
   combineLatest,
@@ -6,7 +9,7 @@ import {
   defer,
   from,
   lastValueFrom,
-  Observable,
+  type Observable,
   of,
   timer,
 } from 'rxjs'
@@ -22,18 +25,17 @@ import {
   skip,
   throttleTime,
 } from 'rxjs/operators'
-import {isReference, type Schema, type ValidationMarker} from '@sanity/types'
-import {reduce as reduceJSON} from 'json-reduce'
-import shallowEquals from 'shallow-equals'
-import {omit} from 'lodash'
 import {exhaustMapWithTrailing} from 'rxjs-exhaustmap-with-trailing'
-import type {LocaleSource} from '../../../../i18n'
+import shallowEquals from 'shallow-equals'
+
+import {type SourceClientOptions} from '../../../../config'
+import {type LocaleSource} from '../../../../i18n'
+import {type DraftsModelDocumentAvailability} from '../../../../preview'
 import {validateDocumentObservable, type ValidationContext} from '../../../../validation'
-import type {SourceClientOptions} from '../../../../config'
-import type {IdPair} from '../types'
-import type {DraftsModelDocumentAvailability} from '../../../../preview'
+import {type IdPair} from '../types'
 import {memoize} from '../utils/createMemoizer'
 import {editState} from './editState'
+import {memoizeKeyGen} from './memoizeKeyGen'
 
 /**
  * @hidden
@@ -93,6 +95,7 @@ export const validation = memoize(
       observeDocumentPairAvailability: ObserveDocumentPairAvailability
       schema: Schema
       i18n: LocaleSource
+      serverActionsEnabled: Observable<boolean>
     },
     {draftId, publishedId}: IdPair,
     typeName: string,
@@ -188,8 +191,6 @@ export const validation = memoize(
     )
   },
   (ctx, idPair, typeName) => {
-    const config = ctx.client.config()
-
-    return `${config.dataset ?? ''}-${config.projectId ?? ''}-${idPair.publishedId}-${typeName}`
+    return memoizeKeyGen(ctx.client, idPair, typeName)
   },
 )

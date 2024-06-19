@@ -1,18 +1,28 @@
-import React, {KeyboardEvent, forwardRef, useCallback, useRef, useState} from 'react'
-import FocusLock from 'react-focus-lock'
-import {Box, Flex, LayerProvider, useClickOutside, useForwardedRef} from '@sanity/ui'
 import {CalendarIcon} from '@sanity/icons'
+import {Box, Flex, LayerProvider, useClickOutside} from '@sanity/ui'
+import {
+  type FocusEvent,
+  type ForwardedRef,
+  forwardRef,
+  type KeyboardEvent,
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react'
+import FocusLock from 'react-focus-lock'
+
 import {Button, Popover} from '../../../../../ui-components'
+import {type CalendarLabels} from './calendar/types'
 import {DatePicker} from './DatePicker'
 import {LazyTextInput} from './LazyTextInput'
-import {CalendarLabels} from './calendar/types'
 
 export interface DateTimeInputProps {
   customValidity?: string
   id?: string
   inputValue?: string
   onChange: (date: Date | null) => void
-  onInputChange?: (event: React.FocusEvent<HTMLInputElement>) => void
+  onInputChange?: (event: FocusEvent<HTMLInputElement>) => void
   placeholder?: string
   readOnly?: boolean
   selectTime?: boolean
@@ -23,7 +33,7 @@ export interface DateTimeInputProps {
 
 export const DateTimeInput = forwardRef(function DateTimeInput(
   props: DateTimeInputProps,
-  ref: React.ForwardedRef<HTMLInputElement>,
+  forwardedRef: ForwardedRef<HTMLInputElement>,
 ) {
   const {
     value,
@@ -36,17 +46,22 @@ export const DateTimeInput = forwardRef(function DateTimeInput(
     ...rest
   } = props
   const [popoverRef, setPopoverRef] = useState<HTMLElement | null>(null)
-  const forwardedRef = useForwardedRef(ref)
+  const ref = useRef<HTMLInputElement | null>(null)
   const buttonRef = useRef(null)
+
+  useImperativeHandle<HTMLInputElement | null, HTMLInputElement | null>(
+    forwardedRef,
+    () => ref.current,
+  )
 
   const [isPickerOpen, setPickerOpen] = useState(false)
 
   useClickOutside(() => setPickerOpen(false), [popoverRef])
 
   const handleDeactivation = useCallback(() => {
-    forwardedRef.current?.focus()
-    forwardedRef.current?.select()
-  }, [forwardedRef])
+    ref.current?.focus()
+    ref.current?.select()
+  }, [])
 
   const handleKeyUp = useCallback((e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Escape') {
@@ -72,7 +87,7 @@ export const DateTimeInput = forwardRef(function DateTimeInput(
 
   return (
     <LazyTextInput
-      ref={forwardedRef}
+      ref={ref}
       {...rest}
       value={inputValue}
       onChange={onInputChange}

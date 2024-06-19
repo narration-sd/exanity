@@ -1,15 +1,15 @@
-import {Box, Flex, rem, Text, Theme} from '@sanity/ui'
-import React, {memo} from 'react'
 import {ToggleArrowRightIcon} from '@sanity/icons'
-import styled, {css} from 'styled-components'
-import {useTranslation} from '../../../i18n'
+import {Box, Flex, rem, Text, type Theme} from '@sanity/ui'
+import {memo, type ReactNode} from 'react'
+import {css, styled} from 'styled-components'
+
 import {focusRingStyle} from './styles'
 
 export interface FormFieldSetLegendProps {
   collapsed: boolean
   collapsible?: boolean
   onClick?: () => void
-  title: React.ReactNode
+  title: ReactNode
 }
 
 const Root = styled.legend`
@@ -70,15 +70,10 @@ const ToggleIconBox = styled(Box)`
 
 export const FormFieldSetLegend = memo(function FormFieldSetLegend(props: FormFieldSetLegendProps) {
   const {collapsed, collapsible, onClick, title} = props
-  const {t} = useTranslation()
 
   const text = (
     <Text weight="medium" size={1}>
-      {title || (
-        <span style={{color: 'var(--card-muted-fg-color)'}}>
-          {t('form.field.untitled-fieldset-label')}
-        </span>
-      )}
+      {title}
     </Text>
   )
 

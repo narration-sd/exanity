@@ -1,28 +1,35 @@
-import type {
-  ArraySchemaType,
-  PortableTextTextBlock,
-  Rule,
-  SanityDocument,
-  Schema,
-  SchemaType,
-  ValidationContext,
-  SchemaTypeDefinition,
-} from '@sanity/types'
+import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {
-  validateDocument,
-  resolveTypeForArrayItem,
-  validateItem,
-} from '../../src/core/validation/validateDocument'
+  type ArraySchemaType,
+  type PortableTextTextBlock,
+  type Rule,
+  type SanityDocument,
+  type Schema,
+  type SchemaType,
+  type SchemaTypeDefinition,
+  type ValidationContext,
+} from '@sanity/types'
+
+import {createSchema, type Workspace} from '../../src/core'
 import {getFallbackLocaleSource} from '../../src/core/i18n/fallback'
 import {convertToValidationMarker} from '../../src/core/validation/util/convertToValidationMarker'
-import {Workspace, createSchema} from '../../src/core'
+import {
+  resolveTypeForArrayItem,
+  validateDocument,
+  validateItem,
+} from '../../src/core/validation/validateDocument'
 import {createMockSanityClient} from './mocks/mockSanityClient'
+
+type ConvertToValidationMarker =
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+  typeof import('../../src/core/validation/util/convertToValidationMarker')
 
 jest.mock('../../src/core/validation/util/convertToValidationMarker', () => {
   return {
     convertToValidationMarker: jest.fn(
-      jest.requireActual('../../src/core/validation/util/convertToValidationMarker')
-        .convertToValidationMarker,
+      jest.requireActual<ConvertToValidationMarker>(
+        '../../src/core/validation/util/convertToValidationMarker',
+      ).convertToValidationMarker,
     ),
   }
 })

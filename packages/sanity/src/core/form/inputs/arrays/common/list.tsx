@@ -1,25 +1,16 @@
-import {Box, Card, Grid} from '@sanity/ui'
-import React, {
-  type ComponentProps,
-  type ForwardedRef,
-  forwardRef,
-  memo,
-  useCallback,
-  useMemo,
-} from 'react'
-import styled, {css} from 'styled-components'
 import {
+  type AutoScrollOptions,
   closestCenter,
   DndContext,
+  type DragEndEvent,
+  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
+  type SensorOptions,
   useSensor,
   useSensors,
-  type SensorOptions,
-  type AutoScrollOptions,
-  type DragStartEvent,
-  type DragEndEvent,
 } from '@dnd-kit/core'
+import {restrictToHorizontalAxis, restrictToVerticalAxis} from '@dnd-kit/modifiers'
 import {
   horizontalListSortingStrategy,
   SortableContext,
@@ -28,8 +19,19 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import {CSS} from '@dnd-kit/utilities'
-import {restrictToHorizontalAxis, restrictToVerticalAxis} from '@dnd-kit/modifiers'
-import {SortableItemIdContext} from './DragHandle'
+import {Box, type Card, Grid} from '@sanity/ui'
+import {
+  type ComponentProps,
+  type ForwardedRef,
+  forwardRef,
+  memo,
+  type ReactNode,
+  useCallback,
+  useMemo,
+} from 'react'
+import {SortableItemIdContext} from 'sanity/_singletons'
+import {css, styled} from 'styled-components'
+
 import {restrictToParentElementWithMargins} from './dndkit-modifier/restrictToParentElementWithMargins'
 
 export const MOVING_ITEM_CLASS_NAME = 'moving'
@@ -163,7 +165,7 @@ interface ListProps extends ComponentProps<typeof Grid> {
   onItemMove?: (event: {fromIndex: number; toIndex: number}) => void
   onItemMoveStart?: (event: DragStartEvent) => void
   onItemMoveEnd?: () => void
-  children?: React.ReactNode
+  children?: ReactNode
 }
 
 export function List(props: ListProps) {
@@ -190,13 +192,13 @@ export function List(props: ListProps) {
 }
 
 interface ItemProps {
-  id: string
+  'id': string
 
   // false positive:
   // eslint-disable-next-line react/no-unused-prop-types
-  sortable?: boolean
-  disableTransition?: boolean
-  children?: React.ReactNode
+  'sortable'?: boolean
+  'disableTransition'?: boolean
+  'children'?: ReactNode
   'data-index'?: number
 }
 

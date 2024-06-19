@@ -1,6 +1,7 @@
-import {Card, CardProps} from '@sanity/ui'
-import React, {createContext, forwardRef, useContext} from 'react'
-import styled, {css} from 'styled-components'
+import {Card, type CardProps} from '@sanity/ui'
+import {type ForwardedRef, forwardRef, type HTMLProps, useContext} from 'react'
+import {PreviewCardContext} from 'sanity/_singletons'
+import {css, styled} from 'styled-components'
 
 /** @internal */
 const StyledCard = styled(Card)(() => {
@@ -22,8 +23,6 @@ export interface PreviewCardContextValue {
   selected?: boolean
 }
 
-const PreviewCardContext = createContext<PreviewCardContextValue>({selected: false})
-
 /** @internal */
 export function usePreviewCard(): PreviewCardContextValue {
   const context = useContext(PreviewCardContext)
@@ -37,8 +36,8 @@ export function usePreviewCard(): PreviewCardContextValue {
 
 /** @internal */
 export const PreviewCard = forwardRef(function PreviewCard(
-  props: CardProps & Omit<React.HTMLProps<HTMLDivElement>, 'height'>,
-  ref: React.ForwardedRef<HTMLDivElement>,
+  props: CardProps & Omit<HTMLProps<HTMLDivElement>, 'height'>,
+  ref: ForwardedRef<HTMLDivElement>,
 ) {
   const {children, selected, as, ...restProps} = props
 
@@ -48,3 +47,16 @@ export const PreviewCard = forwardRef(function PreviewCard(
     </StyledCard>
   )
 })
+
+/**
+ *  This is a workaround for a circular import issue.
+ * Calling `styled(PreviewCard)` at program load time triggered a build error with the commonjs bundle because it tried
+ * to access the PreviewCard variable/symbol before it was initialized.
+ * The workaround is to colocate the styled component with the component itself.
+ * @internal
+ */
+export const ReferenceInputPreviewCard = styled(PreviewCard)`
+  /* this is a hack to avoid layout jumps while previews are loading
+there's probably better ways of solving this */
+  min-height: 36px;
+`

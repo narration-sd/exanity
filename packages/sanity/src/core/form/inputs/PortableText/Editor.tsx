@@ -1,9 +1,11 @@
 import {
-  PortableTextEditable,
   type EditorSelection,
   type HotkeyOptions,
   type OnCopyFn,
   type OnPasteFn,
+  PortableTextEditable,
+  type PortableTextEditableProps,
+  type RangeDecoration,
   type RenderAnnotationFunction,
   type RenderBlockFunction,
   type RenderChildFunction,
@@ -11,26 +13,25 @@ import {
   type RenderListItemFunction,
   type RenderStyleFunction,
 } from '@sanity/portable-text-editor'
-import type {Path} from '@sanity/types'
+import {type Path} from '@sanity/types'
 import {BoundaryElementProvider, useBoundaryElement, useGlobalKeyDown, useLayer} from '@sanity/ui'
-import React, {useCallback, useMemo, useRef} from 'react'
+// eslint-disable-next-line camelcase
+import {getTheme_v2} from '@sanity/ui/theme'
+import {omit} from 'lodash'
+import {type ReactNode, useCallback, useMemo} from 'react'
+import {css, styled} from 'styled-components'
+
 import {TooltipDelayGroupProvider} from '../../../../ui-components'
 import {useTranslation} from '../../../i18n'
+import {type PortableTextInputProps} from '../../types/inputProps'
 import {useFormBuilder} from '../../useFormBuilder'
-import {Toolbar} from './toolbar'
-import {Decorator} from './text'
-import {
-  EditableCard,
-  EditableContainer,
-  EditableWrapper,
-  Root,
-  Scroller,
-  ToolbarCard,
-} from './Editor.styles'
-import {useSpellcheck} from './hooks/useSpellCheck'
+import {EditableCard, EditableWrapper, Root, Scroller, ToolbarCard} from './Editor.styles'
 import {useScrollSelectionIntoView} from './hooks/useScrollSelectionIntoView'
-import {Style} from './text/Style'
+import {useSpellCheck} from './hooks/useSpellCheck'
+import {Decorator} from './text'
 import {ListItem} from './text/ListItem'
+import {Style} from './text/Style'
+import {Toolbar} from './toolbar'
 
 const noOutlineStyle = {outline: 'none'} as const
 
@@ -38,7 +39,16 @@ const noOutlineStyle = {outline: 'none'} as const
 // This is used to determine whether this editor should apply document pane specific styling.
 const FORM_BUILDER_DEFAULT_ID = 'root'
 
+const PlaceholderWrapper = styled.span((props) => {
+  const {color} = getTheme_v2(props.theme)
+  return css`
+    color: ${color.input.default.enabled.placeholder};
+  `
+})
+
 interface EditorProps {
+  elementRef: React.RefObject<HTMLDivElement>
+  hideToolbar?: boolean
   hotkeys: HotkeyOptions
   initialSelection?: EditorSelection
   isActive: boolean
@@ -49,9 +59,11 @@ interface EditorProps {
   onToggleFullscreen: () => void
   path: Path
   readOnly?: boolean
+  rangeDecorations?: RangeDecoration[]
   renderAnnotation: RenderAnnotationFunction
   renderBlock: RenderBlockFunction
   renderChild: RenderChildFunction
+  renderEditable?: PortableTextInputProps['renderEditable']
   scrollElement: HTMLElement | null
   setPortalElement?: (portalElement: HTMLDivElement | null) => void
   setScrollElement: (scrollElement: HTMLElement | null) => void
@@ -72,8 +84,10 @@ const renderListItem: RenderListItemFunction = (props) => {
 /**
  * @internal
  */
-export function Editor(props: EditorProps) {
+export function Editor(props: EditorProps): ReactNode {
   const {
+    elementRef,
+    hideToolbar,
     hotkeys,
     initialSelection,
     isActive,
@@ -84,9 +98,11 @@ export function Editor(props: EditorProps) {
     onToggleFullscreen,
     path,
     readOnly,
+    rangeDecorations,
     renderAnnotation,
     renderBlock,
     renderChild,
+    renderEditable,
     scrollElement,
     setPortalElement,
     setScrollElement,
@@ -95,7 +111,6 @@ export function Editor(props: EditorProps) {
   const {id} = useFormBuilder()
   const {t} = useTranslation()
   const {isTopLayer} = useLayer()
-  const editableRef = useRef<HTMLDivElement | null>(null)
 
   const {element: boundaryElement} = useBoundaryElement()
 
@@ -116,49 +131,59 @@ export function Editor(props: EditorProps) {
 
   const renderPlaceholder = useCallback(
     () => (
-      <span data-testid="pt-input-placeholder">{t('inputs.portable-text.empty-placeholder')}</span>
+      <PlaceholderWrapper data-testid="pt-input-placeholder">
+        {t('inputs.portable-text.empty-placeholder')}
+      </PlaceholderWrapper>
     ),
     [t],
   )
-  const spellcheck = useSpellcheck()
+  const spellCheck = useSpellCheck()
 
   const scrollSelectionIntoView = useScrollSelectionIntoView(scrollElement)
 
-  const editable = useMemo(
-    () => (
-      <PortableTextEditable
-        aria-describedby={ariaDescribedBy}
-        hotkeys={hotkeys}
-        onCopy={onCopy}
-        onPaste={onPaste}
-        ref={editableRef}
-        renderAnnotation={renderAnnotation}
-        renderBlock={renderBlock}
-        renderChild={renderChild}
-        renderDecorator={renderDecorator}
-        renderListItem={renderListItem}
-        renderPlaceholder={renderPlaceholder}
-        renderStyle={renderStyle}
-        scrollSelectionIntoView={scrollSelectionIntoView}
-        selection={initialSelection}
-        spellCheck={spellcheck}
-        style={noOutlineStyle}
-      />
-    ),
-    [
-      ariaDescribedBy,
+  const editable = useMemo(() => {
+    const editableProps = {
+      'aria-describedby': ariaDescribedBy,
       hotkeys,
-      initialSelection,
       onCopy,
       onPaste,
+      rangeDecorations,
+      'ref': elementRef,
       renderAnnotation,
       renderBlock,
       renderChild,
+      renderDecorator,
+      renderListItem,
       renderPlaceholder,
+      renderStyle,
       scrollSelectionIntoView,
-      spellcheck,
-    ],
-  )
+      'selection': initialSelection,
+      spellCheck,
+      'style': noOutlineStyle,
+    } satisfies PortableTextEditableProps
+    const defaultRender = (defaultRenderProps: PortableTextEditableProps) => (
+      <PortableTextEditable {...editableProps} {...omit(defaultRenderProps, ['renderDefault'])} />
+    )
+    if (renderEditable) {
+      return renderEditable({...editableProps, renderDefault: defaultRender})
+    }
+    return defaultRender(editableProps)
+  }, [
+    ariaDescribedBy,
+    elementRef,
+    hotkeys,
+    initialSelection,
+    onCopy,
+    onPaste,
+    rangeDecorations,
+    renderAnnotation,
+    renderBlock,
+    renderChild,
+    renderEditable,
+    renderPlaceholder,
+    scrollSelectionIntoView,
+    spellCheck,
+  ])
 
   const handleToolBarOnMemberOpen = useCallback(
     (relativePath: Path) => {
@@ -171,8 +196,8 @@ export function Editor(props: EditorProps) {
   const collapsibleToolbar = id === FORM_BUILDER_DEFAULT_ID
 
   return (
-    <Root $fullscreen={isFullscreen} data-testid="pt-editor">
-      {isActive && (
+    <Root data-fullscreen={isFullscreen} data-testid="pt-editor">
+      {isActive && !hideToolbar && (
         <TooltipDelayGroupProvider>
           <ToolbarCard data-testid="pt-editor__toolbar-card" shadow={1}>
             <Toolbar
@@ -189,7 +214,7 @@ export function Editor(props: EditorProps) {
 
       <EditableCard flex={1} tone={readOnly ? 'transparent' : 'default'}>
         <Scroller ref={setScrollElement}>
-          <EditableContainer padding={isFullscreen ? 2 : 0} sizing="border" width={1}>
+          <div>
             <EditableWrapper
               $isFullscreen={isFullscreen}
               tone={readOnly ? 'transparent' : 'default'}
@@ -198,7 +223,7 @@ export function Editor(props: EditorProps) {
                 {editable}
               </BoundaryElementProvider>
             </EditableWrapper>
-          </EditableContainer>
+          </div>
         </Scroller>
 
         <div data-portal="" ref={setPortalElement} />

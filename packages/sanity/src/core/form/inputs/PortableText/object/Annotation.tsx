@@ -1,34 +1,43 @@
 import {PortableTextEditor, usePortableTextEditor} from '@sanity/portable-text-editor'
-import type {ObjectSchemaType, Path, PortableTextObject} from '@sanity/types'
-import React, {ComponentType, useCallback, useMemo, useState} from 'react'
+import {type ObjectSchemaType, type Path, type PortableTextObject} from '@sanity/types'
 import {isEqual} from '@sanity/util/paths'
+import {
+  type ComponentType,
+  type ReactElement,
+  type ReactNode,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react'
+
 import {Tooltip} from '../../../../../ui-components'
 import {pathToString} from '../../../../field'
-import type {
-  BlockAnnotationProps,
-  RenderAnnotationCallback,
-  RenderArrayOfObjectsItemCallback,
-  RenderBlockCallback,
-  RenderCustomMarkers,
-  RenderFieldCallback,
-  RenderInputCallback,
-  RenderPreviewCallback,
+import {useTranslation} from '../../../../i18n'
+import {EMPTY_ARRAY} from '../../../../util'
+import {isEmptyItem} from '../../../store/utils/isEmptyItem'
+import {useChildPresence} from '../../../studio/contexts/Presence'
+import {
+  type BlockAnnotationProps,
+  type RenderAnnotationCallback,
+  type RenderArrayOfObjectsItemCallback,
+  type RenderBlockCallback,
+  type RenderCustomMarkers,
+  type RenderFieldCallback,
+  type RenderInputCallback,
+  type RenderPreviewCallback,
 } from '../../../types'
-import {DefaultMarkers} from '../_legacyDefaultParts/Markers'
 import {useFormBuilder} from '../../../useFormBuilder'
+import {DefaultMarkers} from '../_legacyDefaultParts/Markers'
+import {debugRender} from '../debugRender'
 import {useMemberValidation} from '../hooks/useMemberValidation'
 import {usePortableTextMarkers} from '../hooks/usePortableTextMarkers'
 import {usePortableTextMemberItem} from '../hooks/usePortableTextMembers'
-import {debugRender} from '../debugRender'
-import {useChildPresence} from '../../../studio/contexts/Presence'
-import {EMPTY_ARRAY} from '../../../../util'
-import {useTranslation} from '../../../../i18n'
-import {AnnotationToolbarPopover} from './AnnotationToolbarPopover'
 import {Root, TooltipBox} from './Annotation.styles'
+import {AnnotationToolbarPopover} from './AnnotationToolbarPopover'
 import {ObjectEditModal} from './modals/ObjectEditModal'
 
 interface AnnotationProps {
-  children: React.ReactElement
+  children: ReactElement
   editorNodeFocused: boolean
   floatingBoundary: HTMLElement | null
   focused: boolean
@@ -51,7 +60,7 @@ interface AnnotationProps {
   value: PortableTextObject
 }
 
-export function Annotation(props: AnnotationProps) {
+export function Annotation(props: AnnotationProps): ReactNode {
   const {
     children,
     editorNodeFocused,
@@ -82,7 +91,6 @@ export function Annotation(props: AnnotationProps) {
     [path, value._key],
   )
   const [spanElement, setSpanElement] = useState<HTMLSpanElement | null>(null)
-  const spanPath: Path = useMemo(() => path.slice(path.length - 3, path.length), [path])
   const memberItem = usePortableTextMemberItem(pathToString(markDefPath))
   const {validation} = useMemberValidation(memberItem?.node)
   const markers = usePortableTextMarkers(path)
@@ -91,25 +99,21 @@ export function Annotation(props: AnnotationProps) {
 
   const onOpen = useCallback(() => {
     if (memberItem) {
-      // Take focus away from the editor so that it doesn't propagate a new focusPath and interfere here.
+      // Take focus away from the editor so it doesn't accidentally propagate a new focusPath
+      // for the text node that the annotation is attached to.
       PortableTextEditor.blur(editor)
-      onPathFocus(memberItem.node.focusPath) // Set the focus path to be the markDef here as we currently have focus on the text node
+      // Open the annotation item (markDef object)
       onItemOpen(memberItem.node.path)
     }
-  }, [editor, memberItem, onItemOpen, onPathFocus])
+  }, [editor, memberItem, onItemOpen])
 
   const onClose = useCallback(() => {
     onItemClose()
-    // Keep track of any previous offsets on the spanNode before we select it.
-    const sel = PortableTextEditor.getSelection(editor)
-    const focusOffset = sel?.focus.path && isEqual(sel.focus.path, spanPath) && sel.focus.offset
-    const anchorOffset = sel?.anchor.path && isEqual(sel.anchor.path, spanPath) && sel.anchor.offset
-    PortableTextEditor.select(editor, {
-      anchor: {path: spanPath, offset: anchorOffset || 0},
-      focus: {path: spanPath, offset: focusOffset || 0},
-    })
+    if (isEmptyItem(value)) {
+      PortableTextEditor.removeAnnotation(editor, schemaType)
+    }
     PortableTextEditor.focus(editor)
-  }, [editor, spanPath, onItemClose])
+  }, [editor, onItemClose, schemaType, value])
 
   const onRemove = useCallback(() => {
     PortableTextEditor.removeAnnotation(editor, schemaType)

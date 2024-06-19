@@ -1,24 +1,25 @@
 import {SyncIcon} from '@sanity/icons'
+import {type SanityDocument} from '@sanity/types'
 import {Box, Container, Flex, Heading, Stack, Text} from '@sanity/ui'
-import React, {useCallback, useEffect, useMemo, useState} from 'react'
-import {SanityDocument} from '@sanity/types'
-import styled from 'styled-components'
-import {Button} from '../../../ui-components'
-import {Delay, PaneContent, usePane, usePaneLayout, PaneItem} from '../../components'
-import {DocumentListPaneItem, LoadingVariant} from './types'
-import {FULL_LIST_LIMIT} from './constants'
-import {structureLocaleNamespace} from '../../i18n'
+import {useCallback, useEffect, useMemo, useState} from 'react'
 import {
   CommandList,
-  CommandListRenderItemCallback,
-  GeneralPreviewLayoutKey,
-  SanityDefaultPreview,
+  type CommandListRenderItemCallback,
+  type GeneralPreviewLayoutKey,
   getPublishedId,
+  LoadingBlock,
+  SanityDefaultPreview,
+  Translate,
   useSchema,
   useTranslation,
-  Translate,
-  LoadingBlock,
 } from 'sanity'
+import {styled} from 'styled-components'
+
+import {Button} from '../../../ui-components'
+import {Delay, PaneContent, PaneItem, usePane, usePaneLayout} from '../../components'
+import {structureLocaleNamespace} from '../../i18n'
+import {FULL_LIST_LIMIT} from './constants'
+import {type DocumentListPaneItem, type LoadingVariant} from './types'
 
 const RootBox = styled(Box)`
   position: relative;
@@ -276,7 +277,10 @@ export function DocumentListPaneContent(props: DocumentListPaneContentProps) {
   ])
 
   return (
-    <PaneContent overflow={layoutCollapsed || loadingVariant === 'initial' ? 'hidden' : 'auto'}>
+    <PaneContent
+      data-testid="document-list-pane"
+      overflow={layoutCollapsed || loadingVariant === 'initial' ? 'hidden' : 'auto'}
+    >
       {mainContent}
     </PaneContent>
   )

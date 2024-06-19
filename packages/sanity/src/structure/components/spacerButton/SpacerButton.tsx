@@ -1,5 +1,4 @@
-import React from 'react'
-import {Button, ButtonProps} from '../../../ui-components'
+import {Button, type ButtonProps} from '../../../ui-components'
 
 interface SpacerButtonProps {
   size?: ButtonProps['size']

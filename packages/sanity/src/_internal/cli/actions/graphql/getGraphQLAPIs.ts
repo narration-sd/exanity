@@ -1,14 +1,16 @@
-import path from 'path'
-import {Worker, isMainThread} from 'worker_threads'
+import path from 'node:path'
+import {isMainThread, Worker} from 'node:worker_threads'
+
+import {type CliCommandContext, type CliV3CommandContext} from '@sanity/cli'
 import readPkgUp from 'read-pkg-up'
-import type {CliCommandContext, CliV3CommandContext} from '@sanity/cli'
-import type {
-  ResolvedGraphQLAPI,
-  ResolvedSourceProperties,
-  SchemaDefinitionish,
-  TypeResolvedGraphQLAPI,
-} from './types'
 import {createSchema} from 'sanity'
+
+import {
+  type ResolvedGraphQLAPI,
+  type ResolvedSourceProperties,
+  type SchemaDefinitionish,
+  type TypeResolvedGraphQLAPI,
+} from './types'
 
 export async function getGraphQLAPIs(cliContext: CliCommandContext): Promise<ResolvedGraphQLAPI[]> {
   if (!isModernCliConfig(cliContext)) {

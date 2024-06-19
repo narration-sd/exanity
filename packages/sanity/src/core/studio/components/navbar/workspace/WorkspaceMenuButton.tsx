@@ -7,14 +7,15 @@ import {
   Menu,
   Text,
 } from '@sanity/ui'
-import styled from 'styled-components'
-import {MenuButton, MenuButtonProps, MenuItem, Tooltip} from '../../../../../ui-components'
+import {useRouter} from 'sanity/router'
+import {styled} from 'styled-components'
+
+import {MenuButton, type MenuButtonProps, MenuItem, Tooltip} from '../../../../../ui-components'
 import {useTranslation} from '../../../../i18n'
 import {useActiveWorkspace} from '../../../activeWorkspaceMatcher'
 import {useWorkspaces} from '../../../workspaces'
-import {STATE_TITLES, WorkspacePreviewIcon} from './WorkspacePreview'
 import {useWorkspaceAuthStates} from './hooks'
-import {useRouter} from 'sanity/router'
+import {STATE_TITLES, WorkspacePreviewIcon} from './WorkspacePreview'
 
 const StyledMenu = styled(Menu)`
   max-width: 350px;
@@ -97,15 +98,9 @@ export function WorkspaceMenuButton() {
                   pressed={isSelected}
                   preview={<WorkspacePreviewIcon icon={workspace.icon} size="small" />}
                   selected={isSelected}
+                  __unstable_subtitle={workspace.subtitle}
+                  __unstable_space={1}
                   text={workspace?.title || workspace.name}
-                  tooltipProps={
-                    workspace?.subtitle
-                      ? {
-                          content: workspace.subtitle,
-                          placement: 'right',
-                        }
-                      : undefined
-                  }
                 />
               )
             })}

@@ -1,7 +1,6 @@
 import {Box, Container, Flex, Stack, Text} from '@sanity/ui'
 import {useBoolean, useSelect} from '@sanity/ui-workshop'
-import React from 'react'
-import styled, {css} from 'styled-components'
+import {css, styled} from 'styled-components'
 
 interface BlockType {
   level: number

@@ -1,4 +1,6 @@
-import path from 'path'
+import path from 'node:path'
+
+import {jest} from '@jest/globals'
 import dotenv from 'dotenv'
 
 // eslint-disable-next-line no-process-env
@@ -29,23 +31,5 @@ if (typeof window !== 'undefined') {
       unobserve = jest.fn()
       disconnect = jest.fn()
     },
-  })
-
-  jest.mock('@sanity/ui', () => {
-    // causes `ResizeObserver` not found errors
-    const sanityUi = jest.requireActual('@sanity/ui')
-    const mockDomRect: DOMRectReadOnly = {
-      bottom: 0,
-      height: 0,
-      left: 0,
-      right: 0,
-      top: 0,
-      width: 0,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    }
-
-    return {...sanityUi, useElementRect: jest.fn(() => mockDomRect)}
   })
 }

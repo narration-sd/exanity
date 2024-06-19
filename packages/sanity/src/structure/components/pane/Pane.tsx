@@ -1,14 +1,26 @@
-import {BoundaryElementProvider, Card, CardProps, Code, Flex, useForwardedRef} from '@sanity/ui'
-import React, {forwardRef, useMemo, useState, useCallback, useEffect} from 'react'
-import styled from 'styled-components'
+import {BoundaryElementProvider, Card, type CardProps, Code, Flex} from '@sanity/ui'
+import {
+  type ForwardedRef,
+  forwardRef,
+  type HTMLProps,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import {IsLastPaneProvider, LegacyLayerProvider} from 'sanity'
+import {PaneContext} from 'sanity/_singletons'
+import {styled} from 'styled-components'
+
 import {PANE_COLLAPSED_WIDTH, PANE_DEBUG, PANE_DEFAULT_MIN_WIDTH} from './constants'
-import {PaneContext} from './PaneContext'
 import {PaneDivider} from './PaneDivider'
 import {usePaneLayout} from './usePaneLayout'
-import {LegacyLayerProvider} from 'sanity'
 
 interface PaneProps {
-  children?: React.ReactNode
+  children?: ReactNode
   currentMinWidth?: number
   currentMaxWidth?: number
   flex?: number
@@ -27,16 +39,15 @@ const Root = styled(Card)`
 `
 
 /**
- *
  * @hidden
- * @beta This API will change. DO NOT USE IN PRODUCTION.
+ * @internal
  */
 // eslint-disable-next-line complexity
 export const Pane = forwardRef(function Pane(
   props: PaneProps &
     Omit<CardProps, 'as' | 'overflow'> &
-    Omit<React.HTMLProps<HTMLDivElement>, 'as' | 'height' | 'hidden' | 'id' | 'style'>,
-  ref: React.ForwardedRef<HTMLDivElement>,
+    Omit<HTMLProps<HTMLDivElement>, 'as' | 'height' | 'hidden' | 'id' | 'style'>,
+  forwardedRef: ForwardedRef<HTMLDivElement>,
 ) {
   const {
     children,
@@ -65,18 +76,18 @@ export const Pane = forwardRef(function Pane(
   const expanded = expandedElement === rootElement
   const collapsed = layoutCollapsed ? false : pane?.collapsed || false
   const nextCollapsed = nextPane?.collapsed || false
-  const forwardedRef = useForwardedRef(ref)
+  const ref = useRef<HTMLDivElement | null>(null)
   const flex = pane?.flex ?? flexProp
   const currentMinWidth = pane?.currentMinWidth ?? currentMinWidthProp
   const currentMaxWidth = pane?.currentMaxWidth ?? currentMaxWidthProp
 
-  const setRef = useCallback(
-    (refValue: HTMLDivElement | null) => {
-      setRootElement(refValue)
-      forwardedRef.current = refValue
-    },
-    [forwardedRef],
-  )
+  // Forward ref to parent
+  useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(forwardedRef, () => ref.current)
+
+  const setRef = useCallback((refValue: HTMLDivElement | null) => {
+    setRootElement(refValue)
+    ref.current = refValue
+  }, [])
 
   useEffect(() => {
     if (!rootElement) return undefined
@@ -183,44 +194,46 @@ export const Pane = forwardRef(function Pane(
     <>
       <LegacyLayerProvider zOffset="pane">
         <PaneContext.Provider value={contextValue}>
-          <Root
-            data-testid="pane"
-            data-ui="Pane"
-            tone="inherit"
-            hidden={hidden}
-            id={id}
-            overflow={layoutCollapsed ? undefined : 'hidden'}
-            {...restProps}
-            data-pane-collapsed={collapsed ? '' : undefined}
-            data-pane-index={paneIndex}
-            data-pane-selected={selected ? '' : undefined}
-            ref={setRef}
-            style={style}
-          >
-            {PANE_DEBUG && (
-              <Card padding={4} tone={expanded ? 'primary' : 'caution'}>
-                <Code size={1}>
-                  {[
-                    `#${paneIndex}`,
-                    `collapsed=${collapsed}`,
-                    `currentMinWidth=${currentMinWidth}`,
-                    `currentMaxWidth=${currentMaxWidth}`,
-                    `flex=${flex}`,
-                    `minWidth=${minWidth}`,
-                    `maxWidth=${maxWidth}`,
-                  ].join('\n')}
-                </Code>
-              </Card>
-            )}
-
-            <BoundaryElementProvider element={rootElement}>
-              {!hidden && (
-                <Flex direction="column" height="fill">
-                  {children}
-                </Flex>
+          <IsLastPaneProvider isLastPane={isLast}>
+            <Root
+              data-testid="pane"
+              data-ui="Pane"
+              tone="inherit"
+              hidden={hidden}
+              id={id}
+              overflow={layoutCollapsed ? undefined : 'hidden'}
+              {...restProps}
+              data-pane-collapsed={collapsed ? '' : undefined}
+              data-pane-index={paneIndex}
+              data-pane-selected={selected ? '' : undefined}
+              ref={setRef}
+              style={style}
+            >
+              {PANE_DEBUG && (
+                <Card padding={4} tone={expanded ? 'primary' : 'caution'}>
+                  <Code size={1}>
+                    {[
+                      `#${paneIndex}`,
+                      `collapsed=${collapsed}`,
+                      `currentMinWidth=${currentMinWidth}`,
+                      `currentMaxWidth=${currentMaxWidth}`,
+                      `flex=${flex}`,
+                      `minWidth=${minWidth}`,
+                      `maxWidth=${maxWidth}`,
+                    ].join('\n')}
+                  </Code>
+                </Card>
               )}
-            </BoundaryElementProvider>
-          </Root>
+
+              <BoundaryElementProvider element={rootElement}>
+                {!hidden && (
+                  <Flex direction="column" height="fill">
+                    {children}
+                  </Flex>
+                )}
+              </BoundaryElementProvider>
+            </Root>
+          </IsLastPaneProvider>
         </PaneContext.Provider>
       </LegacyLayerProvider>
 

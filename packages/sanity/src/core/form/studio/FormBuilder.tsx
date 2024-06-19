@@ -1,25 +1,15 @@
 /* eslint-disable camelcase */
 /* eslint-disable react/jsx-handler-names */
 
-import {ObjectSchemaType, Path, ValidationMarker} from '@sanity/types'
-import React, {useCallback, useRef} from 'react'
-import {FormPatch, PatchChannel, PatchEvent} from '../patch'
-import {ObjectFormNode} from '../store/types/nodes'
-import {
-  BlockAnnotationProps,
-  BlockProps,
-  FieldProps,
-  InputProps,
-  ItemProps,
-  ObjectInputProps,
-  RenderPreviewCallbackProps,
-  type FormDocumentValue,
-} from '../types'
-import {StateTree} from '../store'
+import {type ObjectSchemaType, type Path, type ValidationMarker} from '@sanity/types'
+import {useCallback, useRef} from 'react'
+
+import {type DocumentFieldAction} from '../../config'
+import {type FormNodePresence} from '../../presence'
+import {PreviewLoader} from '../../preview'
 import {EMPTY_ARRAY} from '../../util'
-import {FormNodePresence} from '../../presence'
-import {DocumentFieldAction} from '../../config'
-import {useSource} from '../../studio'
+import {FormValueProvider} from '../contexts/FormValue'
+import {GetFormValueProvider} from '../contexts/GetFormValue'
 import {
   useAnnotationComponent,
   useBlockComponent,
@@ -29,11 +19,22 @@ import {
   useItemComponent,
   usePreviewComponent,
 } from '../form-components-hooks'
-import {PreviewLoader} from '../../preview'
-import {FormValueProvider} from '../contexts/FormValue'
-import {GetFormValueProvider} from '../contexts/GetFormValue'
-import {FormProvider} from './FormProvider'
+import {type FormPatch, type PatchChannel, PatchEvent} from '../patch'
+import {type StateTree} from '../store'
+import {type ObjectFormNode} from '../store/types/nodes'
+import {
+  type BlockAnnotationProps,
+  type BlockProps,
+  type FieldProps,
+  type FormDocumentValue,
+  type InputProps,
+  type ItemProps,
+  type ObjectInputProps,
+  type RenderPreviewCallbackProps,
+} from '../types'
 import {DocumentFieldActionsProvider} from './contexts/DocumentFieldActions'
+import {FormBuilderInputErrorBoundary} from './FormBuilderInputErrorBoundary'
+import {FormProvider} from './FormProvider'
 
 /**
  * @alpha
@@ -145,7 +146,11 @@ export function FormBuilder(props: FormBuilderProps) {
   const Annotation = useAnnotationComponent()
 
   const renderInput = useCallback(
-    (inputProps: Omit<InputProps, 'renderDefault'>) => <Input {...inputProps} />,
+    (inputProps: Omit<InputProps, 'renderDefault'>) => (
+      <FormBuilderInputErrorBoundary>
+        <Input {...inputProps} />
+      </FormBuilderInputErrorBoundary>
+    ),
     [Input],
   )
   const renderField = useCallback(
@@ -153,7 +158,7 @@ export function FormBuilder(props: FormBuilderProps) {
     [Field],
   )
   const renderItem = useCallback(
-    (itemProps: Omit<ItemProps, 'renderDefault'>) => <Item {...itemProps} />,
+    ({key, ...itemProps}: Omit<ItemProps, 'renderDefault'>) => <Item key={key} {...itemProps} />,
     [Item],
   )
   const renderPreview = useCallback(
@@ -180,10 +185,10 @@ export function FormBuilder(props: FormBuilderProps) {
   const rootInputProps: Omit<ObjectInputProps, 'renderDefault'> = {
     focusPath,
     elementProps: {
-      ref: focusRef,
+      'ref': focusRef,
       id,
-      onBlur: handleBlur,
-      onFocus: handleFocus,
+      'onBlur': handleBlur,
+      'onFocus': handleFocus,
       'aria-describedby': undefined, // Root input should not have any aria-describedby
     },
     changed: members.some((m) => m.kind === 'field' && m.field.changed),

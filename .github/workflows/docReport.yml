@@ -18,25 +18,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: pnpm/action-setup@v2
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
       - name: Cache node modules
         id: cache-node-modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-node-modules
         with:
-          path: '**/node_modules'
-          key: ${{ runner.os }}-modules-${{ env.cache-name }}-${{ hashFiles('**/yarn.lock') }}
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ env.cache-name }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-modules-${{ env.cache-name }}-
-            ${{ runner.os }}-modules-
-            ${{ runner.os }}-
+            v1-${{ runner.os }}-pnpm-store-${{ env.cache-name }}-
+            v1-${{ runner.os }}-pnpm-store-
+            v1-${{ runner.os }}-
 
       - name: Install project dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: yarn install --frozen-lockfile
+        run: pnpm install
 
       - name: Build packages
-        run: yarn build
+        run: pnpm build --output-logs=full --log-order=grouped
         env:
           NODE_OPTIONS: --max_old_space_size=8192
 
@@ -45,25 +61,25 @@ jobs:
         env:
           DOCS_REPORT_TOKEN: ${{ secrets.DOCS_REPORT_DATASET_TOKEN }}
           DOCS_REPORT_DATASET: ${{ github.ref == 'refs/heads/current' && 'production' || 'next'}}
-        run: yarn docs:report:create
+        run: pnpm docs:report:create
 
       - name: Create Docs Report on PR
         if: ${{ github.event_name == 'pull_request' }}
         env:
           DOCS_REPORT_TOKEN: ${{ secrets.DOCS_REPORT_DATASET_TOKEN }}
           DOCS_REPORT_DATASET: pr-${{ github.event.number }}
-        run: yarn docs:report:create
+        run: pnpm docs:report:create
 
       - name: Compare Docs Coverage on PR
         if: ${{ github.event_name == 'pull_request' }}
         env:
           DOCS_REPORT_TOKEN: ${{ secrets.DOCS_REPORT_DATASET_TOKEN }}
           DOCS_REPORT_DATASET: pr-${{ github.event.number }}
-        run: yarn docs:report
+        run: pnpm docs:report
 
       - name: PR comment with report
-        uses: thollander/actions-comment-pull-request@1d3973dc4b8e1399c0620d3f2b1aa5e795465308 # v2
+        uses: thollander/actions-comment-pull-request@fabd468d3a1a0b97feee5f6b9e499eab0dd903f6 # v2
         if: ${{ github.event_name == 'pull_request' }}
         with:
-          comment_tag: 'docs-report'
+          comment_tag: "docs-report"
           filePath: ${{ github.workspace }}/scripts/docs-report.md

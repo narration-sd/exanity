@@ -1,5 +1,4 @@
-import React from 'react'
-import {defineType, PreviewProps} from 'sanity'
+import {defineType, type PreviewProps} from 'sanity'
 
 const IFRAME_URL_RE = /^<iframe src="([^"]+)"/
 

@@ -1,23 +1,25 @@
 {
   "name": "sanity-test-next-studio",
-  "version": "3.28.0",
+  "version": "3.47.0",
   "private": true,
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
   "scripts": {
     "build": "next build",
-    "dev": "next dev",
+    "dev": "next dev -p 3333",
     "lint": "eslint .",
     "start": "next start"
   },
   "dependencies": {
-    "next": "^14.0.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "sanity": "3.28.0",
-    "styled-components": "^6.1.0"
-  },
-  "devDependencies": {
-    "eslint-config-next": "^14.0.3"
+    "@sanity/vision": "workspace:*",
+    "babel-plugin-react-compiler": "0.0.0-experimental-938cd9a-20240601",
+    "next": "15.0.0-rc.0",
+    "react": "19.0.0-rc-38e3b23483-20240529",
+    "react-dom": "19.0.0-rc-38e3b23483-20240529",
+    "react-is": "19.0.0-rc-38e3b23483-20240529",
+    "sanity": "workspace:*",
+    "sanity-test-studio": "workspace:*",
+    "styled-components": "^6.1.11",
+    "typescript": "5.4.5"
   }
 }

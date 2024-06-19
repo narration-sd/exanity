@@ -1,7 +1,7 @@
-import {SanityDocument} from '@sanity/types'
-import groq, {type ExprNode} from 'groq-js'
-import {Migration} from '../../types'
-import {groqFilter} from '../../it-utils/groqFilter'
+import {type SanityDocument} from '@sanity/types'
+import {evaluate, type ExprNode, parse} from 'groq-js'
+
+import {type Migration} from '../../types'
 
 function isSystemDocumentId(id: string) {
   return id.startsWith('_.')
@@ -20,7 +20,7 @@ async function* filterDocumentTypes(
 
 function parseGroqFilter(filter: string) {
   try {
-    return groq.parse(`*[${filter}]`)
+    return parse(`*[${filter}]`)
   } catch (err) {
     err.message = `Failed to parse GROQ filter "${filter}": ${err.message}`
     throw err
@@ -28,7 +28,7 @@ function parseGroqFilter(filter: string) {
 }
 
 export async function matchesFilter(parsedFilter: ExprNode, document: SanityDocument) {
-  const result = await (await groq.evaluate(parsedFilter, {dataset: [document]})).get()
+  const result = await (await evaluate(parsedFilter, {dataset: [document]})).get()
   return result.length === 1
 }
 

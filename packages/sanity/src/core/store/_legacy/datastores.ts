@@ -1,23 +1,26 @@
 /* eslint-disable camelcase */
 
 import {useMemo} from 'react'
+import {of} from 'rxjs'
+
 import {useClient, useSchema, useTemplates} from '../../hooks'
-import {createDocumentPreviewStore, DocumentPreviewStore} from '../../preview'
+import {createDocumentPreviewStore, type DocumentPreviewStore} from '../../preview'
 import {useSource, useWorkspace} from '../../studio'
 import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../studioClient'
+import {createKeyValueStore, type KeyValueStore} from '../key-value'
 import {useCurrentUser} from '../user'
 import {
-  ConnectionStatusStore,
+  type ConnectionStatusStore,
   createConnectionStatusStore,
 } from './connection-status/connection-status-store'
-import {createDocumentStore, DocumentStore} from './document'
-import {createGrantsStore, GrantsStore} from './grants'
-import {createHistoryStore, HistoryStore} from './history'
-import {createProjectStore, ProjectStore} from './project'
+import {createDocumentStore, type DocumentStore} from './document'
+import {fetchFeatureToggle} from './document/document-pair/utils/fetchFeatureToggle'
+import {createGrantsStore, type GrantsStore} from './grants'
+import {createHistoryStore, type HistoryStore} from './history'
+import {__tmp_wrap_presenceStore, type PresenceStore} from './presence/presence-store'
+import {createProjectStore, type ProjectStore} from './project'
 import {useResourceCache} from './ResourceCacheProvider'
-import {createSettingsStore, SettingsStore} from './settings'
-import {createUserStore, UserStore} from './user'
-import {PresenceStore, __tmp_wrap_presenceStore} from './presence/presence-store'
+import {createUserStore, type UserStore} from './user'
 
 /**
  * @hidden
@@ -128,12 +131,21 @@ export function useDocumentStore(): DocumentStore {
   const resourceCache = useResourceCache()
   const historyStore = useHistoryStore()
   const documentPreviewStore = useDocumentPreviewStore()
+  const workspace = useWorkspace()
+
+  const serverActionsEnabled = useMemo(() => {
+    const configFlag = workspace.__internal_serverDocumentActions?.enabled
+    // If it's explicitly set, let it override the feature toggle
+    return typeof configFlag === 'boolean'
+      ? of(configFlag as boolean)
+      : fetchFeatureToggle(getClient(DEFAULT_STUDIO_CLIENT_OPTIONS))
+  }, [getClient, workspace.__internal_serverDocumentActions?.enabled])
 
   return useMemo(() => {
     const documentStore =
       resourceCache.get<DocumentStore>({
         namespace: 'documentStore',
-        dependencies: [getClient, documentPreviewStore, historyStore, schema, i18n],
+        dependencies: [getClient, documentPreviewStore, historyStore, schema, i18n, workspace],
       }) ||
       createDocumentStore({
         getClient,
@@ -142,6 +154,7 @@ export function useDocumentStore(): DocumentStore {
         initialValueTemplates: templates,
         schema,
         i18n,
+        serverActionsEnabled,
       })
 
     resourceCache.set({
@@ -151,7 +164,17 @@ export function useDocumentStore(): DocumentStore {
     })
 
     return documentStore
-  }, [getClient, documentPreviewStore, historyStore, resourceCache, schema, templates, i18n])
+  }, [
+    resourceCache,
+    getClient,
+    documentPreviewStore,
+    historyStore,
+    schema,
+    i18n,
+    workspace,
+    templates,
+    serverActionsEnabled,
+  ])
 }
 
 /** @internal */
@@ -229,23 +252,24 @@ export function useProjectStore(): ProjectStore {
 }
 
 /** @internal */
-export function useSettingsStore(): SettingsStore {
+export function useKeyValueStore(): KeyValueStore {
   const resourceCache = useResourceCache()
   const workspace = useWorkspace()
+  const client = useClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
 
   return useMemo(() => {
-    const settingsStore =
-      resourceCache.get<SettingsStore>({
+    const keyValueStore =
+      resourceCache.get<KeyValueStore>({
         dependencies: [workspace],
-        namespace: 'settingsStore',
-      }) || createSettingsStore()
+        namespace: 'KeyValueStore',
+      }) || createKeyValueStore({client})
 
     resourceCache.set({
       dependencies: [workspace],
-      namespace: 'settingsStore',
-      value: settingsStore,
+      namespace: 'KeyValueStore',
+      value: keyValueStore,
     })
 
-    return settingsStore
-  }, [resourceCache, workspace])
+    return keyValueStore
+  }, [client, resourceCache, workspace])
 }

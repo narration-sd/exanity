@@ -1,4 +1,4 @@
-import {Observable, of} from 'rxjs'
+import {type Observable, of} from 'rxjs'
 
 export interface MockClientTransactionLog {
   id: number
@@ -10,6 +10,8 @@ export interface MockClientTransactionLog {
   patch: any[][]
 }
 
+export type UploadBody = File | Blob | Buffer | NodeJS.ReadableStream
+
 export interface MockClientLog {
   listen: {query: string; params?: any}[]
   observable: {
@@ -17,6 +19,7 @@ export interface MockClientLog {
     getDocuments: {ids: string[]}[]
     listen: {query: string; params?: any}[]
     request: any[]
+    action: {actions: any[]; options: {transctionId: string; tag: string}}[]
   }
   request: any[]
   transaction: MockClientTransactionLog[]
@@ -83,6 +86,7 @@ export function createMockSanityClient(
       getDocuments: [],
       listen: [],
       request: [],
+      action: [],
     },
     request: [],
     transaction: [],
@@ -120,6 +124,10 @@ export function createMockSanityClient(
     },
 
     observable: {
+      action: (actions: any[], opts: {transctionId: string; tag: string}) => {
+        $log.observable.action.push({actions, options: opts})
+        return of({})
+      },
       fetch: (query: string, params?: any): Observable<any> => {
         $log.observable.fetch.push({query, params})
         // $log('observable.fetch', {query, params})
@@ -153,6 +161,24 @@ export function createMockSanityClient(
         }
 
         return of(requests[opts.uri] || requests['*'] || null)
+      },
+
+      assets: {
+        upload: (_assetType: 'file' | 'image', _body: UploadBody, _options?: any) => {
+          return of({
+            type: 'response',
+            body: {
+              document: {
+                _id: 'mock-asset-id',
+              },
+            },
+            url: '/uploads',
+            method: 'post',
+            statusCode: 200,
+            statusMessage: 'ok',
+            headers: {},
+          })
+        },
       },
 
       transaction: () => {

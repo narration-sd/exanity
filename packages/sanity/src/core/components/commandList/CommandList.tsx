@@ -1,10 +1,10 @@
 import {Box, rem, Stack} from '@sanity/ui'
-import {ScrollToOptions, useVirtualizer, Virtualizer} from '@tanstack/react-virtual'
-import throttle from 'lodash/throttle'
-import React, {
+import {type ScrollToOptions, useVirtualizer, type Virtualizer} from '@tanstack/react-virtual'
+import {throttle} from 'lodash'
+import {
   cloneElement,
   forwardRef,
-  ReactElement,
+  type ReactElement,
   useCallback,
   useEffect,
   useId,
@@ -13,9 +13,10 @@ import React, {
   useRef,
   useState,
 } from 'react'
-import styled, {css} from 'styled-components'
+import {css, styled} from 'styled-components'
+
 import {focusRingStyle} from '../../form/components/formField/styles'
-import {CommandListElementType, CommandListHandle, CommandListProps} from './types'
+import {type CommandListElementType, type CommandListHandle, type CommandListProps} from './types'
 
 // Data attribute to assign to the current active virtual list element
 const LIST_ITEM_DATA_ATTR_ACTIVE = 'data-active'
@@ -446,33 +447,29 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
     }
   }, [hideChildrenActiveState, onlyShowSelectionWhenActive])
 
-  useImperativeHandle(
-    ref,
-    () => {
-      return {
-        focusInputElement() {
-          focusInputElement()
-        },
-        focusListElement() {
-          focusListElement()
-        },
-        getTopIndex() {
-          return handleGetTopIndex()
-        },
-        scrollToIndex(index: number) {
-          setActiveIndex({index})
-          enableChildContainerPointerEvents(true)
-        },
-      }
-    },
-    [
-      enableChildContainerPointerEvents,
-      focusInputElement,
-      focusListElement,
-      handleGetTopIndex,
-      setActiveIndex,
-    ],
-  )
+  useImperativeHandle(ref, () => {
+    return {
+      focusInputElement() {
+        focusInputElement()
+      },
+      focusListElement() {
+        focusListElement()
+      },
+      getTopIndex() {
+        return handleGetTopIndex()
+      },
+      scrollToIndex(index: number) {
+        setActiveIndex({index})
+        enableChildContainerPointerEvents(true)
+      },
+    }
+  }, [
+    enableChildContainerPointerEvents,
+    focusInputElement,
+    focusListElement,
+    handleGetTopIndex,
+    setActiveIndex,
+  ])
 
   /**
    * Optionally set active index (and align) on mount only
@@ -625,9 +622,9 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
                     'aria-posinset': activeIndex + 1,
                     ...(ariaMultiselectable ? {'aria-selected': selected.toString()} : {}),
                     'aria-setsize': activeItemCount,
-                    id: getChildDescendantId(activeIndex),
-                    role: 'option',
-                    onMouseEnter: handleChildMouseEnter(activeIndex),
+                    'id': getChildDescendantId(activeIndex),
+                    'role': 'option',
+                    'onMouseEnter': handleChildMouseEnter(activeIndex),
                   }
                 : {}
 

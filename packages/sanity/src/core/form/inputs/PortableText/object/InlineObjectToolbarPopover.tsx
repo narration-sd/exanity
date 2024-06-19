@@ -1,8 +1,9 @@
-import React, {useRef, useCallback, useMemo} from 'react'
-import {Box, Inline, Text, useGlobalKeyDown, useTheme} from '@sanity/ui'
 import {EditIcon, TrashIcon} from '@sanity/icons'
+import {Box, Inline, Text, useGlobalKeyDown, useTheme} from '@sanity/ui'
+import {type MouseEvent, useCallback, useMemo, useRef} from 'react'
+
+import {Button, Popover, type PopoverProps} from '../../../../../ui-components'
 import {useTranslation} from '../../../../i18n'
-import {Button, Popover, PopoverProps} from '../../../../../ui-components'
 
 const POPOVER_FALLBACK_PLACEMENTS: PopoverProps['fallbackPlacements'] = ['top', 'bottom']
 
@@ -10,8 +11,8 @@ interface InlineObjectToolbarPopoverProps {
   floatingBoundary: HTMLElement | null
   open: boolean
   onClosePopover: () => void
-  onDelete: (event: React.MouseEvent<HTMLButtonElement>) => void
-  onEdit: (event: React.MouseEvent<HTMLButtonElement>) => void
+  onDelete: (event: MouseEvent<HTMLButtonElement>) => void
+  onEdit: (event: MouseEvent<HTMLButtonElement>) => void
   referenceBoundary: HTMLElement | null
   referenceElement: HTMLElement | null
   title: string
@@ -50,7 +51,7 @@ export function InlineObjectToolbarPopover(props: InlineObjectToolbarPopoverProp
   )
 
   const handleDelete = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement>) => {
+    (event: MouseEvent<HTMLButtonElement>) => {
       if (deleteButtonRef.current?.disabled) {
         return
       }

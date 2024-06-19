@@ -1,9 +1,12 @@
 /* eslint-disable import/export */
-import React, {FC, ReactElement} from 'react'
-import {render, RenderOptions} from '@testing-library/react'
-import {LayerProvider, studioTheme, ThemeProvider} from '@sanity/ui'
+// eslint-disable-next-line import/no-unassigned-import
+import '@testing-library/jest-dom/jest-globals'
 
-const Providers: FC<{children?: React.ReactNode}> = ({children}) => {
+import {LayerProvider, studioTheme, ThemeProvider} from '@sanity/ui'
+import {render, type RenderOptions} from '@testing-library/react'
+import {type ReactElement} from 'react'
+
+const Providers = ({children}: {children: React.ReactNode}) => {
   return (
     <ThemeProvider theme={studioTheme}>
       <LayerProvider>{children}</LayerProvider>
@@ -11,10 +14,13 @@ const Providers: FC<{children?: React.ReactNode}> = ({children}) => {
   )
 }
 
-const customRender = (ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) => {
-  return render(ui, {wrapper: Providers, ...options})
-}
-
 export * from '@testing-library/react'
+
+export type {RenderOptions}
+
+const customRender = (
+  ui: ReactElement,
+  options?: Omit<RenderOptions, 'wrapper'>,
+): ReturnType<typeof render> => render(ui, {wrapper: Providers, ...options})
 
 export {customRender as render}

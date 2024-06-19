@@ -1,6 +1,7 @@
-import {isatty} from 'tty'
+import {isatty} from 'node:tty'
+
+import {type SchemaValidationProblemGroup, type SchemaValidationProblemPath} from '@sanity/types'
 import chalk from 'chalk'
-import {SchemaValidationProblemGroup, SchemaValidationProblemPath} from '@sanity/types'
 import logSymbols from 'log-symbols'
 
 const isTty = isatty(1)
@@ -24,7 +25,7 @@ function formatPath(pathSegments: SchemaValidationProblemPath) {
     return `${mode === 'array' ? `[${name}]` : `.${name}`}${format(next)}`
   }
 
-  return format(pathSegments.slice(1)).substring(1) // removes the top-level type and leading `.`
+  return format(pathSegments.slice(1)).slice(1) // removes the top-level type and leading `.`
 }
 
 export function getAggregatedSeverity(

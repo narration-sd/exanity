@@ -1,11 +1,13 @@
-import path from 'path'
-import cac from 'cac'
-import ora from 'ora'
-import {createClient} from '@sanity/client'
-import {SanityTSDocConfigOptions, _loadConfig, extract, load, transform} from '@sanity/tsdoc'
-import chalk from 'chalk'
+import path from 'node:path'
 
-const cli = cac('yarn etl')
+import baseConfig from '@repo/package.config'
+import {createClient} from '@sanity/client'
+import {_loadConfig, extract, load, type SanityTSDocConfigOptions, transform} from '@sanity/tsdoc'
+import cac from 'cac'
+import chalk from 'chalk'
+import ora from 'ora'
+
+const cli = cac('pnpm etl')
 
 cli
   .command('[packageName]', 'Extract, transform, and load API documents for a package')
@@ -24,7 +26,7 @@ async function main(options: {packageName: string; releaseVersion?: string}): Pr
   const {packageName, releaseVersion} = options
 
   if (!packageName) {
-    throw new Error('Missing package name. Usage: yarn etl [packageName]')
+    throw new Error('Missing package name. Usage: pnpm etl [packageName]')
   }
 
   const packagePath = path.resolve(__dirname, '../packages', packageName)
@@ -75,7 +77,13 @@ async function etl(options: {
 
   let timer = startTimer(`Extracting API documents from \`${packageName}\``)
   const {pkg, results} = await extract({
+    customTags: tsdocConfig?.extract?.customTags,
     packagePath,
+    rules: tsdocConfig?.extract?.rules,
+    strict: true,
+    tsconfig: tsdocConfig?.input?.tsconfig ?? (baseConfig.tsconfig || 'tsconfig.json'),
+    bundledPackages: tsdocConfig?.input?.bundledPackages,
+    legacyExports: tsdocConfig?.legacyExports ?? baseConfig.legacyExports ?? true,
   })
   timer.end()
 

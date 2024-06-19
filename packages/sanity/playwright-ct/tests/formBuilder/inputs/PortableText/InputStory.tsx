@@ -1,33 +1,68 @@
+import {type PortableTextEditor} from '@sanity/portable-text-editor'
 import {defineArrayMember, defineField, defineType} from '@sanity/types'
-import React from 'react'
-import {TestWrapper} from '../../utils/TestWrapper'
-import {TestForm} from '../../utils/TestForm'
+import {createRef, type RefObject, useMemo, useState} from 'react'
+import {type InputProps, type PortableTextInputProps} from 'sanity'
 
-const SCHEMA_TYPES = [
-  defineType({
-    type: 'document',
-    name: 'test',
-    title: 'Test',
-    fields: [
-      defineField({
-        type: 'array',
-        name: 'body',
-        of: [
-          defineArrayMember({
-            type: 'block',
+import {TestForm} from '../../utils/TestForm'
+import {TestWrapper} from '../../utils/TestWrapper'
+
+interface InputStoryProps {
+  getRef?: (editorRef: RefObject<PortableTextEditor | null>) => void
+  ptInputProps?: Partial<PortableTextInputProps>
+}
+
+export function InputStory(props: InputStoryProps) {
+  const {getRef, ptInputProps} = props
+
+  // Use a state as ref here to be make sure we are able to call the ref callback when
+  // the ref is ready
+  const [editorRef, setEditorRef] = useState<RefObject<PortableTextEditor | null>>({current: null})
+  if (getRef && editorRef.current) {
+    getRef(editorRef)
+  }
+
+  const schemaTypes = useMemo(
+    () => [
+      defineType({
+        type: 'document',
+        name: 'test',
+        title: 'Test',
+        fields: [
+          defineField({
+            type: 'array',
+            name: 'body',
+            of: [
+              defineArrayMember({
+                type: 'block',
+              }),
+            ],
+            components: {
+              input: (inputProps: InputProps) => {
+                const editorProps = {
+                  ...inputProps,
+                  ...ptInputProps,
+                  editorRef: createRef(),
+                } as PortableTextInputProps
+                if (editorProps.editorRef) {
+                  setEditorRef(editorProps.editorRef)
+                }
+                return (
+                  <div data-testid="pt-input-with-editor-ref">
+                    {inputProps.renderDefault(editorProps)}
+                  </div>
+                )
+              },
+            },
           }),
         ],
       }),
     ],
-  }),
-]
+    [ptInputProps],
+  )
 
-export function InputStory() {
   return (
-    <TestWrapper schemaTypes={SCHEMA_TYPES}>
+    <TestWrapper schemaTypes={schemaTypes}>
       <TestForm />
     </TestWrapper>
   )
 }
-
-export default InputStory

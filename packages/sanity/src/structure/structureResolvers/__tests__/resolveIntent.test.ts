@@ -1,9 +1,15 @@
-import {PaneNode, UnresolvedPaneNode} from '../../types'
+/* eslint-disable simple-import-sort/imports */
+/* this has to be imported after createStructureBuilder due to what looks like a circular import issue */
 import {createStructureBuilder, SerializeError} from '../../structureBuilder'
-import {resolveIntent} from '../resolveIntent'
-import {PaneResolutionError} from '../PaneResolutionError'
+import {type SchemaPluginOptions} from 'sanity'
+
+import {expect, describe, it, jest} from '@jest/globals'
+
 import {getMockSource} from '../../../../test/testUtils/getMockWorkspaceFromConfig'
-import {SchemaPluginOptions} from 'sanity'
+/* eslint-enable import/order */
+import {type PaneNode, type UnresolvedPaneNode} from '../../types'
+import {PaneResolutionError} from '../PaneResolutionError'
+import {resolveIntent} from '../resolveIntent'
 
 const mockSchema: SchemaPluginOptions = {
   name: 'mockSchema',
@@ -284,6 +290,48 @@ describe('resolveIntent', () => {
         'edit',
         {id: 'author123', type: 'author'},
         {index: 1, pane: {id: 'myList', title: 'My List', type: 'list'}},
+      ],
+    ])
+  })
+
+  it('resolves custom components that implement `canHandleIntent`', async () => {
+    const source = await getMockSource({config: {schema: mockSchema}})
+    const S = createStructureBuilder({source})
+
+    const customComponent = S.component(() => null)
+      .canHandleIntent(() => true)
+      .title('My Component')
+      .serialize()
+
+    const canHandleIntentSpy = jest.spyOn(customComponent, 'canHandleIntent')
+
+    const rootPaneNode = S.list()
+      .title('Content')
+      .items([
+        S.documentTypeListItem('book').title('Sick Books'),
+        S.documentTypeListItem('movie').title('Rad Movies'),
+        S.listItem().title('Some Item').child(customComponent),
+      ]) as unknown as UnresolvedPaneNode
+
+    const routerPanes = await resolveIntent({
+      intent: 'edit',
+      params: {id: 'author123', type: 'author'},
+      payload: undefined,
+      rootPaneNode,
+      structureContext: null as any,
+    })
+
+    expect(routerPanes).toEqual([
+      [{id: 'someItem'}],
+      [{id: 'author123', params: {}, payload: undefined}],
+    ])
+
+    expect(canHandleIntentSpy).toHaveBeenCalled()
+    expect(canHandleIntentSpy.mock.calls).toMatchObject([
+      [
+        'edit',
+        {id: 'author123', type: 'author'},
+        {index: 1, pane: {id: 'myComponent', title: 'My Component', type: 'component'}},
       ],
     ])
   })

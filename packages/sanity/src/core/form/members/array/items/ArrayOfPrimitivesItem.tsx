@@ -1,19 +1,20 @@
-import {isBooleanSchemaType, isNumberSchemaType, SchemaType} from '@sanity/types'
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import {FIXME} from '../../../../FIXME'
-import {ArrayOfPrimitivesItemMember} from '../../../store'
+import {isBooleanSchemaType, isNumberSchemaType, type SchemaType} from '@sanity/types'
+import {type ChangeEvent, type FocusEvent, useCallback, useMemo, useRef, useState} from 'react'
+
+import {type FIXME} from '../../../../FIXME'
 import {useDidUpdate} from '../../../hooks/useDidUpdate'
 import {getEmptyValue} from '../../../inputs/arrays/ArrayOfPrimitivesInput/getEmptyValue'
-import {
-  PrimitiveInputProps,
-  PrimitiveItemProps,
-  RenderArrayOfPrimitivesItemCallback,
-  RenderInputCallback,
-} from '../../../types'
-import {insert, PatchArg, PatchEvent, set, unset} from '../../../patch'
+import {insert, type PatchArg, PatchEvent, set, unset} from '../../../patch'
+import {type ArrayOfPrimitivesItemMember} from '../../../store'
 import {useFormCallbacks} from '../../../studio/contexts/FormCallbacks'
-import {resolveNativeNumberInputValue} from '../../common/resolveNativeNumberInputValue'
+import {
+  type PrimitiveInputProps,
+  type PrimitiveItemProps,
+  type RenderArrayOfPrimitivesItemCallback,
+  type RenderInputCallback,
+} from '../../../types'
 import {createDescriptionId} from '../../common/createDescriptionId'
+import {resolveNativeNumberInputValue} from '../../common/resolveNativeNumberInputValue'
 
 /**
  *
@@ -46,14 +47,14 @@ export function ArrayOfPrimitivesItem(props: PrimitiveMemberItemProps) {
   })
 
   const handleBlur = useCallback(
-    (event: React.FocusEvent) => {
+    (event: FocusEvent) => {
       onPathBlur(member.item.path)
     },
     [member.item.path, onPathBlur],
   )
 
   const handleFocus = useCallback(
-    (event: React.FocusEvent) => {
+    (event: FocusEvent) => {
       onPathFocus(member.item.path)
     },
     [member.item.path, onPathFocus],
@@ -66,7 +67,7 @@ export function ArrayOfPrimitivesItem(props: PrimitiveMemberItemProps) {
     [onChange, member.index],
   )
   const handleNativeChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    (event: ChangeEvent<HTMLInputElement>) => {
       let inputValue: number | string | boolean = event.currentTarget.value
       if (isNumberSchemaType(member.item.schemaType)) {
         inputValue = event.currentTarget.valueAsNumber
@@ -104,14 +105,14 @@ export function ArrayOfPrimitivesItem(props: PrimitiveMemberItemProps) {
 
   const elementProps = useMemo(
     (): PrimitiveInputProps['elementProps'] => ({
-      onBlur: handleBlur,
-      onFocus: handleFocus,
-      id: member.item.id,
-      ref: focusRef,
-      onChange: handleNativeChange,
-      value: resolveNativeInputValue(member.item.schemaType, member.item.value, localValue),
-      readOnly: Boolean(member.item.readOnly),
-      placeholder: member.item.schemaType.placeholder,
+      'onBlur': handleBlur,
+      'onFocus': handleFocus,
+      'id': member.item.id,
+      'ref': focusRef,
+      'onChange': handleNativeChange,
+      'value': resolveNativeInputValue(member.item.schemaType, member.item.value, localValue),
+      'readOnly': Boolean(member.item.readOnly),
+      'placeholder': member.item.schemaType.placeholder,
       'aria-describedby': createDescriptionId(member.item.id, member.item.schemaType.description),
     }),
     [

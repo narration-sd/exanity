@@ -1,23 +1,27 @@
 import {ArrowLeftIcon, CloseIcon, SplitVerticalIcon} from '@sanity/icons'
 import {Flex} from '@sanity/ui'
-import React, {createElement, memo, forwardRef, useMemo} from 'react'
+import {createElement, type ForwardedRef, forwardRef, memo, useMemo, useState} from 'react'
+import {useFieldActions, useTimelineSelector, useTranslation} from 'sanity'
+
+import {Button, TooltipDelayGroupProvider} from '../../../../../ui-components'
 import {
   PaneContextMenuButton,
   PaneHeader,
   PaneHeaderActionButton,
+  RenderActionCollectionState,
   usePane,
   usePaneRouter,
 } from '../../../../components'
+import {structureLocaleNamespace} from '../../../../i18n'
+import {isMenuNodeButton, isNotMenuNodeButton, resolveMenuNodes} from '../../../../menuNodes'
+import {type PaneMenuItem} from '../../../../types'
+import {useStructureTool} from '../../../../useStructureTool'
+import {ActionDialogWrapper, ActionMenuListItem} from '../../statusBar/ActionMenuButton'
+import {isRestoreAction} from '../../statusBar/DocumentStatusBarActions'
 import {TimelineMenu} from '../../timeline'
 import {useDocumentPane} from '../../useDocumentPane'
-import {isMenuNodeButton, isNotMenuNodeButton, resolveMenuNodes} from '../../../../menuNodes'
-import {useStructureTool} from '../../../../useStructureTool'
-import {PaneMenuItem} from '../../../../types'
-import {Button, TooltipDelayGroupProvider} from '../../../../../ui-components'
-import {structureLocaleNamespace} from '../../../../i18n'
 import {DocumentHeaderTabs} from './DocumentHeaderTabs'
 import {DocumentHeaderTitle} from './DocumentHeaderTitle'
-import {useFieldActions, useTimelineSelector, useTranslation} from 'sanity'
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface DocumentPanelHeaderProps {
@@ -27,23 +31,33 @@ export interface DocumentPanelHeaderProps {
 export const DocumentPanelHeader = memo(
   forwardRef(function DocumentPanelHeader(
     _props: DocumentPanelHeaderProps,
-    ref: React.ForwardedRef<HTMLDivElement>,
+    ref: ForwardedRef<HTMLDivElement>,
   ) {
     const {menuItems} = _props
     const {
+      actions: allActions,
+      editState,
       onMenuAction,
       onPaneClose,
       onPaneSplit,
       menuItemGroups,
       schemaType,
       timelineStore,
-      ready,
+      connectionState,
       views,
       unstable_languageFilter,
     } = useDocumentPane()
     const {features} = useStructureTool()
     const {index, BackLink, hasGroupSiblings} = usePaneRouter()
     const {actions: fieldActions} = useFieldActions()
+    const [referenceElement, setReferenceElement] = useState<HTMLElement | null>(null)
+
+    // The restore action has a dedicated place in the UI; it's only visible when the user is
+    // viewing a different document revision. It must be omitted from this collection.
+    const actions = useMemo(
+      () => (allActions ?? []).filter((action) => !isRestoreAction(action)),
+      [allActions],
+    )
 
     const menuNodes = useMemo(
       () =>
@@ -76,11 +90,17 @@ export const DocumentPanelHeader = memo(
     // and there is more than one split pane open (aka has-siblings)
     const showSplitPaneCloseButton = showSplitPaneButton && hasGroupSiblings
 
+    // show the back button if both the feature is enabled and the current pane
+    // is not the first
+    const showBackButton = features.backButton && index > 0
+
     // show the pane group close button if the `showSplitPaneCloseButton` is
     // _not_ showing (the split pane button replaces the group close button)
     // and if the back button is not showing (the back button and the close
-    // button) do the same thing and shouldn't be shown at the same time)
-    const showPaneGroupCloseButton = !showSplitPaneCloseButton && !features.backButton
+    // button do the same thing and shouldn't be shown at the same time)
+    // and if a BackLink component was provided
+    const showPaneGroupCloseButton = !showSplitPaneCloseButton && !showBackButton && !!BackLink
+
     const {t} = useTranslation(structureLocaleNamespace)
 
     return (
@@ -88,13 +108,12 @@ export const DocumentPanelHeader = memo(
         <PaneHeader
           border
           ref={ref}
-          loading={!ready}
+          loading={connectionState === 'connecting'}
           title={<DocumentHeaderTitle />}
           tabs={showTabs && <DocumentHeaderTabs />}
           tabIndex={tabIndex}
           backButton={
-            features.backButton &&
-            index > 0 && (
+            showBackButton && (
               <Button
                 as={BackLink}
                 data-as="a"
@@ -122,8 +141,39 @@ export const DocumentPanelHeader = memo(
               {menuButtonNodes.map((item) => (
                 <PaneHeaderActionButton key={item.key} node={item} />
               ))}
-
-              <PaneContextMenuButton nodes={contextMenuNodes} key="context-menu" />
+              {editState && (
+                <RenderActionCollectionState
+                  actions={actions}
+                  actionProps={editState}
+                  group="paneActions"
+                >
+                  {({states}) => (
+                    <ActionDialogWrapper actionStates={states} referenceElement={referenceElement}>
+                      {({handleAction}) => (
+                        <div ref={setReferenceElement}>
+                          <PaneContextMenuButton
+                            nodes={contextMenuNodes}
+                            key="context-menu"
+                            actionsNodes={
+                              states.length > 0
+                                ? states.map((actionState, actionIndex) => (
+                                    <ActionMenuListItem
+                                      key={actionState.label}
+                                      actionState={actionState}
+                                      disabled={Boolean(actionState.disabled)}
+                                      index={actionIndex}
+                                      onAction={handleAction}
+                                    />
+                                  ))
+                                : undefined
+                            }
+                          />
+                        </div>
+                      )}
+                    </ActionDialogWrapper>
+                  )}
+                </RenderActionCollectionState>
+              )}
 
               {showSplitPaneButton && (
                 <Button

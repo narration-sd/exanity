@@ -1,7 +1,6 @@
 /* eslint-disable i18next/no-literal-string */
-import React from 'react'
-import {PortableTextBlock} from '@sanity/types'
-import {Card, Heading, Code, Box} from '@sanity/ui'
+import {type PortableTextBlock} from '@sanity/types'
+import {Box, Card, Code, Heading} from '@sanity/ui'
 
 type Props = {value: PortableTextBlock[] | undefined; revId: string}
 

@@ -1,17 +1,18 @@
-import React, {memo, useCallback, useMemo} from 'react'
-import {useTranslation} from 'react-i18next'
 import {
   PortableTextEditor,
   usePortableTextEditor,
   usePortableTextEditorSelection,
 } from '@sanity/portable-text-editor'
 import {isKeySegment} from '@sanity/types'
-import {PopoverProps} from '../../../../../ui-components'
+import {memo, useCallback, useMemo} from 'react'
+
+import {type PopoverProps} from '../../../../../ui-components'
 import {CollapseMenu, CollapseMenuButton} from '../../../../components/collapseMenu'
 import {ContextMenuButton} from '../../../../components/contextMenuButton'
-import {PTEToolbarAction, PTEToolbarActionGroup} from './types'
-import {useActiveActionKeys, useFocusBlock} from './hooks'
+import {useTranslation} from '../../../../i18n'
 import {getActionIcon} from './helpers'
+import {useActiveActionKeys, useFocusBlock} from './hooks'
+import {type PTEToolbarAction, type PTEToolbarActionGroup} from './types'
 
 const CollapseMenuMemo = memo(CollapseMenu)
 
@@ -88,6 +89,9 @@ export const ActionMenu = memo(function ActionMenu(props: ActionMenuProps) {
         const active = activeKeys.includes(action.key)
         return (
           <CollapseMenuButton
+            aria-label={t('toolbar.portable-text.action-button-aria-label', {
+              action: action.title || action.key,
+            })}
             data-testid={`action-button-${action.key}`}
             disabled={disabled || annotationDisabled}
             mode="bleed"

@@ -1,13 +1,14 @@
 /* eslint-disable i18next/no-literal-string,@sanity/i18n/no-attribute-string-literals */
-import React, {useCallback, useState, useId} from 'react'
-import {Stack, Text} from '@sanity/ui'
 import {WarningOutlineIcon} from '@sanity/icons'
+import {Stack, Text} from '@sanity/ui'
+import {useCallback, useId, useState} from 'react'
+
 import {Dialog} from '../../../../../ui-components'
-import {useSchema} from '../../../../hooks'
-import {SchemaProblemGroups} from '../../../screens/schemaErrors/SchemaProblemGroups'
-import {useColorScheme} from '../../../colorScheme'
 import {StatusButton} from '../../../../components'
+import {useSchema} from '../../../../hooks'
 import {useTranslation} from '../../../../i18n'
+import {useColorSchemeValue} from '../../../colorScheme'
+import {SchemaProblemGroups} from '../../../screens/schemaErrors/SchemaProblemGroups'
 
 export function ConfigIssuesButton() {
   const schema = useSchema()
@@ -17,7 +18,7 @@ export function ConfigIssuesButton() {
     ) || []
 
   // get root scheme
-  const {scheme} = useColorScheme()
+  const scheme = useColorSchemeValue()
   const {t} = useTranslation()
 
   const dialogId = useId()
@@ -47,6 +48,7 @@ export function ConfigIssuesButton() {
         ref={setButtonElement}
         selected={isDialogOpen}
         tone="caution"
+        aria-label={t('configuration-issues.button.label')}
         tooltipProps={{scheme, content: t('configuration-issues.button.tooltip')}}
       />
 

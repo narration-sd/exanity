@@ -1,7 +1,8 @@
 /** @jest-environment ./setup/collaborative.jest.env.ts */
-
 import '../setup/globals.jest'
-import type {PortableTextBlock} from '@sanity/types'
+
+import {describe, expect, it} from '@jest/globals'
+import {type PortableTextBlock} from '@sanity/types'
 
 const initialValue: PortableTextBlock[] = [
   {
@@ -55,11 +56,74 @@ describe('collaborate editing', () => {
     expect(selectionA).toEqual({
       anchor: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 11},
       focus: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 11},
+      backward: false,
     })
     expect(selectionB).toEqual({
       anchor: {offset: 0, path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}]},
       focus: {offset: 0, path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}]},
+      backward: false,
     })
+  })
+
+  it('should not remove content for both users if one user backspaces into a block that starts with a mark.', async () => {
+    const exampleValue = [
+      {
+        _key: 'randomKey0',
+        _type: 'block',
+        children: [
+          {
+            _key: 'randomKey1',
+            _type: 'span',
+            marks: ['strong'],
+            text: 'Example Text: ',
+          },
+          {
+            _type: 'span',
+            marks: [],
+            text: "This is a very long example text that will completely disappear later on. It's kind of a bad magic trick, really. Just writing more text so the disappearance becomes more apparent. This is a very long example text that will completely disappear later on. It's kind of a bad magic trick, really. Just writing more text so the disappearance becomes more apparent. This is a very long example text that will completely disappear later on. It's kind of a bad magic trick, really. Just writing more text so the disappearance becomes more apparent.",
+            _key: 'randomKey2',
+          },
+        ],
+        markDefs: [],
+        style: 'normal',
+      },
+    ]
+    await setDocumentValue(exampleValue)
+    const [editorA, editorB] = await getEditors()
+    await editorA.setSelection({
+      anchor: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey2'}], offset: 542},
+      focus: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey2'}], offset: 542},
+    })
+    await editorA.pressKey('Enter')
+    await editorA.pressKey('Backspace')
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    const valA = await editorA.getValue()
+    const valB = await editorB.getValue()
+    expect(valA).toEqual(valB)
+    expect(valB).toEqual([
+      {
+        _key: 'randomKey0',
+        _type: 'block',
+        children: [
+          {
+            _key: 'randomKey1',
+            _type: 'span',
+            marks: ['strong'],
+            text: 'Example Text: ',
+          },
+          {
+            _type: 'span',
+            marks: [],
+            text: "This is a very long example text that will completely disappear later on. It's kind of a bad magic trick, really. Just writing more text so the disappearance becomes more apparent. This is a very long example text that will completely disappear later on. It's kind of a bad magic trick, really. Just writing more text so the disappearance becomes more apparent. This is a very long example text that will completely disappear later on. It's kind of a bad magic trick, really. Just writing more text so the disappearance becomes more apparent.",
+            _key: 'randomKey2',
+          },
+        ],
+        markDefs: [],
+        style: 'normal',
+      },
+    ])
   })
 
   it('will reset the value when someone deletes everything, and when they start to type again, they will produce their own respective blocks.', async () => {
@@ -161,6 +225,7 @@ describe('collaborate editing', () => {
     const desiredSelectionA = {
       anchor: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 18},
       focus: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 18},
+      backward: false,
     }
     await editorA.setSelection(desiredSelectionA)
     await editorB.setSelection({
@@ -193,6 +258,7 @@ describe('collaborate editing', () => {
     expect(selectionB).toEqual({
       anchor: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 18},
       focus: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 18},
+      backward: false,
     })
   })
 
@@ -217,6 +283,7 @@ describe('collaborate editing', () => {
     const desiredSelectionA = {
       anchor: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 11},
       focus: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 11},
+      backward: false,
     }
     await editorB.setSelection({
       anchor: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 18},
@@ -263,6 +330,7 @@ describe('collaborate editing', () => {
     expect(selectionB).toEqual({
       anchor: {offset: 0, path: [{_key: 'B-6'}, 'children', {_key: 'B-5'}]},
       focus: {offset: 0, path: [{_key: 'B-6'}, 'children', {_key: 'B-5'}]},
+      backward: false,
     })
   })
 
@@ -336,10 +404,12 @@ describe('collaborate editing', () => {
     expect(selectionA).toEqual({
       anchor: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 11},
       focus: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 11},
+      backward: false,
     })
     expect(selectionB).toEqual({
       anchor: {offset: 17, path: [{_key: 'B-3'}, 'children', {_key: 'B-2'}]},
       focus: {offset: 17, path: [{_key: 'B-3'}, 'children', {_key: 'B-2'}]},
+      backward: false,
     })
   })
 
@@ -378,6 +448,7 @@ describe('collaborate editing', () => {
     const startSelectionA = {
       anchor: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 11},
       focus: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 11},
+      backward: false,
     }
     await editorA.setSelection(startSelectionA)
     await editorB.setSelection({
@@ -414,10 +485,12 @@ describe('collaborate editing', () => {
     expect(selectionA).toEqual({
       anchor: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 52},
       focus: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 52},
+      backward: false,
     })
     expect(selectionB).toEqual({
       anchor: {offset: 17, path: [{_key: 'B-3'}, 'children', {_key: 'B-2'}]},
       focus: {offset: 17, path: [{_key: 'B-3'}, 'children', {_key: 'B-2'}]},
+      backward: false,
     })
   })
 
@@ -459,6 +532,7 @@ describe('collaborate editing', () => {
     const newExpectedSelA = {
       anchor: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 52},
       focus: {path: [{_key: 'randomKey0'}, 'children', {_key: 'randomKey1'}], offset: 52},
+      backward: false,
     }
     await editorA.setSelection(newExpectedSelA)
     const newSelA = await editorA.getSelection()
@@ -531,6 +605,7 @@ describe('collaborate editing', () => {
             },
           ],
         },
+        "backward": false,
         "focus": Object {
           "offset": 0,
           "path": Array [
@@ -546,7 +621,8 @@ describe('collaborate editing', () => {
       }
     `)
     await editorA.pressKey('Enter')
-    expect(valA).toMatchInlineSnapshot(`
+    const valAAfterSecondEnter = await editorA.getValue()
+    expect(valAAfterSecondEnter).toMatchInlineSnapshot(`
       Array [
         Object {
           "_key": "randomKey0",
@@ -557,6 +633,20 @@ describe('collaborate editing', () => {
               "_type": "span",
               "marks": Array [],
               "text": "Hello world<- I left off here. And you wrote that ->",
+            },
+          ],
+          "markDefs": Array [],
+          "style": "normal",
+        },
+        Object {
+          "_key": "A-9",
+          "_type": "block",
+          "children": Array [
+            Object {
+              "_key": "A-8",
+              "_type": "span",
+              "marks": Array [],
+              "text": "",
             },
           ],
           "markDefs": Array [],
@@ -594,13 +684,15 @@ describe('collaborate editing', () => {
     `)
     const selectionA = await editorA.getSelection()
     expect(selectionA).toEqual({
-      anchor: {path: [{_key: 'A-8'}, 'children', {_key: 'A-7'}], offset: 0},
-      focus: {path: [{_key: 'A-8'}, 'children', {_key: 'A-7'}], offset: 0},
+      anchor: {path: [{_key: 'A-6'}, 'children', {_key: 'A-5'}], offset: 0},
+      focus: {path: [{_key: 'A-6'}, 'children', {_key: 'A-5'}], offset: 0},
+      backward: false,
     })
     const selectionB = await editorB.getSelection()
     expect(selectionB).toEqual({
       anchor: {offset: 17, path: [{_key: 'B-3'}, 'children', {_key: 'B-2'}]},
       focus: {offset: 17, path: [{_key: 'B-3'}, 'children', {_key: 'B-2'}]},
+      backward: false,
     })
   })
 
@@ -679,6 +771,7 @@ describe('collaborate editing', () => {
     expect(newSelectionA).toEqual({
       anchor: {path: [{_key: '26901064a3c9'}, 'children', {_key: 'ef4627c1c11b'}], offset: 16},
       focus: {path: [{_key: '26901064a3c9'}, 'children', {_key: 'ef4627c1c11b'}], offset: 16},
+      backward: false,
     })
   })
   it('will not result in duplicate keys when overwriting some partial bold text line, as the only content in the editor', async () => {

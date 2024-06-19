@@ -1,9 +1,10 @@
-import type {ComponentType, ReactNode} from 'react'
-import type {RuleDef, ValidationBuilder} from '../../ruleBuilder'
-import type {InitialValueProperty} from '../../types'
-import type {ArrayOfType} from './array'
-import type {BaseSchemaDefinition} from './common'
-import type {ObjectDefinition} from './object'
+import {type ComponentType, type ReactNode} from 'react'
+
+import {type RuleDef, type ValidationBuilder} from '../../ruleBuilder'
+import {type InitialValueProperty} from '../../types'
+import {type ArrayOfType} from './array'
+import {type BaseSchemaDefinition} from './common'
+import {type ObjectDefinition} from './object'
 
 /**
  * Schema options for a Block schema definition
@@ -112,6 +113,7 @@ export interface BlockStyleDefinition {
   title: string
   value: string
   i18nTitleKey?: string
+  icon?: ReactNode | ComponentType
 }
 
 /**

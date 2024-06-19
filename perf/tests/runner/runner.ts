@@ -1,12 +1,13 @@
 /* eslint-disable no-console */
-import {chromium, BrowserContext, Page} from '@playwright/test'
+import {type BrowserContext, chromium, type Page} from '@playwright/test'
+import {type SanityClient} from '@sanity/client'
+import {capitalize} from 'lodash'
 import {concatMap, from, lastValueFrom, range} from 'rxjs'
 import {tap, toArray} from 'rxjs/operators'
-import {SanityClient} from '@sanity/client'
-import {capitalize} from 'lodash'
-import {Deployment, PerformanceTestProps} from './types'
-import {createSanitySessionCookie} from './utils/createSanitySessionCookie'
+
+import {type Deployment, type PerformanceTestProps} from './types'
 import {bundle} from './utils/bundlePerfHelpers'
+import {createSanitySessionCookie} from './utils/createSanitySessionCookie'
 import {getDeviceInfo} from './utils/getDeviceInfo'
 
 interface RunCompareOptions {
@@ -126,7 +127,7 @@ export async function run({
     givenIds.forEach((testId) => {
       if (!testModules.some((testModule) => testModule.id === testId)) {
         throw new Error(
-          `Invalid test id: "${testId}". Use yarn perf:test --list to see all tests ids`,
+          `Invalid test id: "${testId}". Use pnpm perf:test --list to see all tests ids`,
         )
       }
     })

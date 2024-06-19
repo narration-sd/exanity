@@ -2,8 +2,9 @@ import {PortableText, type PortableTextComponents} from '@portabletext/react'
 import {Icon, LinkIcon} from '@sanity/icons'
 import {type PortableTextBlock} from '@sanity/types'
 import {Box, Card, Flex, Heading, Text} from '@sanity/ui'
-import styled, {css} from 'styled-components'
-import React, {useEffect, useMemo, useState} from 'react'
+import {type ReactNode, useEffect, useMemo, useState} from 'react'
+import {css, styled} from 'styled-components'
+
 import {ConditionalWrapper} from '../../../../ui-components/conditionalWrapper'
 import {transformBlocks} from './helpers'
 
@@ -77,13 +78,11 @@ const DynamicIconContainer = styled.span`
   }
 `
 
-const accentSpanWrapper = (children: React.ReactNode) => <AccentSpan>{children}</AccentSpan>
+const accentSpanWrapper = (children: ReactNode) => <AccentSpan>{children}</AccentSpan>
 
 const DynamicIcon = (props: {icon: {url: string}}) => {
-  const [ref, setRef] = useState<HTMLSpanElement | null>(null)
+  const [__html, setHtml] = useState('')
   useEffect(() => {
-    if (!ref) return
-
     const controller = new AbortController()
     const signal = controller.signal
 
@@ -94,26 +93,22 @@ const DynamicIcon = (props: {icon: {url: string}}) => {
         }
         return response.text()
       })
-      .then((data) => {
-        if (!ref) return
-        ref.innerHTML = data
-      })
+      .then((data) => setHtml(data))
       .catch((error) => {
         if (error.name !== 'AbortError') {
           console.error(error)
         }
       })
 
-    // eslint-disable-next-line consistent-return
     return () => {
       controller.abort()
     }
-  }, [ref, props.icon.url])
+  }, [props.icon.url])
 
-  return <DynamicIconContainer ref={setRef} />
+  return <DynamicIconContainer dangerouslySetInnerHTML={{__html}} />
 }
 
-function NormalBlock(props: {children: React.ReactNode}) {
+function NormalBlock(props: {children: ReactNode}) {
   const {children} = props
 
   return (
@@ -125,7 +120,7 @@ function NormalBlock(props: {children: React.ReactNode}) {
   )
 }
 
-function HeadingBlock(props: {children: React.ReactNode}) {
+function HeadingBlock(props: {children: ReactNode}) {
   const {children} = props
   return (
     <Box paddingX={2} marginY={4}>

@@ -1,30 +1,41 @@
 import {
-  Path,
-  Reference,
-  ReferenceFilterSearchOptions,
-  ReferenceOptions,
-  ReferenceSchemaType,
-  SanityDocument,
+  type Path,
+  type Reference,
+  type ReferenceFilterSearchOptions,
+  type ReferenceOptions,
+  type ReferenceSchemaType,
+  type SanityDocument,
 } from '@sanity/types'
 import * as PathUtils from '@sanity/util/paths'
 import {get} from '@sanity/util/paths'
-import React, {ComponentProps, ForwardedRef, forwardRef, useCallback, useMemo, useRef} from 'react'
+import {
+  type ComponentProps,
+  type ForwardedRef,
+  forwardRef,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react'
 import {from, throwError} from 'rxjs'
 import {catchError, mergeMap} from 'rxjs/operators'
-import * as adapter from '../client-adapters/reference'
-import {ReferenceInput} from '../../../inputs/ReferenceInput/ReferenceInput'
-import {CreateReferenceOption, EditReferenceEvent} from '../../../inputs/ReferenceInput/types'
-import {useReferenceInputOptions} from '../../contexts'
-import {ObjectInputProps} from '../../../types'
-import {Source} from '../../../../config'
-import {useSource} from '../../../../studio'
+
+import {type Source} from '../../../../config'
+import {type FIXME} from '../../../../FIXME'
 import {useSchema} from '../../../../hooks'
 import {useDocumentPreviewStore} from '../../../../store'
-import {FIXME} from '../../../../FIXME'
-import {isNonNullable} from '../../../../util'
-import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../../studioClient'
-import {useFormValue} from '../../../contexts/FormValue'
+import {useSource} from '../../../../studio'
 import {useSearchMaxFieldDepth} from '../../../../studio/components/navbar/search/hooks/useSearchMaxFieldDepth'
+import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../../studioClient'
+import {isNonNullable} from '../../../../util'
+import {useFormValue} from '../../../contexts/FormValue'
+import {ReferenceInput} from '../../../inputs/ReferenceInput/ReferenceInput'
+import {
+  type CreateReferenceOption,
+  type EditReferenceEvent,
+} from '../../../inputs/ReferenceInput/types'
+import {type ObjectInputProps} from '../../../types'
+import {useReferenceInputOptions} from '../../contexts'
+import * as adapter from '../client-adapters/reference'
 
 async function resolveUserDefinedFilter(
   options: ReferenceOptions | undefined,
@@ -84,6 +95,7 @@ export function StudioReferenceInput(props: StudioReferenceInputProps) {
   const {path, schemaType} = props
   const {EditReferenceLinkComponent, onEditReference, activePath, initialValueTemplateItems} =
     useReferenceInputOptions()
+  const {enableLegacySearch = false} = source.search
 
   const documentValue = useFormValue([]) as FIXME
   const documentRef = useValueRef(documentValue)
@@ -99,13 +111,19 @@ export function StudioReferenceInput(props: StudioReferenceInputProps) {
     (searchString: string) =>
       from(resolveUserDefinedFilter(schemaType.options, documentRef.current, path, getClient)).pipe(
         mergeMap(({filter, params}) =>
-          adapter.referenceSearch(searchClient, searchString, schemaType, {
-            ...schemaType.options,
-            filter,
-            params,
-            tag: 'search.reference',
-            maxFieldDepth,
-          }),
+          adapter.referenceSearch(
+            searchClient,
+            searchString,
+            schemaType,
+            {
+              ...schemaType.options,
+              filter,
+              params,
+              tag: 'search.reference',
+              maxFieldDepth,
+            },
+            enableLegacySearch,
+          ),
         ),
 
         catchError((err: SearchError) => {
@@ -117,7 +135,7 @@ export function StudioReferenceInput(props: StudioReferenceInputProps) {
         }),
       ),
 
-    [documentRef, path, searchClient, schemaType, maxFieldDepth, getClient],
+    [schemaType, documentRef, path, getClient, searchClient, maxFieldDepth, enableLegacySearch],
   )
 
   const template = props.value?._strengthenOnPublish?.template

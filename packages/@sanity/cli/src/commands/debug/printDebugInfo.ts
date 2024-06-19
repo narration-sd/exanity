@@ -1,18 +1,25 @@
-import os from 'os'
-import util from 'util'
-import path from 'path'
-import xdgBasedir from 'xdg-basedir'
+import os from 'node:os'
+import path from 'node:path'
+import util from 'node:util'
+
+import {type SanityProject, type SanityProjectMember} from '@sanity/client'
+import {omit, pick} from 'lodash'
 import promiseProps from 'promise-props-recursive'
-import {pick, omit} from 'lodash'
-import type {SanityProject, SanityProjectMember} from '@sanity/client'
+import xdgBasedir from 'xdg-basedir'
+
+import {
+  findSanityModuleVersions,
+  type ModuleVersionResult,
+} from '../../actions/versions/findSanityModuleVersions'
+import {
+  type CliCommandAction,
+  type CliCommandContext,
+  type CliUserConfig,
+  type SanityJson,
+} from '../../types'
 import {getCliToken} from '../../util/clientWrapper'
 import {getUserConfig} from '../../util/getUserConfig'
 import {printResult as printVersionsResult} from '../versions/printVersionResult'
-import {
-  findSanityModuleVersions,
-  ModuleVersionResult,
-} from '../../actions/versions/findSanityModuleVersions'
-import {CliCommandAction, CliUserConfig, CliCommandContext, SanityJson} from '../../types'
 
 export const printDebugInfo: CliCommandAction = async (args, context) => {
   const flags = args.extOptions
@@ -40,7 +47,7 @@ export const printDebugInfo: CliCommandAction = async (args, context) => {
     context.output.print('Project:')
     printKeyValue(
       {
-        ID: project.id,
+        'ID': project.id,
         'Display name': project.displayName,
         'Studio URL': project.studioHostname,
       },

@@ -1,19 +1,19 @@
-import {castArray, flatMap, pick, startCase} from 'lodash'
-import type {
-  FieldGroup,
-  FieldGroupDefinition,
-  Fieldset,
-  FieldsetDefinition,
-  ObjectDefinition,
-  ObjectField,
+import {
+  type FieldGroup,
+  type FieldGroupDefinition,
+  type Fieldset,
+  type FieldsetDefinition,
+  type ObjectDefinition,
+  type ObjectField,
 } from '@sanity/types'
-import createPreviewGetter from '../preview/createPreviewGetter'
+import {castArray, flatMap, pick, startCase} from 'lodash'
+
 import guessOrderingConfig from '../ordering/guessOrderingConfig'
+import createPreviewGetter from '../preview/createPreviewGetter'
 import {normalizeSearchConfigs} from '../searchConfig/normalize'
 import {resolveSearchConfig} from '../searchConfig/resolve'
-import {lazyGetter} from './utils'
-
 import {DEFAULT_OVERRIDEABLE_FIELDS} from './constants'
+import {lazyGetter} from './utils'
 
 const OVERRIDABLE_FIELDS = [
   ...DEFAULT_OVERRIDEABLE_FIELDS,
@@ -32,16 +32,16 @@ export const ObjectType = {
       jsonType: 'object',
     }
   },
-  extend(rawSubTypeDef, createMemberType) {
+  extend(rawSubTypeDef: any, createMemberType: any) {
     const subTypeDef = {fields: [], ...rawSubTypeDef}
 
     const options = {...(subTypeDef.options || {})}
     const parsed = Object.assign(pick(this.get(), OVERRIDABLE_FIELDS), subTypeDef, {
       type: this.get(),
-      title: subTypeDef.title || (subTypeDef.name ? startCase(subTypeDef.name) : ''),
+      title: subTypeDef.title || (subTypeDef.name ? startCase(subTypeDef.name) : 'Object'),
       options: options,
       orderings: subTypeDef.orderings || guessOrderingConfig(subTypeDef),
-      fields: subTypeDef.fields.map((fieldDef) => {
+      fields: subTypeDef.fields.map((fieldDef: any) => {
         const {name, fieldset, group, ...rest} = fieldDef
 
         const compiledField = {
@@ -91,12 +91,12 @@ export const ObjectType = {
 
     return subtype(parsed)
 
-    function subtype(parent) {
+    function subtype(parent: any) {
       return {
         get() {
           return parent
         },
-        extend: (extensionDef) => {
+        extend: (extensionDef: any) => {
           if (extensionDef.fields) {
             throw new Error('Cannot override `fields` of subtypes of "object"')
           }
@@ -104,7 +104,7 @@ export const ObjectType = {
             title:
               extensionDef.title ||
               subTypeDef.title ||
-              (subTypeDef.name ? startCase(subTypeDef.name) : ''),
+              (subTypeDef.name ? startCase(subTypeDef.name) : 'Object'),
             type: parent,
           })
           lazyGetter(current, '__experimental_search', () => parent.__experimental_search)

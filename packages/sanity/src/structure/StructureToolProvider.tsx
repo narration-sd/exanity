@@ -1,14 +1,19 @@
-import React, {useMemo, useState} from 'react'
-import {StructureToolContext} from './StructureToolContext'
-import {createStructureBuilder, type DefaultDocumentNodeResolver} from './structureBuilder'
-import type {StructureToolContextValue, StructureResolver, UnresolvedPaneNode} from './types'
+import {type ReactElement, type ReactNode, useMemo, useState} from 'react'
 import {useConfigContextFromSource, useDocumentStore, useSource} from 'sanity'
+import {StructureToolContext} from 'sanity/_singletons'
+
+import {createStructureBuilder, type DefaultDocumentNodeResolver} from './structureBuilder'
+import {
+  type StructureResolver,
+  type StructureToolContextValue,
+  type UnresolvedPaneNode,
+} from './types'
 
 /** @internal */
 export interface StructureToolProviderProps {
   structure?: StructureResolver
   defaultDocumentNode?: DefaultDocumentNodeResolver
-  children: React.ReactNode
+  children: ReactNode
 }
 
 /** @internal */
@@ -16,7 +21,7 @@ export function StructureToolProvider({
   defaultDocumentNode,
   structure: resolveStructure,
   children,
-}: StructureToolProviderProps): React.ReactElement {
+}: StructureToolProviderProps): ReactElement {
   const [layoutCollapsed, setLayoutCollapsed] = useState(false)
   const source = useSource()
   const configContext = useConfigContextFromSource(source)

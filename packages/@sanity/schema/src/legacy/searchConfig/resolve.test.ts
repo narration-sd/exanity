@@ -1,4 +1,6 @@
-import {type Schema, defineField, defineType} from '@sanity/types'
+import {describe, expect, test} from '@jest/globals'
+import {defineField, defineType, type Schema} from '@sanity/types'
+
 import {Schema as SchemaBuilder} from '../Schema'
 import {resolveSearchConfig, resolveSearchConfigForBaseFieldPaths} from './resolve'
 

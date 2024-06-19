@@ -1,11 +1,12 @@
 import open from 'open'
-import {CliCommandDefinition} from '../../types'
+
+import {type CliCommandDefinition} from '../../types'
 
 const docsCommand: CliCommandDefinition = {
   name: 'docs',
   helpText: '',
   signature: 'docs',
-  description: 'Opens the Sanity documentation',
+  description: 'Opens Sanity Studio documentation in your web browser',
   async action(args, context) {
     const {output} = context
     const {print} = output

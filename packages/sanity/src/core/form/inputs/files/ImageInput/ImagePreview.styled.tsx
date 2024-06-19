@@ -1,5 +1,5 @@
-import {studioTheme, rgba, Card, Flex, CardTone} from '@sanity/ui'
-import styled, {css} from 'styled-components'
+import {Card, type CardTone, Flex, rgba, studioTheme} from '@sanity/ui'
+import {css, styled} from 'styled-components'
 
 export const MAX_DEFAULT_HEIGHT = 30
 

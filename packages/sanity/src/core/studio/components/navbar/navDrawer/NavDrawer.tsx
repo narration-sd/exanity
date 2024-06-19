@@ -1,17 +1,18 @@
-import {Layer, Card, Flex, Text, Box, Stack} from '@sanity/ui'
 import {CloseIcon, LeaveIcon} from '@sanity/icons'
-import React, {memo, useCallback} from 'react'
-import styled from 'styled-components'
+import {Box, Card, Flex, Layer, Stack, Text} from '@sanity/ui'
+import {AnimatePresence, motion, type Transition, type Variants} from 'framer-motion'
+import {type KeyboardEvent, memo, useCallback, useMemo} from 'react'
 import TrapFocus from 'react-focus-lock'
-import {AnimatePresence, motion, Transition, Variants} from 'framer-motion'
+import {styled} from 'styled-components'
+
 import {Button} from '../../../../../ui-components'
-import {useWorkspace} from '../../../workspace'
-import {Tool} from '../../../../config'
-import {useToolMenuComponent} from '../../../studio-components-hooks'
 import {UserAvatar} from '../../../../components'
-import {useWorkspaces} from '../../../workspaces'
-import {useColorSchemeSetValue} from '../../../colorScheme'
+import {type NavbarAction, type Tool} from '../../../../config'
 import {useTranslation} from '../../../../i18n'
+import {useColorSchemeSetValue} from '../../../colorScheme'
+import {useToolMenuComponent} from '../../../studio-components-hooks'
+import {useWorkspace} from '../../../workspace'
+import {useWorkspaces} from '../../../workspaces'
 import {HomeButton} from '../home/HomeButton'
 import {WorkspaceMenuButton} from '../workspace'
 import {AppearanceMenu} from './ApperanceMenu'
@@ -72,6 +73,7 @@ const InnerCardMotion = styled(motion(Card))`
 `
 
 interface NavDrawerProps {
+  __internal_actions?: NavbarAction[]
   activeToolName?: string
   isOpen: boolean
   onClose: () => void
@@ -79,7 +81,7 @@ interface NavDrawerProps {
 }
 
 export const NavDrawer = memo(function NavDrawer(props: NavDrawerProps) {
-  const {activeToolName, isOpen, onClose, tools} = props
+  const {__internal_actions: actions, activeToolName, isOpen, onClose, tools} = props
 
   const setScheme = useColorSchemeSetValue()
   const {auth, currentUser} = useWorkspace()
@@ -89,13 +91,42 @@ export const NavDrawer = memo(function NavDrawer(props: NavDrawerProps) {
   const {t} = useTranslation()
 
   const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
+    (event: KeyboardEvent<HTMLDivElement>) => {
       if (event.key === 'Escape') {
         onClose()
       }
     },
     [onClose],
   )
+
+  const handleActionClick = useCallback(
+    (action: () => void) => {
+      action?.()
+      onClose()
+    },
+    [onClose],
+  )
+
+  const actionNodes = useMemo(() => {
+    return actions
+      ?.filter((v) => v.location === 'sidebar')
+      ?.map((action) => {
+        return (
+          <Button
+            icon={action?.icon}
+            justify="flex-start"
+            key={action.name}
+            mode="bleed"
+            // eslint-disable-next-line react/jsx-no-bind
+            onClick={() => handleActionClick(action.onAction)}
+            selected={action.selected}
+            size="large"
+            text={action.title}
+            width="fill"
+          />
+        )
+      })
+  }, [actions, handleActionClick])
 
   return (
     <AnimatePresence>
@@ -171,6 +202,12 @@ export const NavDrawer = memo(function NavDrawer(props: NavDrawerProps) {
                 </Card>
 
                 <Flex direction="column">
+                  {actionNodes && (
+                    <Card flex="none" padding={2}>
+                      <Stack space={1}>{actionNodes}</Stack>
+                    </Card>
+                  )}
+
                   {setScheme && <AppearanceMenu setScheme={setScheme} />}
                   <LocaleMenu />
                   <ManageMenu />
