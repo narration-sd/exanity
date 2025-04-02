@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
-import {describe, expect, it, test} from '@jest/globals'
 import {Schema} from '@sanity/schema'
 import {defineArrayMember, defineField, defineType} from '@sanity/types'
+import {describe, expect, it, test} from 'vitest'
 
 import {FINDABILITY_MVI} from '../constants'
 import {
@@ -46,10 +46,10 @@ describe('createSearchQuery', () => {
 
       expect(query).toEqual(
         `// findability-mvi:${FINDABILITY_MVI}\n` +
-          '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0)]' +
+          '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0) && !(_id in path("versions.**"))]' +
           '| order(_id asc)' +
           '[0...$__limit]' +
-          '{_type, _id, ...select(_type == "basic-schema-test" => { "w0": _id,"w1": _type,"w2": title })}',
+          '{_type, _id, _originalId, ...select(_type == "basic-schema-test" => { "w0": _id,"w1": _type,"w2": title })}',
       )
 
       expect(params).toEqual({
@@ -106,7 +106,7 @@ describe('createSearchQuery', () => {
       })
 
       expect(query).toContain(
-        '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0 || object.field match $t0)]',
+        '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0 || object.field match $t0) && !(_id in path("versions.**"))]',
       )
     })
 
@@ -117,7 +117,7 @@ describe('createSearchQuery', () => {
       })
 
       expect(query).toContain(
-        '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0) && (_id match $t1 || _type match $t1 || title match $t1)]',
+        '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0) && (_id match $t1 || _type match $t1 || title match $t1) && !(_id in path("versions.**"))]',
       )
       expect(params.t0).toEqual('term0*')
       expect(params.t1).toEqual('term1*')
@@ -147,9 +147,9 @@ describe('createSearchQuery', () => {
 
       const result = [
         `// findability-mvi:${FINDABILITY_MVI}\n` +
-          '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0)]{_type, _id, object{field}}',
+          '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0) && !(_id in path("versions.**"))]{_type, _id, _originalId, object{field}}',
         '|order(_id asc)[0...$__limit]',
-        '{_type, _id, ...select(_type == "basic-schema-test" => { "w0": _id,"w1": _type,"w2": title })}',
+        '{_type, _id, _originalId, ...select(_type == "basic-schema-test" => { "w0": _id,"w1": _type,"w2": title })}',
       ].join('')
 
       expect(query).toBe(result)
@@ -193,7 +193,7 @@ describe('createSearchQuery', () => {
       )
 
       expect(query).toContain(
-        '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0) && (randomCondition == $customParam)]',
+        '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0) && (randomCondition == $customParam) && !(_id in path("versions.**"))]',
       )
       expect(params.customParam).toEqual('custom')
     })
@@ -241,10 +241,10 @@ describe('createSearchQuery', () => {
 
       expect(query).toEqual(
         `// findability-mvi:${FINDABILITY_MVI}\n` +
-          '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0)]' +
+          '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0) && !(_id in path("versions.**"))]' +
           '| order(exampleField desc)' +
           '[0...$__limit]' +
-          '{_type, _id, ...select(_type == "basic-schema-test" => { "w0": _id,"w1": _type,"w2": title })}',
+          '{_type, _id, _originalId, ...select(_type == "basic-schema-test" => { "w0": _id,"w1": _type,"w2": title })}',
       )
     })
 
@@ -275,9 +275,9 @@ describe('createSearchQuery', () => {
 
       const result = [
         `// findability-mvi:${FINDABILITY_MVI}\n`,
-        '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0)]| ',
+        '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0) && !(_id in path("versions.**"))]| ',
         'order(exampleField desc,anotherExampleField asc,lower(mapWithField) asc)',
-        '[0...$__limit]{_type, _id, ...select(_type == "basic-schema-test" => { "w0": _id,"w1": _type,"w2": title })}',
+        '[0...$__limit]{_type, _id, _originalId, ...select(_type == "basic-schema-test" => { "w0": _id,"w1": _type,"w2": title })}',
       ].join('')
 
       expect(query).toEqual(result)
@@ -291,10 +291,10 @@ describe('createSearchQuery', () => {
 
       expect(query).toEqual(
         `// findability-mvi:${FINDABILITY_MVI}\n` +
-          '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0)]' +
+          '*[_type in $__types && (_id match $t0 || _type match $t0 || title match $t0) && !(_id in path("versions.**"))]' +
           '| order(_id asc)' +
           '[0...$__limit]' +
-          '{_type, _id, ...select(_type == "basic-schema-test" => { "w0": _id,"w1": _type,"w2": title })}',
+          '{_type, _id, _originalId, ...select(_type == "basic-schema-test" => { "w0": _id,"w1": _type,"w2": title })}',
       )
     })
 
@@ -403,14 +403,14 @@ describe('createSearchQuery', () => {
          * This is an improvement over before, where an illegal term was used (number-as-string, ala ["0"]),
          * which lead to no hits at all. */
         `// findability-mvi:${FINDABILITY_MVI}\n` +
-          '*[_type in $__types && (_id match $t0 || _type match $t0 || cover[].cards[].title match $t0) && (_id match $t1 || _type match $t1 || cover[].cards[].title match $t1)]' +
+          '*[_type in $__types && (_id match $t0 || _type match $t0 || cover[].cards[].title match $t0) && (_id match $t1 || _type match $t1 || cover[].cards[].title match $t1) && !(_id in path("versions.**"))]' +
           '| order(_id asc)' +
           '[0...$__limit]' +
           // at this point we could refilter using cover[0].cards[0].title.
           // This solution was discarded at it would increase the size of the query payload by up to 50%
 
           // we still map out the path with number
-          '{_type, _id, ...select(_type == "numbers-in-path" => { "w0": _id,"w1": _type,"w2": cover[].cards[].title })}',
+          '{_type, _id, _originalId, ...select(_type == "numbers-in-path" => { "w0": _id,"w1": _type,"w2": cover[].cards[].title })}',
       )
     })
   })

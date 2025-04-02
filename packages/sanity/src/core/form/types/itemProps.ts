@@ -14,10 +14,10 @@ import {
   type SlugValue,
   type StringSchemaType,
 } from '@sanity/types'
-import {type FocusEvent, type ReactElement, type ReactNode} from 'react'
+import {type FocusEvent, type ReactNode} from 'react'
 
 import {type FormNodePresence} from '../../presence'
-import {type ArrayInputInsertEvent} from './event'
+import {type ArrayInputCopyEvent, type ArrayInputInsertEvent} from './event'
 import {type ObjectInputProps} from './inputProps'
 
 /** @public */
@@ -70,6 +70,11 @@ export interface BaseItemProps<T> {
    * @beta */
   onInsert: (event: Omit<ArrayInputInsertEvent<T>, 'referenceItem'>) => void
 
+  /**
+   * @hidden
+   * @beta */
+  onCopy: (event: Omit<ArrayInputCopyEvent<T>, 'referenceItem'>) => void
+
   /** The children of the item. */
   children: ReactNode
 
@@ -82,7 +87,7 @@ export interface BaseItemProps<T> {
   presence: FormNodePresence[]
 
   /** The function to call to render the default item. See {@link ItemProps} */
-  renderDefault: (props: ItemProps) => ReactElement
+  renderDefault: (props: ItemProps) => React.JSX.Element
 }
 
 /**

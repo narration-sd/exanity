@@ -1,8 +1,8 @@
 import {stat} from 'node:fs/promises'
 import path from 'node:path'
 
-import {describe, expect} from '@jest/globals'
 import tar from 'tar'
+import {describe, expect} from 'vitest'
 
 import {describeCliTest, testConcurrent} from './shared/describe'
 import {
@@ -28,6 +28,36 @@ describeCliTest('CLI: `sanity dataset export` / `import`', () => {
       expect(result.code).toBe(0)
 
       const tarballPath = path.join(studiosPath, version, testRunArgs.exportTarball)
+
+      const stats = await stat(tarballPath)
+      expect(stats.isFile()).toBe(true)
+
+      // We're just checking for the existence of a few files here - the actual export
+      // functionality is fully tested in `@sanity/export`
+      const filesTypes: string[] = []
+      await tar.t({
+        file: tarballPath,
+        onentry: (entry) => filesTypes.push(path.extname(entry.path)),
+      })
+
+      expect(filesTypes).toContain('.ndjson')
+      expect(filesTypes).toContain('.jpg')
+    })
+
+    testConcurrent('export, with mode', async () => {
+      const filename = `cursor-${testRunArgs.exportTarball}.tar.gz`
+      const result = await runSanityCmdCommand(version, [
+        'dataset',
+        'export',
+        'production',
+        filename,
+        '--overwrite',
+        '--mode cursor',
+      ])
+      expect(result.stdout).toMatch(/export finished/i)
+      expect(result.code).toBe(0)
+
+      const tarballPath = path.join(studiosPath, version, filename)
 
       const stats = await stat(tarballPath)
       expect(stats.isFile()).toBe(true)

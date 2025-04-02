@@ -8,7 +8,8 @@ import {type LocaleSource} from '../../../i18n'
 import {type DocumentPreviewStore} from '../../../preview'
 import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../studioClient'
 import {type Template} from '../../../templates'
-import {getDraftId, isDraftId} from '../../../util'
+import {getIdPair, isDraftId, isVersionId} from '../../../util'
+import {type ValidationStatus} from '../../../validation'
 import {type HistoryStore} from '../history'
 import {checkoutPair, type DocumentVersionEvent, type Pair} from './document-pair/checkoutPair'
 import {consistencyStatus} from './document-pair/consistencyStatus'
@@ -21,7 +22,8 @@ import {
   type OperationSuccess,
 } from './document-pair/operationEvents'
 import {type OperationsAPI} from './document-pair/operations'
-import {validation, type ValidationStatus} from './document-pair/validation'
+import {validation} from './document-pair/validation'
+import {type DocumentStoreExtraOptions} from './getPairListener'
 import {getInitialValueStream, type InitialValueMsg, type InitialValueOptions} from './initialValue'
 import {listenQuery, type ListenQueryOptions} from './listenQuery'
 import {resolveTypeForDocument} from './resolveTypeForDocument'
@@ -32,19 +34,31 @@ import {type IdPair} from './types'
  * @beta */
 export type QueryParams = Record<string, string | number | boolean | string[]>
 
-function getIdPairFromPublished(publishedId: string): IdPair {
+function getIdPairFromPublished(publishedId: string, version?: string): IdPair {
+  if (version === 'published' || version === 'drafts') {
+    throw new Error('Version Id cannot be "published" or "drafts"')
+  }
+  if (isVersionId(publishedId)) {
+    throw new Error('editOpsOf does not expect a version id.')
+  }
   if (isDraftId(publishedId)) {
     throw new Error('editOpsOf does not expect a draft id.')
   }
 
-  return {publishedId, draftId: getDraftId(publishedId)}
+  return getIdPair(publishedId, {version})
 }
 
 /**
  * @hidden
  * @beta */
 export interface DocumentStore {
-  /** @internal */
+  /**
+   * Checks out a document (with its published and draft version) for real-time editing.
+   * Note that every call to this function will open a new listener to the server.
+   * It's recommended to use the helper functions on `pair` below which will re-use a single connection.
+   *
+   * @internal
+   **/
   checkoutPair: (idPair: IdPair) => Pair
   initialValue: (
     opts: InitialValueOptions,
@@ -58,17 +72,29 @@ export interface DocumentStore {
   resolveTypeForDocument: (id: string, specifiedType?: string) => Observable<string>
 
   pair: {
-    consistencyStatus: (publishedId: string, type: string) => Observable<boolean>
+    consistencyStatus: (publishedId: string, type: string, version?: string) => Observable<boolean>
     /** @internal */
-    documentEvents: (publishedId: string, type: string) => Observable<DocumentVersionEvent>
+    documentEvents: (
+      publishedId: string,
+      type: string,
+      version?: string,
+    ) => Observable<DocumentVersionEvent>
     /** @internal */
-    editOperations: (publishedId: string, type: string) => Observable<OperationsAPI>
-    editState: (publishedId: string, type: string) => Observable<EditStateFor>
+    editOperations: (
+      publishedId: string,
+      type: string,
+      version?: string,
+    ) => Observable<OperationsAPI>
+    editState: (publishedId: string, type: string, version?: string) => Observable<EditStateFor>
     operationEvents: (
       publishedId: string,
       type: string,
     ) => Observable<OperationSuccess | OperationError>
-    validation: (publishedId: string, type: string) => Observable<ValidationStatus>
+    validation: (
+      publishedId: string,
+      type: string,
+      version?: string,
+    ) => Observable<ValidationStatus>
   }
 }
 
@@ -81,6 +107,7 @@ export interface DocumentStoreOptions {
   initialValueTemplates: Template[]
   i18n: LocaleSource
   serverActionsEnabled: Observable<boolean>
+  extraOptions?: DocumentStoreExtraOptions
 }
 
 /** @internal */
@@ -92,6 +119,7 @@ export function createDocumentStore({
   schema,
   i18n,
   serverActionsEnabled,
+  extraOptions = {},
 }: DocumentStoreOptions): DocumentStore {
   const observeDocumentPairAvailability =
     documentPreviewStore.unstable_observeDocumentPairAvailability
@@ -101,6 +129,7 @@ export function createDocumentStore({
   // for things like validations
   const client = getClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
 
+  const {onReportLatency, onSyncErrorRecovery} = extraOptions
   const ctx = {
     client,
     getClient,
@@ -109,12 +138,16 @@ export function createDocumentStore({
     schema,
     i18n,
     serverActionsEnabled,
+    extraOptions,
   }
 
   return {
     // Public API
     checkoutPair(idPair) {
-      return checkoutPair(client, idPair, serverActionsEnabled)
+      return checkoutPair(client, idPair, serverActionsEnabled, {
+        onSyncErrorRecovery,
+        onReportLatency,
+      })
     },
     initialValue(opts, context) {
       return getInitialValueStream(
@@ -125,34 +158,39 @@ export function createDocumentStore({
         context,
       )
     },
-    listenQuery(query, params, options) {
-      return listenQuery(client, query, params, options)
+    listenQuery(query, params, listenQueryOptions) {
+      return listenQuery(client, query, params, listenQueryOptions)
     },
     resolveTypeForDocument(id, specifiedType) {
       return resolveTypeForDocument(client, id, specifiedType)
     },
     pair: {
-      consistencyStatus(publishedId, type) {
+      consistencyStatus(publishedId, type, version) {
         return consistencyStatus(
           ctx.client,
-          getIdPairFromPublished(publishedId),
+          getIdPairFromPublished(publishedId, version),
           type,
           serverActionsEnabled,
+          extraOptions,
         )
       },
-      documentEvents(publishedId, type) {
+      documentEvents(publishedId, type, version) {
         return documentEvents(
           ctx.client,
-          getIdPairFromPublished(publishedId),
+          getIdPairFromPublished(publishedId, version),
           type,
           serverActionsEnabled,
+          extraOptions,
         )
       },
-      editOperations(publishedId, type) {
-        return editOperations(ctx, getIdPairFromPublished(publishedId), type)
+      editOperations(publishedId, type, version) {
+        return editOperations(ctx, getIdPairFromPublished(publishedId, version), type)
       },
-      editState(publishedId, type) {
-        return editState(ctx, getIdPairFromPublished(publishedId), type)
+      editState(publishedId, type, version) {
+        const idPair = getIdPairFromPublished(publishedId, version)
+
+        const edit = editState(ctx, idPair, type)
+        return edit
       },
       operationEvents(publishedId, type) {
         return operationEvents({
@@ -160,6 +198,7 @@ export function createDocumentStore({
           historyStore,
           schema,
           serverActionsEnabled,
+          extraOptions,
         }).pipe(
           filter(
             (result) =>
@@ -173,8 +212,9 @@ export function createDocumentStore({
           }),
         )
       },
-      validation(publishedId, type) {
-        return validation(ctx, getIdPairFromPublished(publishedId), type)
+      validation(publishedId, type, version) {
+        const idPair = getIdPairFromPublished(publishedId, version)
+        return validation(ctx, idPair, type)
       },
     },
   }

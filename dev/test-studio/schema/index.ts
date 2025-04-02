@@ -6,6 +6,7 @@ import conditionalFieldset from './ci/conditionalFieldset'
 import validationTest from './ci/validationCI'
 import actions from './debug/actions'
 import {allNativeInputComponents} from './debug/allNativeInputComponents'
+import {arrayCapabilities} from './debug/arrayCapabilities'
 import button from './debug/button'
 import {circularCrossDatasetReferenceTest} from './debug/circularCrossDatasetReference'
 import {collapsibleObjects} from './debug/collapsibleObjects'
@@ -32,6 +33,8 @@ import fieldGroupsDefault from './debug/fieldGroupsDefault'
 import fieldGroupsMany from './debug/fieldGroupsMany'
 import fieldGroupsWithFieldsets from './debug/fieldGroupsWithFieldsets'
 import fieldGroupsWithFieldsetsAndValidation from './debug/fieldGroupsWithFieldsetsAndValidation'
+import fieldGroupsWithFieldsetsHidden from './debug/fieldGroupsWithFieldsetsHidden'
+import fieldGroupsWithI18n from './debug/fieldGroupsWithI18n'
 import fieldGroupsWithValidation from './debug/fieldGroupsWithValidation'
 import fieldsets from './debug/fieldsets'
 import {
@@ -50,6 +53,8 @@ import liveEdit from './debug/liveEdit'
 import localeString from './debug/localeString'
 import manyFieldsTest from './debug/manyFieldsTest'
 import notitle from './debug/notitle'
+import {objectsDebug} from './debug/objectsDebug'
+import {patchOnMountDebug} from './debug/patchOnMount'
 import poppers from './debug/poppers'
 import presence, {objectWithNestedArray} from './debug/presence'
 import previewImageUrlTest from './debug/previewImageUrlTest'
@@ -74,7 +79,6 @@ import uploads from './debug/uploads'
 import validation, {validationArraySuperType} from './debug/validation'
 import {virtualizationDebug} from './debug/virtualizationDebug'
 import {virtualizationInObject} from './debug/virtualizationInObject'
-import {demos3d} from './demos/3d'
 import {v3docs} from './docs/v3'
 import markdown from './externalPlugins/markdown'
 import mux from './externalPlugins/mux'
@@ -92,6 +96,9 @@ import date from './standard/date'
 import datetime from './standard/datetime'
 import emails from './standard/emails'
 import files from './standard/files'
+import globalDocumentReference, {
+  createGlobalDocumentReferenceSubtype,
+} from './standard/globalDocumentReference'
 import images, {myImage} from './standard/images'
 import numbers from './standard/numbers'
 import objects, {myObject} from './standard/objects'
@@ -146,147 +153,153 @@ const codeInputType = {
   ],
 }
 
-export const schemaTypes = [
-  // Test documents with standard inputs
-  arrays,
-  topLevelArrayType,
-  topLevelPrimitiveArrayType,
-  booleans,
-  date,
-  datetime,
-  emails,
-  files,
-  images,
-  numbers,
-  objects,
-  ptAllTheBellsAndWhistlesType,
-  blocks,
-  ptCustomBlockEditors,
-  ptCustomMarkersTestType,
-  richTextObject,
-  ...Object.values(scrollBugTypes),
-  simpleBlock,
-  manyEditors,
-  simpleBlockNote,
-  simpleBlockNoteBody,
-  simpleBlockNoteUrl,
-  spotifyEmbed,
-  references,
-  referenceAlias,
-  slugs,
-  slugAlias,
-  strings,
-  texts,
-  urls,
+export function createSchemaTypes(projectId: string) {
+  return [
+    // Test documents with standard inputs
+    arrays,
+    topLevelArrayType,
+    topLevelPrimitiveArrayType,
+    booleans,
+    date,
+    datetime,
+    emails,
+    files,
+    images,
+    numbers,
+    objects,
+    ptAllTheBellsAndWhistlesType,
+    blocks,
+    ptCustomBlockEditors,
+    ptCustomMarkersTestType,
+    richTextObject,
+    ...Object.values(scrollBugTypes),
+    simpleBlock,
+    manyEditors,
+    simpleBlockNote,
+    simpleBlockNoteBody,
+    simpleBlockNoteUrl,
+    spotifyEmbed,
+    references,
+    referenceAlias,
+    slugs,
+    slugAlias,
+    strings,
+    texts,
+    urls,
 
-  // Test documents for debugging
-  actions,
-  button,
-  collapsibleObjects,
-  commentsDebug,
-  conditionalFields,
-  customInputs,
-  customInputsWithPatches,
-  customNumber,
-  dateTimeValidation,
-  dateValidation,
-  deprecatedDocument,
-  deprecatedFields,
-  documentActions,
-  empty,
-  experiment,
-  fieldActionsTest,
-  fieldComponentsTest,
-  fieldsets,
-  removeRestoreAction,
+    // Test documents for debugging
+    actions,
+    button,
+    collapsibleObjects,
+    commentsDebug,
+    conditionalFields,
+    customInputs,
+    customInputsWithPatches,
+    customNumber,
+    dateTimeValidation,
+    dateValidation,
+    deprecatedDocument,
+    deprecatedFields,
+    documentActions,
+    empty,
+    experiment,
+    fieldActionsTest,
+    fieldComponentsTest,
+    fieldsets,
+    removeRestoreAction,
 
-  fieldValidationInferReproSharedObject,
-  fieldValidationInferReproDoc,
+    fieldValidationInferReproSharedObject,
+    fieldValidationInferReproDoc,
 
-  focus,
-  gallery,
-  hoistedPt,
-  hoistedPtDocument,
-  customBlock,
-  initialValuesTest,
-  superlatives,
-  inspectorsTestType,
-  invalidPreviews,
-  languageFilterDebugType,
-  liveEdit,
-  localeString,
-  manyFieldsTest,
-  myImage,
-  myObject,
-  namedDeprecatedObject,
-  namedDeprecatedArray,
-  notitle,
-  poppers,
-  presence,
-  objectWithNestedArray,
-  previewImageUrlTest,
-  formInputDebug,
-  previewMediaTest,
-  previewSelectBugRepro,
-  radio,
-  readOnly,
-  recursive,
-  recursiveArray,
-  recursiveObjectTest,
-  recursiveObject,
-  recursivePopover,
-  simpleArrayOfObjects,
-  simpleReferences,
-  reservedFieldNames,
-  review,
-  select,
-  typeWithNoToplevelStrings,
-  uploads,
-  validation,
-  validationArraySuperType,
-  fieldGroups,
-  fieldGroupsDefault,
-  fieldGroupsMany,
-  fieldGroupsWithValidation,
-  fieldGroupsWithFieldsetsAndValidation,
-  virtualizationInObject,
-  virtualizationDebug,
+    focus,
+    gallery,
+    hoistedPt,
+    hoistedPtDocument,
+    customBlock,
+    initialValuesTest,
+    superlatives,
+    inspectorsTestType,
+    invalidPreviews,
+    languageFilterDebugType,
+    liveEdit,
+    localeString,
+    manyFieldsTest,
+    myImage,
+    myObject,
+    namedDeprecatedObject,
+    namedDeprecatedArray,
+    notitle,
+    objectsDebug,
+    poppers,
+    presence,
+    objectWithNestedArray,
+    previewImageUrlTest,
+    formInputDebug,
+    previewMediaTest,
+    previewSelectBugRepro,
+    radio,
+    readOnly,
+    recursive,
+    recursiveArray,
+    recursiveObjectTest,
+    recursiveObject,
+    recursivePopover,
+    patchOnMountDebug,
+    simpleArrayOfObjects,
+    arrayCapabilities,
+    simpleReferences,
+    reservedFieldNames,
+    review,
+    select,
+    typeWithNoToplevelStrings,
+    uploads,
+    validation,
+    validationArraySuperType,
+    fieldGroups,
+    fieldGroupsDefault,
+    fieldGroupsMany,
+    fieldGroupsWithI18n,
+    fieldGroupsWithValidation,
+    fieldGroupsWithFieldsetsAndValidation,
+    fieldGroupsWithFieldsetsHidden,
+    virtualizationInObject,
+    virtualizationDebug,
 
-  // Test documents with official plugin inputs
-  code,
-  // @todo temporary, until code input is v3 compatible
-  codeInputType,
-  color,
-  geopoint,
-  hotspot,
-  hotspotArrayTest,
+    // Test documents with official plugin inputs
+    code,
+    // @todo temporary, until code input is v3 compatible
+    codeInputType,
+    color,
+    geopoint,
+    hotspot,
+    hotspotArrayTest,
 
-  // Test documents with 3rd party plugin inputs
-  markdown,
-  mux,
+    // Test documents with 3rd party plugin inputs
+    markdown,
+    mux,
 
-  // Other documents
-  author,
-  book,
-  species,
-  playlist,
-  playlistTrack,
+    // Other documents
+    author,
+    book,
+    species,
+    playlist,
+    playlistTrack,
 
-  // CI documents
-  allNativeInputComponents,
-  allTypes,
-  circularCrossDatasetReferenceTest,
-  commentsCI,
-  conditionalFieldset,
-  crossDatasetReference,
-  crossDatasetSubtype,
-  fieldGroupsWithFieldsets,
-  ptReference,
-  validationTest,
+    // CI documents
+    allNativeInputComponents,
+    allTypes,
+    circularCrossDatasetReferenceTest,
+    commentsCI,
+    conditionalFieldset,
+    crossDatasetReference,
+    crossDatasetSubtype,
+    globalDocumentReference(projectId),
+    createGlobalDocumentReferenceSubtype(projectId),
+    fieldGroupsWithFieldsets,
+    ptReference,
+    validationTest,
 
-  // Test documents for docs
-  ...v3docs.types,
-
-  // Demo documents for 3d experiments
-  ...demos3d.types,
-]
+    // Test documents for docs
+    ...v3docs.types,
+  ]
+}

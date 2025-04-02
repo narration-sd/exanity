@@ -1,15 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "extends": ["//"],
-  "pipeline": {
+  "tasks": {
     "build": {
       "outputs": [
-        "lib/**",
-        "_singletons.js",
-        "desk.js",
-        "presentation.js",
-        "router.js",
-        "structure.js"
+        "lib/**"
       ]
     },
     "build:bundle": {

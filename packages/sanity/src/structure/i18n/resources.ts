@@ -7,6 +7,8 @@ import {defineLocalesResources} from 'sanity'
  * @internal
  */
 const structureLocaleStrings = defineLocalesResources('structure', {
+  /** Label for the "Copy Document URL" document action */
+  'action.copy-document-url.label': 'Copy Document URL',
   /** Tooltip when action button is disabled because the operation is not ready   */
   'action.delete.disabled.not-ready': 'Operation not ready',
   /** Tooltip when action button is disabled because the document does not exist */
@@ -47,6 +49,8 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'action.publish.disabled.not-ready': 'Operation not ready',
   /** Label for action when there are pending changes.*/
   'action.publish.draft.label': 'Publish',
+  /** Label for the "Publish" document action */
+  'action.publish.label': 'Publish',
   /** Label for the "Publish" document action when the document has live edit enabled.*/
   'action.publish.live-edit.label': 'Publish',
   /** Fallback tooltip for the "Publish" document action when publish is invoked for a document with live edit enabled.*/
@@ -67,15 +71,15 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   /** Tooltip when publish button is waiting for validation and async tasks to complete.*/
   'action.publish.waiting': 'Waiting for tasks to finish before publishing',
 
-  /** Message prompting the user to confirm that they want to restore to an earlier version*/
+  /** Message prompting the user to confirm that they want to restore to an earlier revision*/
   'action.restore.confirm.message': 'Are you sure you want to restore this document?',
-  /** Fallback tooltip for when user is looking at the initial version */
-  'action.restore.disabled.cannot-restore-initial': "You can't restore to the initial version",
+  /** Fallback tooltip for when user is looking at the initial revision */
+  'action.restore.disabled.cannot-restore-initial': "You can't restore to the initial revision",
 
   /** Label for the "Restore" document action */
-  'action.restore.label': 'Restore',
+  'action.restore.label': 'Revert to revision',
   /** Default tooltip for the action */
-  'action.restore.tooltip': 'Restore to this version',
+  'action.restore.tooltip': 'Restore to this revision',
 
   /** Tooltip when action is disabled because the document is not already published */
   'action.unpublish.disabled.not-published': 'This document is not published',
@@ -86,25 +90,42 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   /** Fallback tooltip for the Unpublish document action when publish is invoked for a document with live edit enabled.*/
   'action.unpublish.live-edit.disabled':
     'This document has live edit enabled and cannot be unpublished',
-
+  /** Description for the archived release banner, rendered when viewing the history of a version document from the publihed view */
+  'banners.archived-release.description':
+    'This document version belongs to the archived <VersionBadge>{{title}}</VersionBadge> release',
   /** The text for the restore button on the deleted document banner */
-  'banners.deleted-document-banner.restore-button.text': 'Restore most recent version',
+  'banners.deleted-document-banner.restore-button.text': 'Restore most recent revision',
   /** The text content for the deleted document banner */
   'banners.deleted-document-banner.text': 'This document has been deleted.',
   /** The text content for the deprecated document type banner */
   'banners.deprecated-document-type-banner.text': 'This document type has been deprecated.',
-  /** The text for the permission check banner if the user only has one role, and it does not allow updating this document */
+  /** The text for publish action for discarding the version */
+  'banners.live-edit-draft-banner.discard.tooltip': 'Discard draft',
+  /** The text for publish action for the draft banner */
+  'banners.live-edit-draft-banner.publish.tooltip': 'Publish to continue editing',
+
+  /** The text content for the live edit document when it's a draft */
+  'banners.live-edit-draft-banner.text':
+    'The type <strong>{{schemaType}}</strong> has <code>liveEdit</code> enabled, but a draft version of this document exists. Publish or discard the draft in order to continue live editing it.',
+  /** The text for the permission check banner if the user only has one role, and it does not allow publishing this document */
   'banners.permission-check-banner.missing-permission_create_one':
-    'Your role <Roles/> does not have permissions to create this document.',
-  /** The text for the permission check banner if the user only has multiple roles, but they do not allow updating this document */
+    'Your role <Roles/> does not have permission to publish this document.',
+  /** The text for the permission check banner if the user only has multiple roles, but they do not allow publishing this document */
   'banners.permission-check-banner.missing-permission_create_other':
-    'Your roles <Roles/> do not have permissions to create this document.',
-  /** The text for the permission check banner if the user only has one role, and it does not allow updating this document */
+    'Your roles <Roles/> do not have permission to publish this document.',
+  /** The text for the permission check banner if the user only has one role, and it does not allow editing this document */
   'banners.permission-check-banner.missing-permission_update_one':
-    'Your role <Roles/> does not have permissions to update this document.',
-  /** The text for the permission check banner if the user only has multiple roles, but they do not allow updating this document */
+    'Your role <Roles/> does not have permission to edit this document.',
+  /** The text for the permission check banner if the user only has multiple roles, but they do not allow editing this document */
   'banners.permission-check-banner.missing-permission_update_other':
-    'Your roles <Roles/> do not have permissions to update this document.',
+    'Your roles <Roles/> do not have permission to edit this document.',
+  /** The pending text for the request permission button that appears for viewer roles */
+  'banners.permission-check-banner.request-permission-button.sent': 'Editor request sent',
+  /** The text for the request permission button that appears for viewer roles */
+  'banners.permission-check-banner.request-permission-button.text': 'Ask to edit',
+  /** Description for the archived release banner, rendered when viewing the history of a version document from the published view */
+  'banners.published-release.description':
+    "You are viewing a read-only document that was published as part of <VersionBadge>{{title}}</VersionBadge>. It can't be edited",
   /** The text for the reload button */
   'banners.reference-changed-banner.reason-changed.reload-button.text': 'Reload reference',
   /** The text for the reference change banner if the reason is that the reference has been changed */
@@ -115,6 +136,40 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   /** The text for the reference change banner if the reason is that the reference has been deleted */
   'banners.reference-changed-banner.reason-removed.text':
     'This reference has been removed since you opened it.',
+  /** The text that appears for the action button to add the current document to the global release */
+  'banners.release.action.add-to-release': 'Add to release',
+  /** The text that appears for the action button to add the current document to the global release */
+  'banners.release.action.open-to-edit': 'Open release to edit',
+  /** Toast description in case an error occurs when adding a document to a release  */
+  'banners.release.error.description':
+    'An error occurred when adding document to the release: {{message}}',
+  /** Toast title in case an error occurs when adding a document to a release  */
+  'banners.release.error.title': 'Error adding document to release',
+  /** The text for the banner that appears when a document only has versions but is in a draft or published pinned release */
+  'banners.release.navigate-to-edit-description': 'The document only exists in the',
+  /** The text for the banner that appears when a document only has versions but is in a draft or published pinned release */
+  'banners.release.navigate-to-edit-description-end_one': 'release',
+  /** The text for the banner that appears when a document only has versions but is in a draft or published pinned release */
+  'banners.release.navigate-to-edit-description-end_other': 'releases',
+  /** The text for the banner that appears when there are multiple versions but no drafts or published, only one extra releases */
+  'banners.release.navigate-to-edit-description-multiple_one':
+    'This document is part of the <VersionBadge/> release and {{count}} more release.',
+  /** The text for the banner that appears when there are multiple versions but no drafts or published, more than one extra releases */
+  'banners.release.navigate-to-edit-description-multiple_other':
+    'This document is part of the <VersionBadge/> release and {{count}} more releases',
+  /** The text for the banner that appears when a document only has one version but is in a draft or published pinned release */
+  'banners.release.navigate-to-edit-description-single':
+    'This document is part of the <VersionBadge/> release',
+  /** The text for the banner that appears when a document is not in the current global release */
+  'banners.release.not-in-release': 'Not in the <VersionBadge>{{title}}</VersionBadge> release.',
+  /** Description of toast that will appear in case of latency between the user adding a document to a release and the UI reflecting it */
+  'banners.release.waiting.description':
+    'Please hold tight while the document is added to the release. It should not take longer than a few seconds.',
+  /** Title of toast that will appear in case of latency between the user adding a document to a release and the UI reflecting it */
+  'banners.release.waiting.title': 'Adding document to release…',
+  /** The text content for the unpublished document banner when is part of a release */
+  'banners.unpublished-release-banner.text':
+    'This document will be unpublished as part of the <VersionBadge>{{title}}</VersionBadge> release',
 
   /** Browser/tab title when creating a new document of a given type */
   'browser-document-title.new-document': 'New {{schemaType}}',
@@ -134,6 +189,34 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'buttons.split-pane-close-button.title': 'Close split pane',
   /** The title for the close group button on the split pane on the document panel header */
   'buttons.split-pane-close-group-button.title': 'Close pane group',
+
+  /** The label used in the changes inspector for the from selector */
+  'changes.from.label': 'From',
+  /* The label for the history tab in the changes inspector*/
+  'changes.tab.history': 'History',
+  /* The label for the review tab in the changes inspector*/
+  'changes.tab.review-changes': 'Review changes',
+  /** The label used in the changes inspector for the to selector */
+  'changes.to.label': 'To',
+
+  /** The error message shown when the specified document comparison mode is not supported */
+  'compare-version.error.invalidModeParam':
+    '"{{input}}" is not a supported document comparison mode.',
+  /** The error message shown when the next document for comparison could not be extracted from the URL */
+  'compare-version.error.invalidNextDocumentParam': 'The next document parameter is invalid.',
+  /** The error message shown when the document comparison URL could not be parsed */
+  'compare-version.error.invalidParams.title': 'Unable to compare documents',
+  /** The error message shown when the previous document for comparison could not be extracted from the URL */
+  'compare-version.error.invalidPreviousDocumentParam':
+    'The previous document parameter is invalid.',
+  /** The text for the "Compare versions" action for a document */
+  'compare-versions.menu-item.title': 'Compare versions',
+  /** The string used to label draft documents */
+  'compare-versions.status.draft': 'Draft',
+  /** The string used to label published documents */
+  'compare-versions.status.published': 'Published',
+  /** The title used when comparing versions of a document */
+  'compare-versions.title': 'Compare versions',
 
   /** The text in the "Cancel" button in the confirm delete dialog that cancels the action and closes the dialog */
   'confirm-delete-dialog.cancel-button.text': 'Cancel',
@@ -159,8 +242,8 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'confirm-delete-dialog.cdr-table.dataset.label': 'Dataset',
   /** The header for the document ID column in the list of cross-dataset references found */
   'confirm-delete-dialog.cdr-table.document-id.label': 'Document ID',
-  /** The toast title when the copy button has been clicked */
-  'confirm-delete-dialog.cdr-table.id-copied-toast.title': 'Copied document ID to clipboard!',
+  /** The toast title when the copy button has been clicked but copying failed */
+  'confirm-delete-dialog.cdr-table.id-copied-toast.title-failed': 'Failed to copy document ID',
   /** The header for the project ID column in the list of cross-dataset references found */
   'confirm-delete-dialog.cdr-table.project-id.label': 'Project ID',
   /** The text in the "Delete anyway" button in the confirm delete dialog that confirms the action */
@@ -262,6 +345,12 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   /** The title of the sync lock toast on the form view */
   'document-view.form-view.sync-lock-toast.title': 'Syncing document…',
 
+  /**The title for the menu items that will be shown when expanding a publish release event to inspect the document */
+  'events.inspect.release': 'Inspect <VersionBadge>{{releaseTitle}}</VersionBadge> document',
+  /**The title for the menu items that will be shown when expanding a publish draft event to inspect the draft document*/
+  'events.open.draft': 'Open <VersionBadge>draft</VersionBadge> document',
+  /**The title for the menu items that will be shown when expanding a publish release event to inspect the release*/
+  'events.open.release': 'Open <VersionBadge>{{releaseTitle}}</VersionBadge> release',
   /** The loading messaging for when the tooltip is still loading permission info */
   'insufficient-permissions-message-tooltip.loading-text': 'Loading…',
 
@@ -318,8 +407,6 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'panes.document-header-title.new.text': 'New {{schemaType}}',
   /** The text used in the document header title if no other title can be determined */
   'panes.document-header-title.untitled.text': 'Untitled',
-  /** The text for the retry button on the document list pane */
-  'panes.document-list-pane.error.retry-button.text': 'Retry',
   /** The error text on the document list pane */
   'panes.document-list-pane.error.text': 'Error: <Code>{{error}}</Code>',
   /** The error title on the document list pane */
@@ -347,8 +434,12 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'panes.document-operation-results.operation-error_unpublish':
     'An error occurred while attempting to unpublish this document. This usually means that there are other documents that refers to it.',
   /** The text when a generic operation succeeded (fallback, generally not shown)  */
-  'panes.document-operation-results.operation-success':
-    'Successfully performed {{context}} on document',
+  'panes.document-operation-results.operation-success': 'Successfully performed {{op}} on document',
+  /** The text when copy URL operation succeeded  */
+  'panes.document-operation-results.operation-success_copy-url': 'Document URL copied to clipboard',
+  /**  */
+  'panes.document-operation-results.operation-success_createVersion':
+    '<Strong>{{title}}</Strong> was added to the release',
   /** The text when a delete operation succeeded  */
   'panes.document-operation-results.operation-success_delete':
     'The document was successfully deleted',
@@ -366,11 +457,9 @@ const structureLocaleStrings = defineLocalesResources('structure', {
     '<Strong>{{title}}</Strong> was restored',
   /** The text when an unpublish operation succeeded  */
   'panes.document-operation-results.operation-success_unpublish':
-    '<Strong>{{title}}</Strong> was unpublished. A draft has been created from the latest published version.',
+    '<Strong>{{title}}</Strong> was unpublished. A draft has been created from the latest published revision.',
   /** The document title shown when document title is "undefined" in operation message */
   'panes.document-operation-results.operation-undefined-title': 'Untitled',
-  /** The title of the reconnecting toast */
-  'panes.document-pane-provider.reconnecting.title': 'Connection lost. Reconnecting…',
   /** The loading message for the document not found pane */
   'panes.document-pane.document-not-found.loading': 'Loading document…',
   /** The text of the document not found pane if the schema is known */
@@ -402,6 +491,24 @@ const structureLocaleStrings = defineLocalesResources('structure', {
 
   /** The text for the "Open preview" action for a document */
   'production-preview.menu-item.title': 'Open preview',
+
+  /** The text for the confirm button in the request permission dialog used in the permissions banner */
+  'request-permission-dialog.confirm-button.text': 'Send request',
+  /** The description text for the request permission dialog used in the permissions banner */
+  'request-permission-dialog.description.text':
+    "Your request will be sent to the project administrator(s). If you'd like, you can also include a note",
+  /** The header/title for the request permission dialog used in the permissions banner */
+  'request-permission-dialog.header.text': 'Ask for edit access',
+  /** The text describing the note input for the request permission dialog used in the permissions banner */
+  'request-permission-dialog.note-input.description.text': "If you'd like, you can add a note",
+  /** The placeholder for the note input in the request permission dialog used in the permissions banner */
+  'request-permission-dialog.note-input.placeholder.text': 'Add note...',
+  /** The error/warning text in the request permission dialog when the user's request has been declined */
+  'request-permission-dialog.warning.denied.text':
+    'Your request to access this project has been declined.',
+  /** The error/warning text in the request permission dialog when the user's request has been denied due to too many outstanding requests */
+  'request-permission-dialog.warning.limit-reached.text':
+    "You've reached the limit for role requests across all projects. Please wait before submitting more requests or contact an administrator for assistance.",
 
   /** Label for button when status is saved */
   'status-bar.document-status-pulse.status.saved.text': 'Saved',
@@ -437,6 +544,15 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'structure-error.reload-button.text': 'Reload',
   /** Labels the structure path of the structure error screen */
   'structure-error.structure-path.label': 'Structure path',
+
+  /** The aria label for the menu button in the timeline item */
+  'timeline-item.menu-button.aria-label': 'Open action menu',
+  /** The text for the tooltip in menu button the timeline item */
+  'timeline-item.menu-button.tooltip': 'Actions',
+  /** The text for the collapse action in the timeline item menu */
+  'timeline-item.menu.action-collapse': 'Collapse',
+  /** The text for the expand action in the timeline item menu */
+  'timeline-item.menu.action-expand': 'Expand',
 })
 
 /**

@@ -1,5 +1,5 @@
-import {test} from '@sanity/test'
 import {expect} from '@playwright/test'
+import {test} from '@sanity/test'
 
 test(`date input shows validation on selecting date from datepicker`, async ({
   page,
@@ -7,7 +7,7 @@ test(`date input shows validation on selecting date from datepicker`, async ({
 }) => {
   await createDraftDocument('/test/content/input-debug;dateValidation')
 
-  await page.waitForSelector(`data-testid=field-requiredDate`)
+  await expect(await page.getByTestId(`field-requiredDate`)).toBeVisible()
 
   await page.getByTestId('field-requiredDate').getByTestId('select-date-button').click()
   await page.getByTestId('date-input-dialog').getByTestId('date-input').fill('2023')
@@ -19,7 +19,7 @@ test(`date input shows validation on selecting date from datepicker`, async ({
     page.getByTestId('field-requiredDate').getByTestId('input-validation-icon-error'),
   ).toBeVisible()
 
-  await expect(page.getByTestId('action-Publish')).toBeDisabled()
+  await expect(page.getByTestId('action-publish')).toBeDisabled()
 })
 
 test.skip(`date input shows validation on entering date in the text field`, async ({
@@ -36,7 +36,7 @@ test.skip(`date input shows validation on entering date in the text field`, asyn
     page.getByTestId('field-requiredDate').getByTestId('input-validation-icon-error'),
   ).toBeVisible()
 
-  await expect(page.getByTestId('action-Publish')).toBeDisabled()
+  await expect(page.getByTestId('action-publish')).toBeDisabled()
 })
 
 test(`publish button is disabled when invalid date is entered in the field`, async ({
@@ -45,13 +45,13 @@ test(`publish button is disabled when invalid date is entered in the field`, asy
 }) => {
   await createDraftDocument('/test/content/input-debug;dateValidation')
 
-  await page.waitForSelector(`data-testid=field-requiredDate`)
+  await expect(await page.getByTestId('field-requiredDate')).toBeVisible()
 
   await page.getByTestId('field-requiredDate').getByTestId('date-input').fill('20230101')
   // TODO: Remove this after fixing the blur test
   await page.getByTestId('field-requiredDate').getByTestId('date-input').blur()
 
-  await expect(page.getByTestId('action-Publish')).toBeDisabled()
+  await expect(page.getByTestId('action-publish')).toBeDisabled()
 })
 
 test(`date input shows validation on entering date in the textfield and onBlur`, async ({
@@ -69,5 +69,5 @@ test(`date input shows validation on entering date in the textfield and onBlur`,
     page.getByTestId('field-requiredDate').getByTestId('input-validation-icon-error'),
   ).toBeVisible()
 
-  await expect(page.getByTestId('action-Publish')).toBeDisabled()
+  await expect(page.getByTestId('action-publish')).toBeDisabled()
 })

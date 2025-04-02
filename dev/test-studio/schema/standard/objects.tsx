@@ -2,7 +2,7 @@
 // import {FaPuzzlePiece as icon} from 'react-icons/fa'
 
 import {useCallback} from 'react'
-import {defineType, type FormPatch, set, TransformPatches} from 'sanity'
+import {defineField, defineType, type FormPatch, set, TransformPatches} from 'sanity'
 
 export const myObject = defineType({
   type: 'object',
@@ -59,7 +59,10 @@ export default defineType({
       )
     },
   },
-  fieldsets: [{name: 'recursive', title: 'Recursive', options: {collapsible: true}}],
+  fieldsets: [
+    {name: 'recursive', title: 'Recursive', options: {collapsible: true}},
+    {name: 'readOnly', title: 'Read only', options: {collapsible: true}},
+  ],
   fields: [
     {
       type: 'object',
@@ -108,6 +111,21 @@ export default defineType({
       title: 'MyObject',
       description: 'The first field here should be the title',
     },
+    defineField({
+      type: 'object',
+      name: 'color',
+      title: 'Color with a long title',
+      fields: [
+        {
+          name: 'title',
+          type: 'string',
+        },
+        {
+          name: 'name',
+          type: 'string',
+        },
+      ],
+    }),
     {
       name: 'fieldWithObjectType',
       title: 'Field of object type',
@@ -211,6 +229,91 @@ export default defineType({
               type: 'array',
               of: [{type: 'string'}],
               validation: (Rule) => Rule.min(1),
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'readOnlyObject',
+      title: 'Read only object',
+      type: 'object',
+      fieldset: 'readOnly',
+      readOnly: true,
+      fields: [
+        {
+          name: 'selfDefinedReadOnlyField',
+          title: 'Read only field',
+          description: 'ReadOnly defined in field',
+          type: 'string',
+          readOnly: true,
+        },
+        {
+          name: 'inheritedReadOnlyField',
+          title: 'Read only field',
+          description: 'ReadOnly inherited from object',
+          type: 'string',
+        },
+      ],
+    },
+    {
+      name: 'sections',
+      title: 'Sections',
+      type: 'array',
+      fieldset: 'readOnly',
+      of: [
+        {
+          type: 'object',
+          name: 'blocks',
+          fields: [
+            {
+              type: 'array',
+              name: 'blocks',
+              title: 'Grid',
+              of: [{type: 'playlistTrack'}],
+            },
+          ],
+        },
+        {
+          type: 'object',
+          name: 'textBlocks',
+          fields: [
+            {
+              type: 'text',
+              name: 'text',
+              title: 'Text',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'sectionsReadOnly',
+      title: 'Sections (read only)',
+      type: 'array',
+      readOnly: true,
+      fieldset: 'readOnly',
+      of: [
+        {
+          type: 'object',
+          name: 'blocks',
+          fields: [
+            {
+              type: 'array',
+              name: 'blocks',
+              title: 'Grid',
+              of: [{type: 'playlistTrack'}],
+            },
+          ],
+        },
+        {
+          type: 'object',
+          name: 'textBlocks',
+          fields: [
+            {
+              type: 'text',
+              name: 'text',
+              title: 'Text',
             },
           ],
         },

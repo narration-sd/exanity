@@ -1,6 +1,5 @@
-import {type UserViteConfig} from '@sanity/cli'
+import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli'
 import chalk from 'chalk'
-import {createServer} from 'vite'
 
 import {debug} from './debug'
 import {extendViteConfigWithUserConfig, getViteConfig} from './getViteConfig'
@@ -16,7 +15,11 @@ export interface DevServerOptions {
   projectName?: string
 
   reactStrictMode: boolean
+  reactCompiler: ReactCompilerConfig | undefined
   vite?: UserViteConfig
+  entry?: string
+  isApp?: boolean
+  skipStartLog?: boolean
 }
 
 export interface DevServer {
@@ -24,19 +27,33 @@ export interface DevServer {
 }
 
 export async function startDevServer(options: DevServerOptions): Promise<DevServer> {
-  const {cwd, httpPort, httpHost, basePath, reactStrictMode, vite: extendViteConfig} = options
+  const {
+    cwd,
+    httpPort,
+    httpHost,
+    basePath,
+    reactStrictMode,
+    vite: extendViteConfig,
+    reactCompiler,
+    entry,
+    isApp,
+    skipStartLog,
+  } = options
 
   const startTime = Date.now()
   debug('Writing Sanity runtime files')
-  await writeSanityRuntime({cwd, reactStrictMode, watch: true, basePath})
+  await writeSanityRuntime({cwd, reactStrictMode, watch: true, basePath, entry, isApp})
 
   debug('Resolving vite config')
   const mode = 'development'
+
   let viteConfig = await getViteConfig({
     basePath,
     mode: 'development',
     server: {port: httpPort, host: httpHost},
     cwd,
+    reactCompiler,
+    isApp,
   })
 
   // Extend Vite configuration with user-provided config
@@ -49,20 +66,23 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   }
 
   debug('Creating vite server')
+  const {createServer} = await import('vite')
   const server = await createServer(viteConfig)
   const info = server.config.logger.info
 
   debug('Listening on specified port')
   await server.listen()
 
-  const startupDuration = Date.now() - startTime
-  const url = `http://${httpHost || 'localhost'}:${httpPort || '3333'}${basePath}`
-  info(
-    `Sanity Studio ` +
-      `using ${chalk.cyan(`vite@${require('vite/package.json').version}`)} ` +
-      `ready in ${chalk.cyan(`${Math.ceil(startupDuration)}ms`)} ` +
-      `and running at ${chalk.cyan(url)}`,
-  )
-
+  if (!skipStartLog) {
+    const startupDuration = Date.now() - startTime
+    const url = `http://${httpHost || 'localhost'}:${httpPort || '3333'}${basePath}`
+    const appType = isApp ? 'Sanity application' : 'Sanity Studio'
+    info(
+      `${appType} ` +
+        `using ${chalk.cyan(`vite@${require('vite/package.json').version}`)} ` +
+        `ready in ${chalk.cyan(`${Math.ceil(startupDuration)}ms`)} ` +
+        `and running at ${chalk.cyan(url)}`,
+    )
+  }
   return {close: () => server.close()}
 }

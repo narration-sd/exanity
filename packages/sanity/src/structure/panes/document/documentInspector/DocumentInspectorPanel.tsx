@@ -1,11 +1,11 @@
 import {Box} from '@sanity/ui'
-import {createElement, type ReactElement, useCallback} from 'react'
+import {useCallback} from 'react'
+import {Resizable} from 'sanity'
 
 import {usePane} from '../../../components'
 import {useStructureTool} from '../../../useStructureTool'
 import {DOCUMENT_INSPECTOR_MAX_WIDTH, DOCUMENT_INSPECTOR_MIN_WIDTH} from '../constants'
 import {useDocumentPane} from '../useDocumentPane'
-import {Resizable} from './Resizable'
 
 interface DocumentInspectorPanelProps {
   documentId: string
@@ -13,7 +13,9 @@ interface DocumentInspectorPanelProps {
   flex?: number | number[]
 }
 
-export function DocumentInspectorPanel(props: DocumentInspectorPanelProps): ReactElement | null {
+export function DocumentInspectorPanel(
+  props: DocumentInspectorPanelProps,
+): React.JSX.Element | null {
   const {documentId, documentType, flex} = props
   const {collapsed} = usePane()
   const {closeInspector, inspector} = useDocumentPane()
@@ -25,11 +27,10 @@ export function DocumentInspectorPanel(props: DocumentInspectorPanelProps): Reac
 
   if (collapsed || !inspector) return null
 
-  const element = createElement(inspector.component, {
-    onClose: handleClose,
-    documentId,
-    documentType,
-  })
+  const Component = inspector.component
+  const element = (
+    <Component onClose={handleClose} documentId={documentId} documentType={documentType} />
+  )
 
   if (features.resizablePanes) {
     return (
@@ -37,6 +38,7 @@ export function DocumentInspectorPanel(props: DocumentInspectorPanelProps): Reac
         as="aside"
         data-ui="DocumentInspectorPanel"
         flex={flex}
+        resizerPosition="left"
         maxWidth={DOCUMENT_INSPECTOR_MAX_WIDTH}
         minWidth={DOCUMENT_INSPECTOR_MIN_WIDTH}
       >

@@ -1,4 +1,4 @@
-import {CogIcon, UsersIcon} from '@sanity/icons'
+import {AddUserIcon, UsersIcon} from '@sanity/icons'
 import {Box, Menu, MenuDivider, Stack, Text} from '@sanity/ui'
 import {useCallback, useMemo, useState} from 'react'
 import {styled} from 'styled-components'
@@ -67,6 +67,7 @@ export function PresenceMenu() {
       placement: 'bottom',
       portal: true,
       scheme: scheme,
+      tone: 'default',
     }),
     [scheme],
   )
@@ -84,7 +85,8 @@ export function PresenceMenu() {
                 focused={focusedId === item.user.id}
                 key={item.user.id}
                 onFocus={handleItemFocus}
-                presence={item}
+                locations={item.locations}
+                user={item.user}
               />
             ))}
 
@@ -107,8 +109,8 @@ export function PresenceMenu() {
 
             <MenuItem
               as="a"
-              href={`https://sanity.io/manage/project/${projectId}`}
-              iconRight={CogIcon}
+              href={`https://www.sanity.io/manage/project/${projectId}/members?invite=true`}
+              icon={AddUserIcon}
               onFocus={handleClearFocusedItem}
               rel="noopener noreferrer"
               target="_blank"

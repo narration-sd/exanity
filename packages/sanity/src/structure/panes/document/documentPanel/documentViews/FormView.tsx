@@ -13,8 +13,10 @@ import {
   PresenceOverlay,
   useDocumentPresence,
   useDocumentStore,
+  usePerspective,
   useTranslation,
 } from 'sanity'
+import {useEffectEvent} from 'use-effect-event'
 
 import {Delay} from '../../../../components'
 import {structureLocaleNamespace} from '../../../../i18n'
@@ -52,31 +54,38 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
     onPathOpen,
     onSetCollapsedFieldSet,
     onSetActiveFieldGroup,
+    openPath,
   } = useDocumentPane()
+  const {selectedReleaseId} = usePerspective()
   const documentStore = useDocumentStore()
   const presence = useDocumentPresence(documentId)
   const {title} = useDocumentTitle()
-
   // The `patchChannel` is an INTERNAL publish/subscribe channel that we use to notify form-builder
   // nodes about both remote and local patches.
   // - Used by the Portable Text input to modify selections.
   // - Used by `withDocument` to reset value.
-  const patchChannel = useMemo(() => createPatchChannel(), [])
+  const [patchChannel] = useState(() => createPatchChannel())
 
   const isLocked = editState?.transactionSyncLock?.enabled
   const {t} = useTranslation(structureLocaleNamespace)
 
-  useConditionalToast({
-    id: `sync-lock-${documentId}`,
-    status: 'warning',
-    enabled: isLocked,
-    title: t('document-view.form-view.sync-lock-toast.title'),
-    description: t('document-view.form-view.sync-lock-toast.description'),
-  })
+  const conditionalToastParams = useMemo(
+    () => ({
+      id: `sync-lock`,
+      status: 'warning' as const,
+      enabled: isLocked,
+      title: t('document-view.form-view.sync-lock-toast.title'),
+      description: t('document-view.form-view.sync-lock-toast.description'),
+      closable: true,
+    }),
+    [isLocked, t],
+  )
+
+  useConditionalToast(conditionalToastParams)
 
   useEffect(() => {
     const sub = documentStore.pair
-      .documentEvents(documentId, documentType)
+      .documentEvents(documentId, documentType, selectedReleaseId)
       .pipe(
         tap((event) => {
           if (event.type === 'mutation') {
@@ -93,23 +102,25 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
     return () => {
       sub.unsubscribe()
     }
-  }, [documentId, documentStore, documentType, patchChannel])
+  }, [documentId, documentStore, documentType, patchChannel, selectedReleaseId])
 
   const hasRev = Boolean(value?._rev)
+  const handleInitialValue = useEffectEvent(() => {
+    // this is a workaround for an issue that caused the document pushed to withDocument to get
+    // stuck at the first initial value.
+    // This effect is triggered only when the document goes from not having a revision, to getting one
+    // so it will kick in as soon as the document is received from the backend
+    patchChannel.publish({
+      type: 'mutation',
+      patches: [],
+      snapshot: value,
+    })
+  })
   useEffect(() => {
     if (hasRev) {
-      // this is a workaround for an issue that caused the document pushed to withDocument to get
-      // stuck at the first initial value.
-      // This effect is triggered only when the document goes from not having a revision, to getting one
-      // so it will kick in as soon as the document is received from the backend
-      patchChannel.publish({
-        type: 'mutation',
-        patches: [],
-        snapshot: value,
-      })
+      handleInitialValue()
     }
     // React to changes in hasRev only
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasRev])
 
   const [formRef, setFormRef] = useState<null | HTMLDivElement>(null)
@@ -159,7 +170,7 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
     >
       <PresenceOverlay margins={margins}>
         <Box as="form" onSubmit={preventDefault} ref={setRef}>
-          {connectionState === 'connecting' ? (
+          {connectionState === 'connecting' && !editState?.draft && !editState?.published ? (
             <Delay ms={300}>
               {/* TODO: replace with loading block */}
               <Flex align="center" direction="column" height="fill" justify="center">
@@ -181,11 +192,11 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
               <FormBuilder
                 __internal_fieldActions={fieldActions}
                 __internal_patchChannel={patchChannel}
+                changed={formState.changed}
                 collapsedFieldSets={collapsedFieldSets}
                 collapsedPaths={collapsedPaths}
-                focusPath={formState.focusPath}
-                changed={formState.changed}
                 focused={formState.focused}
+                focusPath={formState.focusPath}
                 groups={formState.groups}
                 id="root"
                 members={formState.members}
@@ -196,8 +207,11 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
                 onPathOpen={onPathOpen}
                 onSetFieldSetCollapsed={onSetCollapsedFieldSet}
                 onSetPathCollapsed={onSetCollapsedPath}
+                openPath={openPath}
                 presence={presence}
-                readOnly={connectionState === 'reconnecting' || formState.readOnly}
+                readOnly={
+                  connectionState === 'reconnecting' || formState.readOnly || !editState?.ready
+                }
                 schemaType={formState.schemaType}
                 validation={validation}
                 value={

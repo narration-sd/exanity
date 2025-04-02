@@ -1,9 +1,10 @@
 import {isEqual} from 'lodash'
-import {type ReactNode, useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
+import {type ReactNode, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import {SearchContext} from 'sanity/_singletons'
 
 import {type CommandListHandle} from '../../../../../../components'
 import {useSchema} from '../../../../../../hooks'
+import {useActiveReleases} from '../../../../../../releases/store/useActiveReleases'
 import {type SearchTerms} from '../../../../../../search'
 import {useCurrentUser} from '../../../../../../store'
 import {useSource} from '../../../../../source'
@@ -22,19 +23,39 @@ import {initialSearchState, searchReducer} from './reducer'
 interface SearchProviderProps {
   children?: ReactNode
   fullscreen?: boolean
+  /**
+   * list of perspective ids
+   * if provided, then it means that the search is being done using a specific list of perspectives
+   */
+
+  /**
+   * list of document ids that should be be disabled in the search
+   * if they are found to exist in the search results
+   * if provided, then ids should be checked against this list
+   */
+  disabledDocumentIds?: string[]
+  /**
+   * If true, the search action (such as adding a document to a release list, for example) should be allowed to disable under the right conditions
+   */
+  canDisableAction?: boolean
 }
 
 /**
  * @internal
  */
-export function SearchProvider({children, fullscreen}: SearchProviderProps) {
-  const onCloseRef = useRef<(() => void) | null>(null)
+export function SearchProvider({
+  children,
+  fullscreen,
+  disabledDocumentIds,
+  canDisableAction,
+}: SearchProviderProps) {
+  const [onClose, setOnClose] = useState<(() => void) | null>(null)
   const [searchCommandList, setSearchCommandList] = useState<CommandListHandle | null>(null)
-
+  const {data: releases} = useActiveReleases()
   const schema = useSchema()
   const currentUser = useCurrentUser()
   const {
-    search: {operators, filters, enableLegacySearch},
+    search: {operators, filters, strategy},
   } = useSource()
 
   // Create field, filter and operator dictionaries
@@ -60,16 +81,9 @@ export function SearchProvider({children, fullscreen}: SearchProviderProps) {
           cursor: null,
           nextCursor: null,
         },
-        enableLegacySearch,
+        strategy,
       }),
-    [
-      currentUser,
-      fieldDefinitions,
-      filterDefinitions,
-      fullscreen,
-      operatorDefinitions,
-      enableLegacySearch,
-    ],
+    [currentUser, fullscreen, fieldDefinitions, operatorDefinitions, filterDefinitions, strategy],
   )
   const [state, dispatch] = useReducer(searchReducer, initialState)
 
@@ -102,10 +116,6 @@ export function SearchProvider({children, fullscreen}: SearchProviderProps) {
       operatorDefinitions,
     }),
   )
-
-  const handleSetOnClose = useCallback((onClose: () => void) => {
-    onCloseRef.current = onClose
-  }, [])
 
   /**
    * Trigger search when any terms (query or selected types) OR current pageIndex has changed
@@ -140,10 +150,12 @@ export function SearchProvider({children, fullscreen}: SearchProviderProps) {
             `findability-source: global`,
             `findability-filter-count:${completeFilters.length}`,
           ],
-          limit: SEARCH_LIMIT,
+          // `groq2024` supports pagination. Therefore, fetch fewer results.
+          limit: strategy === 'groq2024' ? 25 : SEARCH_LIMIT,
           skipSortByScore: ordering.ignoreScore,
           ...(ordering.sort ? {sort: [ordering.sort]} : {}),
           cursor: cursor || undefined,
+          perspective: 'raw',
         },
         terms: {
           ...terms,
@@ -153,7 +165,9 @@ export function SearchProvider({children, fullscreen}: SearchProviderProps) {
       })
 
       // Update previousCursorRef snapshot only on a valid search request
-      previousCursorRef.current = cursor
+      if (cursorChanged) {
+        previousCursorRef.current = cursor
+      }
     }
 
     // Update snapshots, even if no search request was executed
@@ -169,6 +183,8 @@ export function SearchProvider({children, fullscreen}: SearchProviderProps) {
     searchState.terms,
     terms,
     cursor,
+    strategy,
+    releases,
   ])
 
   /**
@@ -184,21 +200,22 @@ export function SearchProvider({children, fullscreen}: SearchProviderProps) {
     isMountedRef.current = true
   }, [dispatch, hasValidTerms, result.hits, terms.query, terms.types])
 
-  return (
-    <SearchContext.Provider
-      value={{
-        dispatch,
-        onClose: onCloseRef?.current,
-        searchCommandList,
-        setSearchCommandList,
-        setOnClose: handleSetOnClose,
-        state: {
-          ...state,
-          fullscreen,
-        },
-      }}
-    >
-      {children}
-    </SearchContext.Provider>
+  const value = useMemo(
+    () => ({
+      dispatch,
+      onClose,
+      searchCommandList,
+      setSearchCommandList,
+      setOnClose,
+      state: {
+        ...state,
+        fullscreen,
+        disabledDocumentIds,
+        canDisableAction,
+      },
+    }),
+    [fullscreen, disabledDocumentIds, canDisableAction, onClose, searchCommandList, state],
   )
+
+  return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
 }

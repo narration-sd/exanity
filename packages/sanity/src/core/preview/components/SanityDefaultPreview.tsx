@@ -5,10 +5,9 @@ import {type SanityImageSource} from '@sanity/image-url/lib/types/types'
 import {type ImageUrlFitMode} from '@sanity/types'
 import {
   type ComponentType,
-  createElement,
   type ElementType,
   isValidElement,
-  type ReactElement,
+  memo,
   type ReactNode,
   useCallback,
   useMemo,
@@ -37,8 +36,10 @@ export interface SanityDefaultPreviewProps extends Omit<PreviewProps, 'renderDef
  * Used in cases where no custom preview component is provided
  * @internal
  * */
-export function SanityDefaultPreview(props: SanityDefaultPreviewProps): ReactElement {
-  const {icon, layout, media: mediaProp, imageUrl, title, tooltip, ...restProps} = props
+export const SanityDefaultPreview = memo(function SanityDefaultPreview(
+  props: SanityDefaultPreviewProps,
+): React.JSX.Element {
+  const {icon: Icon, layout, media: mediaProp, imageUrl, title, tooltip, ...restProps} = props
 
   const client = useClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
   const imageBuilder = useMemo(() => imageUrlBuilder(client), [client])
@@ -50,6 +51,8 @@ export function SanityDefaultPreview(props: SanityDefaultPreviewProps): ReactEle
       dimensions: {width?: number; height?: number; fit: ImageUrlFitMode; dpr?: number}
     }) => {
       const {dimensions} = options
+      const width = dimensions.width || 100
+      const height = dimensions.height || 100
 
       // Handle sanity image
       return (
@@ -61,8 +64,8 @@ export function SanityDefaultPreview(props: SanityDefaultPreviewProps): ReactEle
               .image(
                 mediaProp as SanityImageSource /*will only enter this code path if it's compatible*/,
               )
-              .width(dimensions.width || 100)
-              .height(dimensions.height || 100)
+              .width(width)
+              .height(height)
               .fit(dimensions.fit)
               .dpr(dimensions.dpr || 1)
               .url() || ''
@@ -74,11 +77,11 @@ export function SanityDefaultPreview(props: SanityDefaultPreviewProps): ReactEle
   )
 
   const renderIcon = useCallback(() => {
-    return createElement(icon || FallbackIcon)
-  }, [icon])
+    return Icon ? <Icon /> : <FallbackIcon />
+  }, [Icon])
 
   const media = useMemo(() => {
-    if (icon === false) {
+    if (Icon === false) {
       // Explicitly disabled
       return false
     }
@@ -108,7 +111,7 @@ export function SanityDefaultPreview(props: SanityDefaultPreviewProps): ReactEle
 
     // Render fallback icon
     return renderIcon
-  }, [icon, imageUrl, mediaProp, renderIcon, renderMedia, title])
+  }, [Icon, imageUrl, mediaProp, renderIcon, renderMedia, title])
 
   const previewProps: Omit<PreviewProps, 'renderDefault'> = useMemo(
     () => ({
@@ -120,20 +123,19 @@ export function SanityDefaultPreview(props: SanityDefaultPreviewProps): ReactEle
     [media, restProps, title],
   )
 
-  const layoutComponent = _previewComponents[layout || 'default']
+  const LayoutComponent = _previewComponents[layout || 'default'] as ComponentType<
+    Omit<PreviewProps, 'renderDefault'>
+  >
 
-  const children = createElement(
-    layoutComponent as ComponentType<Omit<PreviewProps, 'renderDefault'>>,
-    previewProps,
-  )
+  const children = <LayoutComponent {...previewProps} />
 
   if (tooltip) {
     return (
       <Tooltip
         content={tooltip}
         disabled={!tooltip}
-        fallbackPlacements={['top-end']}
-        placement="bottom-end"
+        fallbackPlacements={['top-end', 'bottom-end']}
+        placement="right"
       >
         {/* Currently tooltips won't trigger without a wrapping element */}
         <div>{children}</div>
@@ -142,4 +144,5 @@ export function SanityDefaultPreview(props: SanityDefaultPreviewProps): ReactEle
   }
 
   return children
-}
+})
+SanityDefaultPreview.displayName = 'Memo(SanityDefaultPreview)'

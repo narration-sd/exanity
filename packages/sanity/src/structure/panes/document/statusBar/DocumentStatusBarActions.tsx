@@ -1,15 +1,19 @@
+/* eslint-disable no-warning-comments */
 /* eslint-disable camelcase */
-import {Flex, Hotkeys, LayerProvider, Stack, Text} from '@sanity/ui'
-import {memo, useMemo, useState} from 'react'
+import {Flex, LayerProvider, Stack, Text} from '@sanity/ui'
+import {memo, useCallback, useMemo, useState} from 'react'
 import {
   type DocumentActionComponent,
   type DocumentActionDescription,
-  useTimelineSelector,
+  Hotkeys,
+  usePerspective,
+  useSource,
 } from 'sanity'
 
 import {Button, Tooltip} from '../../../../ui-components'
 import {RenderActionCollectionState} from '../../../components'
 import {HistoryRestoreAction} from '../../../documentActions'
+import {toLowerCaseNoSpaces} from '../../../util/toLowerCaseNoSpaces'
 import {useDocumentPane} from '../useDocumentPane'
 import {ActionMenuButton} from './ActionMenuButton'
 import {ActionStateDialog} from './ActionStateDialog'
@@ -20,9 +24,13 @@ interface DocumentStatusBarActionsInnerProps {
   states: DocumentActionDescription[]
 }
 
-function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsInnerProps) {
+const DocumentStatusBarActionsInner = memo(function DocumentStatusBarActionsInner(
+  props: DocumentStatusBarActionsInnerProps,
+) {
   const {disabled, showMenu, states} = props
-  const {__internal_tasks} = useDocumentPane()
+  const {__internal_tasks} = useSource()
+  const {editState} = useDocumentPane()
+  const {selectedReleaseId} = usePerspective()
   const [firstActionState, ...menuActionStates] = states
   const [buttonElement, setButtonElement] = useState<HTMLButtonElement | null>(null)
 
@@ -35,6 +43,7 @@ function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsInnerProps
         {firstActionState.title && <Text size={1}>{firstActionState.title}</Text>}
         {firstActionState.shortcut && (
           <Hotkeys
+            data-testid="document-status-bar-hotkeys"
             fontSize={1}
             style={{marginTop: -4, marginBottom: -4}}
             keys={String(firstActionState.shortcut)
@@ -46,21 +55,27 @@ function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsInnerProps
     )
   }, [firstActionState])
 
+  const sideMenuItems = useMemo(() => {
+    return selectedReleaseId ? [firstActionState, ...menuActionStates] : menuActionStates
+  }, [selectedReleaseId, firstActionState, menuActionStates])
+
+  const canShowAction = firstActionState && !selectedReleaseId && !editState?.liveEdit
+
+  /* Version / Bundling handling */
   return (
     <Flex align="center" gap={1}>
       {__internal_tasks && __internal_tasks.footerAction}
-      {firstActionState && (
+      {canShowAction && (
         <LayerProvider zOffset={200}>
           <Tooltip disabled={!tooltipContent} content={tooltipContent} placement="top">
             <Stack>
               <Button
-                data-testid={`action-${firstActionState.label}`}
+                data-testid={`action-${toLowerCaseNoSpaces(firstActionState.label)}`}
                 disabled={disabled || Boolean(firstActionState.disabled)}
                 icon={firstActionState.icon}
                 // eslint-disable-next-line react/jsx-handler-names
                 onClick={firstActionState.onHandle}
                 ref={setButtonElement}
-                size="large"
                 text={firstActionState.label}
                 tone={firstActionState.tone || 'primary'}
               />
@@ -68,15 +83,16 @@ function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsInnerProps
           </Tooltip>
         </LayerProvider>
       )}
-      {showMenu && menuActionStates.length > 0 && (
-        <ActionMenuButton actionStates={menuActionStates} disabled={disabled} />
+      {/* if it's in version we always only want to show the items on the side menu and not on the main action */}
+      {((showMenu && menuActionStates.length > 0) || selectedReleaseId) && (
+        <ActionMenuButton actionStates={sideMenuItems} disabled={disabled} />
       )}
       {firstActionState && firstActionState.dialog && (
         <ActionStateDialog dialog={firstActionState.dialog} referenceElement={buttonElement} />
       )}
     </Flex>
   )
-}
+})
 
 export const DocumentStatusBarActions = memo(function DocumentStatusBarActions() {
   const {actions: allActions, connectionState, documentId, editState} = useDocumentPane()
@@ -92,6 +108,24 @@ export const DocumentStatusBarActions = memo(function DocumentStatusBarActions()
     [allActions],
   )
 
+  const renderDocumentStatusBarActions = useCallback<
+    (props: {states: DocumentActionDescription[]}) => React.ReactNode
+  >(
+    ({states}) => (
+      <DocumentStatusBarActionsInner
+        disabled={connectionState !== 'connected'}
+        // isMenuOpen={isMenuOpen}
+        // onMenuOpen={handleMenuOpen}
+        // onMenuClose={handleMenuClose}
+        showMenu={actions.length > 1}
+        states={states}
+        // Use document ID as key to make sure that the actions state is reset when the document changes
+        key={documentId}
+      />
+    ),
+    [actions.length, connectionState, documentId],
+  )
+
   if (actions.length === 0 || !editState) {
     return null
   }
@@ -104,34 +138,32 @@ export const DocumentStatusBarActions = memo(function DocumentStatusBarActions()
       actionProps={editState}
       group="default"
     >
-      {({states}) => (
-        <DocumentStatusBarActionsInner
-          disabled={connectionState !== 'connected'}
-          // isMenuOpen={isMenuOpen}
-          // onMenuOpen={handleMenuOpen}
-          // onMenuClose={handleMenuClose}
-          showMenu={actions.length > 1}
-          states={states}
-          // Use document ID as key to make sure that the actions state is reset when the document changes
-          key={documentId}
-        />
-      )}
+      {renderDocumentStatusBarActions}
     </RenderActionCollectionState>
   )
 })
 
 export const HistoryStatusBarActions = memo(function HistoryStatusBarActions() {
-  const {actions, connectionState, editState, timelineStore} = useDocumentPane()
+  const {actions, connectionState, editState, revisionId: revision} = useDocumentPane()
 
-  // Subscribe to external timeline state changes
-  const revTime = useTimelineSelector(timelineStore, (state) => state.revTime)
-
-  const revision = revTime?.id || ''
   const disabled = (editState?.draft || editState?.published || {})._rev === revision
   const actionProps = useMemo(() => ({...(editState || {}), revision}), [editState, revision])
 
   // If multiple `restore` actions are defined, ensure only the final one is used.
   const historyActions = useMemo(() => (actions ?? []).filter(isRestoreAction).slice(-1), [actions])
+
+  const renderDocumentStatusBarActions = useCallback<
+    (props: {states: DocumentActionDescription[]}) => React.ReactNode
+  >(
+    ({states}) => (
+      <DocumentStatusBarActionsInner
+        disabled={connectionState !== 'connected' || Boolean(disabled)}
+        showMenu={false}
+        states={states}
+      />
+    ),
+    [connectionState, disabled],
+  )
 
   return (
     <RenderActionCollectionState
@@ -139,13 +171,7 @@ export const HistoryStatusBarActions = memo(function HistoryStatusBarActions() {
       actionProps={actionProps as any}
       group="default"
     >
-      {({states}) => (
-        <DocumentStatusBarActionsInner
-          disabled={connectionState !== 'connected' || Boolean(disabled)}
-          showMenu={false}
-          states={states}
-        />
-      )}
+      {renderDocumentStatusBarActions}
     </RenderActionCollectionState>
   )
 })

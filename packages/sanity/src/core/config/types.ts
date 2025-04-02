@@ -8,9 +8,10 @@ import {
   type Schema,
   type SchemaType,
   type SchemaTypeDefinition,
+  type SearchStrategy,
 } from '@sanity/types'
 import {type i18n} from 'i18next'
-import {type ComponentType, type ReactNode} from 'react'
+import {type ComponentType, type ErrorInfo, type ReactNode} from 'react'
 import {type Observable} from 'rxjs'
 import {type Router, type RouterState} from 'sanity/router'
 
@@ -109,8 +110,6 @@ export interface Tool<Options = any> {
 
   /**
    * React component for the icon representing the tool.
-   *
-   * @deprecated Tool icons are no longer displayed.
    */
   icon?: ComponentType
 
@@ -377,16 +376,60 @@ export interface PluginOptions {
     components?: StudioComponentsPluginOptions
   }
 
+  /**
+   * Config for the Sanity Media Library asset source integration.
+   * @beta
+   */
+  mediaLibrary?: MediaLibraryConfig
+
   /** @beta @hidden */
   i18n?: LocalePluginOptions
   search?: {
     unstable_partialIndexing?: {
       enabled: boolean
     }
+
+    /**
+     * Control the strategy used for searching documents. This should generally only be used if you
+     * wish to try experimental search strategies.
+     *
+     * This option takes precedence over the deprecated `search.enableLegacySearch` option.
+     *
+     * Can be one of:
+     *
+     * - `"groqLegacy"` (default): Use client-side tokenization and schema introspection to search
+     *   using the GROQ Query API.
+     * - `"groq2024"`: (experimental) Perform full text searching using the GROQ Query API and its
+     *   new `text::matchQuery` function.
+     */
+    strategy?: SearchStrategy
+
     /**
      * Enables the legacy Query API search strategy.
+     *
+     * @deprecated Use `search.strategy` instead.
      */
     enableLegacySearch?: boolean
+  }
+
+  /** @internal */
+  __internal_serverDocumentActions?: WorkspaceOptions['__internal_serverDocumentActions']
+
+  /** Configuration for studio beta features.
+   * @internal
+   */
+  beta?: BetaFeatures
+
+  /** Configuration for error handling.
+   * @beta
+   */
+  onUncaughtError?: (error: Error, errorInfo: ErrorInfo) => void
+  /**
+   * @hidden
+   * @internal
+   */
+  announcements?: {
+    enabled: boolean
   }
 }
 
@@ -445,6 +488,10 @@ export interface WorkspaceOptions extends SourceOptions {
    * @internal
    */
   tasks?: DefaultPluginsWorkspaceOptions['tasks']
+  /**
+   * @internal
+   */
+  releases?: DefaultPluginsWorkspaceOptions['releases']
 
   /**
    * @hidden
@@ -508,9 +555,21 @@ export interface ResolveProductionUrlContext extends ConfigContext {
  * @hidden
  * @beta
  */
+
+export type DocumentActionsVersionType = 'published' | 'draft' | 'revision' | 'version'
+
+/**
+ * @hidden
+ * @beta
+ */
 export interface DocumentActionsContext extends ConfigContext {
   documentId?: string
   schemaType: string
+
+  /** releaseId of the open document, it's undefined if it's published or the draft */
+  releaseId?: string
+  /** the type of the currently active document. */
+  versionType?: DocumentActionsVersionType
 }
 
 /**
@@ -553,7 +612,7 @@ export interface DocumentLayoutProps {
    * The type of the document. This is a read-only property and changing it will have no effect.
    */
   documentType: string
-  renderDefault: (props: DocumentLayoutProps) => React.ReactElement
+  renderDefault: (props: DocumentLayoutProps) => React.JSX.Element
 }
 
 interface DocumentComponents {
@@ -749,6 +808,7 @@ export interface Source {
     }
 
     enableLegacySearch?: boolean
+    strategy?: SearchStrategy
   }
 
   /** @internal */
@@ -771,8 +831,31 @@ export interface Source {
   /** @beta */
   tasks?: WorkspaceOptions['tasks']
 
+  /** @beta */
+  releases?: WorkspaceOptions['releases']
+
   /** @internal */
   __internal_serverDocumentActions?: WorkspaceOptions['__internal_serverDocumentActions']
+  /** Configuration for studio features.
+   * @internal
+   */
+  beta?: BetaFeatures
+  /** Configuration for error handling.
+   * @beta
+   */
+  onUncaughtError?: (error: Error, errorInfo: ErrorInfo) => void
+  /**
+   * @hidden
+   * @internal
+   */
+  announcements?: {
+    enabled: boolean
+  }
+  /**
+   * Config for the Sanity Media Library asset source integration.
+   * @beta
+   */
+  mediaLibrary?: MediaLibraryConfig
 }
 
 /** @internal */
@@ -811,7 +894,6 @@ export interface WorkspaceSummary extends DefaultPluginsWorkspaceOptions {
       source: Observable<Source>
     }>
   }
-  __internal_serverDocumentActions: WorkspaceOptions['__internal_serverDocumentActions']
 }
 
 /**
@@ -884,4 +966,87 @@ export type {
 export type DefaultPluginsWorkspaceOptions = {
   tasks: {enabled: boolean}
   scheduledPublishing: ScheduledPublishingPluginOptions
+  releases: {enabled: boolean}
+}
+
+/**
+ * Config for the Sanity Media Library asset source integration.
+ * @beta
+ */
+export interface MediaLibraryConfig {
+  /**
+   * Whether the Media Library is enabled.
+   */
+  enabled?: boolean
+  /**
+   * The ID of the Media Library that is connected to the Studio.
+   * If not provided, the Media Library will be automatically detected.
+   */
+  libraryId?: string
+}
+
+/**
+ * @internal
+ * Configuration for studio beta features.
+ * */
+export interface BetaFeatures {
+  /**
+   * @beta
+   * @hidden
+   * @deprecated beta feature is no longer available.
+   * */
+  treeArrayEditing?: {
+    /**
+     * @deprecated beta feature is no longer available.
+     */
+    enabled: boolean
+  }
+
+  /**
+   * @beta
+   */
+  create?: {
+    /**
+     * When true, a "Start in Sanity Create" action will be shown for all new documents, in place of regular document actions,
+     * when the following are true:
+     * - the origin of the current url is listed under Studios in sanity.to/manage (OR fallbackStudioOrigin is provided)
+     * - [origin]/static/create-manifest.json is available over HTTP GET
+     *
+     * The manifest file is automatically created and deployed when deploying studios with `sanity deploy`
+     *
+     * @see #fallbackStudioOrigin
+     */
+    startInCreateEnabled?: boolean
+
+    /**
+     * To show the "Start in Create" button on localhost, or in studios not listed under Studios in sanity.io/manage
+     * provide a fallback origin as a string.
+     *
+     * The string must be the exactly equal `name` as shown for the Studio in manage, and the studio must have create-manifest.json available.
+     *
+     * If the provided fallback Studio does not expose create-manifest.json "Start in Sanity Create" will fail when using the fallback.
+     *
+     * Example: `wonderful.sanity.studio`
+     *
+     * Keep in mind that when fallback origin is used, Sanity Create will used the schema types and dataset in the *deployed* Studio,
+     * not from localhost.
+     *
+     * To see data synced from Sanity Create in your localhost Studio, you must ensure that the deployed fallback studio uses the same
+     * workspace and schemas as your local configuration.
+     *
+     * @see #startInCreateEnabled
+     */
+    fallbackStudioOrigin?: string
+  }
+  /**
+   * Config for the history events API .
+   *
+   * If enabled, it will use the new events API to fetch document history.
+   *
+   * If it is not enabled, it will continue using the legacy Timeline.
+   */
+  eventsAPI?: {
+    documents?: boolean
+    releases?: boolean
+  }
 }

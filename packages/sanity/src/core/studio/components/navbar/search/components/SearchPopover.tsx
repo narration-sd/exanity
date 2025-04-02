@@ -1,10 +1,10 @@
-import {Card, Portal, useClickOutside, useLayer} from '@sanity/ui'
+import {type StackablePerspective} from '@sanity/client'
+import {Card, Portal, useClickOutsideEvent, useLayer} from '@sanity/ui'
 import {AnimatePresence, motion, type Transition, type Variants} from 'framer-motion'
-import {useCallback, useRef, useState} from 'react'
+import {useRef, useState} from 'react'
 import FocusLock from 'react-focus-lock'
 import {styled} from 'styled-components'
 
-import {useTranslation} from '../../../../../i18n'
 import {supportsTouch} from '../../../../../util'
 import {
   POPOVER_INPUT_PADDING,
@@ -29,6 +29,7 @@ export interface SearchPopoverProps {
   disableIntentLink?: boolean
   onClose: () => void
   onItemSelect?: ItemSelectHandler
+  previewPerspective?: StackablePerspective[]
   /**
    * If provided, will trigger to open the search popover when user types hotkey + k
    */
@@ -53,7 +54,7 @@ const OVERLAY_VARIANTS: Variants = {
 
 const Y_POSITION = 12 // vh
 
-const MotionOverlay = styled(motion(Card))`
+const MotionOverlay = styled(motion.create(Card))`
   background-color: var(--card-backdrop-color);
   bottom: 0;
   left: 0;
@@ -62,7 +63,7 @@ const MotionOverlay = styled(motion(Card))`
   top: 0;
 `
 
-const SearchMotionCard = styled(motion(Card))`
+const SearchMotionCard = styled(motion.create(Card))`
   display: flex !important;
   flex-direction: column;
   left: 50%;
@@ -84,14 +85,14 @@ export function SearchPopover({
   onClose,
   onItemSelect,
   onOpen,
+  previewPerspective,
   open,
 }: SearchPopoverProps) {
   const [inputElement, setInputElement] = useState<HTMLInputElement | null>(null)
 
-  const popoverElement = useRef<HTMLElement | null>(null)
+  const popoverElement = useRef<HTMLDivElement | null>(null)
 
   const {isTopLayer, zIndex} = useLayer()
-  const {t} = useTranslation()
 
   const {
     onClose: onSearchClose,
@@ -103,13 +104,9 @@ export function SearchPopover({
   /**
    * Check for top-most layer to prevent closing if a portalled element (i.e. menu button) is active
    */
-  const handleClickOutside = useCallback(() => {
-    if (isTopLayer && onSearchClose && open) {
-      onSearchClose()
-    }
-  }, [isTopLayer, onSearchClose, open])
-
-  useClickOutside(handleClickOutside, [popoverElement.current])
+  useClickOutsideEvent(isTopLayer && open && !!onSearchClose && onSearchClose, () => [
+    popoverElement.current,
+  ])
 
   return (
     <SearchWrapper hasValidTerms={hasValidTerms} onClose={onClose} onOpen={onOpen} open={open}>
@@ -149,6 +146,7 @@ export function SearchPopover({
                     inputElement={inputElement}
                     onItemSelect={onItemSelect}
                     disableIntentLink={disableIntentLink}
+                    previewPerspective={previewPerspective}
                   />
                 ) : (
                   <RecentSearches inputElement={inputElement} />

@@ -8,6 +8,7 @@ import resolveFrom from 'resolve-from'
 import semver, {type SemVer} from 'semver'
 
 import {peerDependencies} from '../../../../package.json'
+import {determineIsApp} from './determineIsApp'
 
 const defaultStudioManifestProps: PartialPackageManifest = {
   name: 'studio',
@@ -31,6 +32,13 @@ interface CheckResult {
  * Additionally, returns the version of the 'sanity' dependency from the package.json.
  */
 export async function checkRequiredDependencies(context: CliCommandContext): Promise<CheckResult> {
+  // currently there's no check needed for core apps,
+  // but this should be removed once they are more mature
+  const isApp = determineIsApp(context.cliConfig)
+  if (isApp) {
+    return {didInstall: false, installedSanityVersion: ''}
+  }
+
   const {workDir: studioPath, output} = context
   const [studioPackageManifest, installedStyledComponentsVersion, installedSanityVersion] =
     await Promise.all([
@@ -49,7 +57,10 @@ export async function checkRequiredDependencies(context: CliCommandContext): Pro
   // The studio _must_ now declare `styled-components` as a dependency. If it's not there,
   // we'll want to automatically _add it_ to the manifest and tell the user to reinstall
   // dependencies before running whatever command was being run
-  const declaredStyledComponentsVersion = studioPackageManifest.dependencies['styled-components']
+  const declaredStyledComponentsVersion =
+    studioPackageManifest.dependencies['styled-components'] ||
+    studioPackageManifest.devDependencies['styled-components']
+
   if (!declaredStyledComponentsVersion) {
     const [file, ...args] = process.argv
     const deps = {'styled-components': wantedStyledComponentsVersionRange}

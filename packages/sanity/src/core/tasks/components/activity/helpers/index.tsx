@@ -1,6 +1,5 @@
 import {CalendarIcon, CircleIcon, EditIcon, LinkIcon, UserIcon} from '@sanity/icons'
 import {TextSkeleton} from '@sanity/ui'
-import {type ReactElement} from 'react'
 import {IntentLink} from 'sanity/router'
 import {styled} from 'styled-components'
 
@@ -37,7 +36,7 @@ export const NoWrap = styled.span`
   white-space: nowrap;
 `
 
-export function UpdatedTimeAgo(timestamp: string) {
+export function useUpdatedTimeAgo(timestamp: string) {
   const date = new Date(timestamp)
   const dateFormatter = useDateTimeFormat(DATE_FORMAT_OPTIONS)
   const formattedDate = dateFormatter.format(date)
@@ -105,8 +104,8 @@ function TargetContentChange({target}: {target: TaskTarget}) {
 
 export function getChangeDetails(activity: FieldChange): {
   text: string
-  icon: ReactElement
-  changeTo?: ReactElement
+  icon: React.JSX.Element
+  changeTo?: React.JSX.Element
 } {
   switch (activity.field) {
     case 'status': {

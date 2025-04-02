@@ -2,11 +2,11 @@ import {SortIcon} from '@sanity/icons'
 import {Card, Flex, Menu, MenuDivider} from '@sanity/ui'
 import {isEqual} from 'lodash'
 import {useCallback, useId, useMemo} from 'react'
-import {useWorkspace} from 'sanity'
 import {styled} from 'styled-components'
 
 import {Button, MenuButton, MenuItem} from '../../../../../../ui-components'
 import {useTranslation} from '../../../../../i18n'
+import {useWorkspace} from '../../../../workspace'
 import {useSearchState} from '../contexts/search/useSearchState'
 import {getOrderings} from '../definitions/getOrderings'
 import {type SearchOrdering} from '../types'
@@ -48,7 +48,7 @@ function CustomMenuItem({ordering}: {ordering: SearchOrdering}) {
 
 export function SortMenu() {
   const {t} = useTranslation()
-  const {enableLegacySearch = false} = useWorkspace().search
+  const {strategy: searchStrategy} = useWorkspace().search
   const {
     state: {ordering},
   } = useSearchState()
@@ -56,7 +56,7 @@ export function SortMenu() {
   const menuButtonId = useId()
 
   const menuOrderings: (SearchDivider | SearchOrdering)[] = useMemo(() => {
-    const orderings = getOrderings({enableLegacySearch})
+    const orderings = getOrderings({searchStrategy})
     return [
       orderings.relevance,
       {type: 'divider'},
@@ -66,7 +66,7 @@ export function SortMenu() {
       orderings.updatedAsc,
       orderings.updatedDesc,
     ]
-  }, [enableLegacySearch])
+  }, [searchStrategy])
 
   const currentMenuItem = menuOrderings.find(
     (item): item is SearchOrdering => isEqual(ordering, item) && !isSearchDivider(item),

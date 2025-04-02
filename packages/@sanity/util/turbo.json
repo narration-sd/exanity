@@ -1,18 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "extends": ["//"],
-  "pipeline": {
+  "tasks": {
     "build": {
       "outputs": [
-        "lib/**",
-        "index.js",
-        "client.js",
-        "concurrency-limiter.js",
-        "content.js",
-        "createSafeJsonParser.js",
-        "fs.js",
-        "legacyDateFormat.js",
-        "paths.js"
+        "lib/**"
       ]
     }
   }

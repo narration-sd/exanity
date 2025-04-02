@@ -1,5 +1,7 @@
+import {type StackablePerspective} from '@sanity/client'
 import {
-  type PreviewConfig,
+  type CrossDatasetType,
+  type GlobalDocumentReferenceType,
   type PreviewValue,
   type Reference,
   type SanityDocumentLike,
@@ -37,7 +39,7 @@ export type Previewable = (
 export type PreviewPath = FieldName[]
 
 /** @internal */
-export type Selection = [Id, FieldName[]]
+export type Selection = [id: Id, fields: FieldName[]]
 
 /**
  * @hidden
@@ -55,10 +57,7 @@ export type AvailabilityReason = 'READABLE' | 'PERMISSION_DENIED' | 'NOT_FOUND'
 /**
  * @hidden
  * @beta */
-export interface PreviewableType {
-  fields?: {name: string; type: SchemaType}[]
-  preview?: PreviewConfig
-}
+export type PreviewableType = SchemaType | CrossDatasetType | GlobalDocumentReferenceType
 
 /**
  * @hidden
@@ -94,6 +93,11 @@ export interface DraftsModelDocumentAvailability {
    * document readability for the draft document
    */
   draft: DocumentAvailability
+
+  /**
+   * document readability for the version document
+   */
+  version?: DocumentAvailability
 }
 
 /**
@@ -110,7 +114,22 @@ export interface DraftsModelDocument<T extends SanityDocumentLike = SanityDocume
     availability: DocumentAvailability
     snapshot: T | undefined
   }
+  version?: {
+    availability: DocumentAvailability
+    snapshot: T | undefined
+  }
 }
+
+/**
+ * Event emitted to notify preview subscribers when they need to refetch a document being previewed
+ * - 'connected' will happen when the store is connected to the invalidation channel, both initially and after a reconnect after a connection loss
+ * - 'mutation' will happen when a document has been mutated and the store needs to refetch a document
+ * @hidden
+ * @beta
+ */
+export type InvalidationChannelEvent =
+  | {type: 'connected'}
+  | {type: 'mutation'; documentId: string; visibility: string}
 
 /**
  * @hidden
@@ -121,7 +140,11 @@ export interface PreparedSnapshot {
 }
 
 /** @internal */
-export type ObserveDocumentTypeFromIdFn = (id: string) => Observable<string | undefined>
+export type ObserveDocumentTypeFromIdFn = (
+  id: string,
+  apiConfig?: ApiConfig,
+  perspective?: StackablePerspective[],
+) => Observable<string | undefined>
 
 /**
  * @hidden
@@ -131,5 +154,20 @@ export interface ObservePathsFn {
     value: Previewable,
     paths: (string | PreviewPath)[],
     apiConfig?: ApiConfig,
+    perspective?: StackablePerspective[],
   ): Observable<PreviewValue | SanityDocumentLike | Reference | string | null>
+}
+
+/**
+ * @hidden
+ * @beta */
+export interface ObserveDocumentAvailabilityFn {
+  (
+    id: string,
+    options?: {version?: string},
+  ): Observable<{
+    draft: DocumentAvailability
+    published: DocumentAvailability
+    version?: DocumentAvailability
+  }>
 }

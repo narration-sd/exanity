@@ -1,13 +1,12 @@
 import {type CliCommandDefinition, type CliCommandGroupDefinition} from '@sanity/cli'
 
+import {SCHEMA_STORE_FEATURE_ENABLED} from '../actions/schema/schemaStoreConstants'
 import backupGroup from './backup/backupGroup'
 import disableBackupCommand from './backup/disableBackupCommand'
 import downloadBackupCommand from './backup/downloadBackupCommand'
 import enableBackupCommand from './backup/enableBackupCommand'
 import listBackupCommand from './backup/listBackupCommand'
 import buildCommand from './build/buildCommand'
-import checkCommand from './check/checkCommand'
-import configCheckCommand from './config/configCheckCommand'
 import addCorsOriginCommand from './cors/addCorsOriginCommand'
 import corsGroup from './cors/corsGroup'
 import deleteCorsOriginCommand from './cors/deleteCorsOriginCommand'
@@ -41,24 +40,26 @@ import hookGroup from './hook/hookGroup'
 import listHookLogsCommand from './hook/listHookLogsCommand'
 import listHooksCommand from './hook/listHooksCommand'
 import printHookAttemptCommand from './hook/printHookAttemptCommand'
+import extractManifestCommand from './manifest/extractManifestCommand'
+import manifestGroup from './manifest/manifestGroup'
 import createMigrationCommand from './migration/createMigrationCommand'
 import listMigrationsCommand from './migration/listMigrationsCommand'
 import migrationGroup from './migration/migrationGroup'
 import runMigrationCommand from './migration/runMigrationCommand'
 import previewCommand from './preview/previewCommand'
+import deleteSchemaCommand from './schema/deleteSchemaCommand'
+import deploySchemaCommand from './schema/deploySchemaCommand'
 import extractSchemaCommand from './schema/extractSchemaCommand'
 import schemaGroup from './schema/schemaGroup'
+import fetchSchemaCommand from './schema/schemaListCommand'
 import validateSchemaCommand from './schema/validateSchemaCommand'
 import startCommand from './start/startCommand'
-import uninstallCommand from './uninstall/uninstallCommand'
 import inviteUserCommand from './users/inviteUserCommand'
 import listUsersCommand from './users/listUsersCommand'
 import usersGroup from './users/usersGroup'
 
-const commands: (CliCommandDefinition | CliCommandGroupDefinition)[] = [
+const baseCommands: (CliCommandDefinition | CliCommandGroupDefinition)[] = [
   buildCommand,
-  checkCommand,
-  configCheckCommand,
   datasetGroup,
   deployCommand,
   undeployCommand,
@@ -108,8 +109,17 @@ const commands: (CliCommandDefinition | CliCommandGroupDefinition)[] = [
   validateSchemaCommand,
   extractSchemaCommand,
   previewCommand,
-  uninstallCommand,
   execCommand,
+  manifestGroup,
+  extractManifestCommand,
+]
+
+const featureToggledSchemaCommands = [fetchSchemaCommand, deploySchemaCommand, deleteSchemaCommand]
+
+// Include experimental commands only when the feature flag is enabled
+const commands: (CliCommandDefinition | CliCommandGroupDefinition)[] = [
+  ...baseCommands,
+  ...(SCHEMA_STORE_FEATURE_ENABLED ? featureToggledSchemaCommands : []),
 ]
 
 /**

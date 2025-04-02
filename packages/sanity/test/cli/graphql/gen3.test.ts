@@ -1,19 +1,20 @@
-import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {orderBy} from 'lodash'
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {extractFromSanitySchema} from '../../../src/_internal/cli/actions/graphql/extractFromSanitySchema'
 import generateSchema from '../../../src/_internal/cli/actions/graphql/gen3'
 import manySelfRefsSchema from './fixtures/many-self-refs'
 import testStudioSchema from './fixtures/test-studio'
+import unionRefsSchema from './fixtures/union-refs'
 
 describe('GraphQL - Generation 3', () => {
   beforeEach(() => {
-    jest.useFakeTimers()
-    jest.resetModules()
+    vi.useFakeTimers()
+    vi.resetModules()
   })
 
   afterEach(() => {
-    jest.runAllTimers()
+    vi.runAllTimers()
   })
 
   /**
@@ -46,6 +47,7 @@ describe('GraphQL - Generation 3', () => {
   describe.each([
     {name: 'testStudioSchema', sanitySchema: testStudioSchema},
     {name: 'manySelfRefsSchema', sanitySchema: manySelfRefsSchema},
+    {name: 'unionRefsSchema', sanitySchema: unionRefsSchema},
   ])(`Union cache: sanitySchema: $name`, ({sanitySchema}) => {
     /**
      * @jest-environment jsdom

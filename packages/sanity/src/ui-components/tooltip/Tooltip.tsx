@@ -1,18 +1,20 @@
-/* eslint-disable no-restricted-imports */
 import {
   Box,
   Flex,
-  Hotkeys,
   type HotkeysProps,
   Text,
+  // eslint-disable-next-line no-restricted-imports
   Tooltip as UITooltip,
+  // eslint-disable-next-line no-restricted-imports
   type TooltipProps as UITooltipProps,
 } from '@sanity/ui'
 import {type ForwardedRef, forwardRef} from 'react'
 
+import {Hotkeys} from '../../core/components/Hotkeys'
 import {TOOLTIP_DELAY_PROPS} from './constants'
 
 /** @internal */
+
 export type TooltipProps = Omit<UITooltipProps, 'arrow' | 'padding' | 'shadow'> & {
   hotkeys?: HotkeysProps['keys']
 }

@@ -1,11 +1,13 @@
 import {SearchIcon, SpinnerIcon} from '@sanity/icons'
 import {Box, TextInput} from '@sanity/ui'
-import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {memo, useCallback, useEffect, useMemo, useState} from 'react'
 import {useObservableEvent} from 'react-rx'
 import {debounce, map, type Observable, of, tap, timer} from 'rxjs'
 import {
   type GeneralPreviewLayoutKey,
+  useActiveReleases,
   useI18nText,
+  usePerspective,
   useSchema,
   useTranslation,
   useUnique,
@@ -14,7 +16,7 @@ import {keyframes, styled} from 'styled-components'
 
 import {structureLocaleNamespace} from '../../i18n'
 import {type BaseStructureToolPaneProps} from '../types'
-import {EMPTY_RECORD} from './constants'
+import {EMPTY_RECORD, FULL_LIST_LIMIT} from './constants'
 import {DocumentListPaneContent} from './DocumentListPaneContent'
 import {applyOrderingFunctions, findStaticTypesInFilter} from './helpers'
 import {useShallowUnique} from './PaneContainer'
@@ -38,8 +40,32 @@ const rotate = keyframes`
   }
 `
 
+const fadeIn = keyframes`
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.1;
+  }
+  100% {
+    opacity: 0.4;
+  }
+`
+
 const AnimatedSpinnerIcon = styled(SpinnerIcon)`
   animation: ${rotate} 500ms linear infinite;
+`
+
+const SubtleSpinnerIcon = styled(SpinnerIcon)`
+  animation: ${rotate} 1500ms linear infinite;
+  opacity: 0.4;
+`
+
+const DelayedSubtleSpinnerIcon = styled(SpinnerIcon)`
+  animation:
+    ${rotate} 1500ms linear infinite,
+    ${fadeIn} 1000ms linear;
+  opacity: 0.4;
 `
 
 /**
@@ -49,7 +75,8 @@ const AnimatedSpinnerIcon = styled(SpinnerIcon)`
 export const DocumentListPane = memo(function DocumentListPane(props: DocumentListPaneProps) {
   const {childItemId, isActive, pane, paneKey, sortOrder: sortOrderRaw, layout} = props
   const schema = useSchema()
-
+  const releases = useActiveReleases()
+  const {perspectiveStack} = usePerspective()
   const {displayOptions, options} = pane
   const {apiVersion, filter} = options
   const params = useShallowUnique(options.params || EMPTY_RECORD)
@@ -68,11 +95,6 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
   const [searchInputValue, setSearchInputValue] = useState<string>('')
   const [searchInputElement, setSearchInputElement] = useState<HTMLInputElement | null>(null)
 
-  // A ref to determine if we should show the loading spinner in the search input.
-  // This is used to avoid showing the spinner on initial load of the document list.
-  // We only wan't to show the spinner when the user interacts with the search input.
-  const showSearchLoadingRef = useRef<boolean>(false)
-
   const sortWithOrderingFn =
     typeName && sortOrderRaw
       ? applyOrderingFunctions(sortOrderRaw, schema.get(typeName) as any)
@@ -82,20 +104,22 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
 
   const {
     error,
-    hasMaxItems,
-    isLazyLoading,
-    isLoading,
-    isSearchReady,
+    isLoadingFullList,
+    isLoading: documentListIsLoading,
     items,
-    onListChange,
+    fromCache,
+    onLoadFullList,
     onRetry,
   } = useDocumentList({
     apiVersion,
     filter,
+    perspective: perspectiveStack,
     params,
     searchQuery: searchQuery?.trim(),
     sortOrder,
   })
+
+  const isLoading = documentListIsLoading || releases.loading
 
   const handleQueryChange = useObservableEvent(
     (event$: Observable<React.ChangeEvent<HTMLInputElement>>) => {
@@ -122,30 +146,41 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
     [handleClearSearch],
   )
 
-  useEffect(() => {
-    if (showSearchLoadingRef.current === false && !isLoading) {
-      showSearchLoadingRef.current = true
-    }
-
-    return () => {
-      showSearchLoadingRef.current = false
-    }
-  }, [isLoading])
+  const [enableSearchSpinner, setEnableSearchSpinner] = useState<string | void>()
 
   useEffect(() => {
-    // Clear search field and reset showSearchLoadingRef ref
+    if (!enableSearchSpinner && !isLoading) {
+      setEnableSearchSpinner(paneKey)
+    }
+  }, [enableSearchSpinner, isLoading, paneKey])
+
+  useEffect(() => {
+    // Clear search field and disable search spinner
     // when switching between panes (i.e. when paneKey changes).
     handleClearSearch()
-    showSearchLoadingRef.current = false
+    setEnableSearchSpinner()
   }, [paneKey, handleClearSearch])
 
   const loadingVariant: LoadingVariant = useMemo(() => {
-    const showSpinner = isLoading && items.length === 0 && showSearchLoadingRef.current
-
-    if (showSpinner) return 'spinner'
+    if (isLoading && enableSearchSpinner === paneKey) {
+      return 'spinner'
+    }
+    if (fromCache) {
+      return 'subtle'
+    }
 
     return 'initial'
-  }, [isLoading, items.length])
+  }, [enableSearchSpinner, fromCache, isLoading, paneKey])
+
+  const textInputIcon = useMemo(() => {
+    if (loadingVariant === 'spinner') {
+      return AnimatedSpinnerIcon
+    }
+    if (searchInputValue && loadingVariant === 'subtle') {
+      return SubtleSpinnerIcon
+    }
+    return SearchIcon
+  }, [loadingVariant, searchInputValue])
 
   return (
     <>
@@ -155,9 +190,12 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
           autoComplete="off"
           border={false}
           clearButton={Boolean(searchQuery)}
-          disabled={!isSearchReady}
+          disabled={Boolean(error)}
           fontSize={[2, 2, 1]}
-          icon={loadingVariant === 'spinner' ? AnimatedSpinnerIcon : SearchIcon}
+          icon={textInputIcon}
+          iconRight={
+            loadingVariant === 'subtle' && !searchInputValue ? DelayedSubtleSpinnerIcon : null
+          }
           onChange={handleQueryChange}
           onClear={handleClearSearch}
           onKeyDown={handleSearchKeyDown}
@@ -173,16 +211,16 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
         childItemId={childItemId}
         error={error}
         filterIsSimpleTypeConstraint={!!typeName}
-        hasMaxItems={hasMaxItems}
+        hasMaxItems={items.length === FULL_LIST_LIMIT}
         hasSearchQuery={Boolean(searchQuery)}
         isActive={isActive}
-        isLazyLoading={isLazyLoading}
+        isLazyLoading={isLoadingFullList}
         isLoading={isLoading}
         items={items}
         key={paneKey}
         layout={layout}
         loadingVariant={loadingVariant}
-        onListChange={onListChange}
+        onEndReached={onLoadFullList}
         onRetry={onRetry}
         paneTitle={title}
         searchInputElement={searchInputElement}

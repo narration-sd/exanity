@@ -10,20 +10,26 @@ import {DiffTooltip} from './DiffTooltip'
 /** @internal */
 export interface DiffCardProps {
   annotation?: Annotation
-  as?: ElementType | keyof JSX.IntrinsicElements
+  as?: ElementType | keyof React.JSX.IntrinsicElements
   diff?: Diff
   disableHoverEffect?: boolean
   path?: Path | string
   tooltip?: {description?: ReactNode} | boolean
 }
 
-const StyledCard = styled(Card)`
+interface StyledCardProps {
+  $annotationColor: {backgroundColor: string; color: string}
+}
+
+const StyledCard = styled(Card)<StyledCardProps>`
   --diff-card-radius: ${({theme}) => rem(theme.sanity.radius[2])};
   --diff-card-bg-color: ${({theme}) => theme.sanity.color.card.enabled.bg};
 
   max-width: 100%;
   position: relative;
   border-radius: var(--diff-card-radius);
+  background-color: ${({$annotationColor}) => $annotationColor.backgroundColor};
+  color: ${({$annotationColor}) => $annotationColor.color};
 
   &:not(del) {
     text-decoration: none;
@@ -100,13 +106,12 @@ export const DiffCard = forwardRef(function DiffCard(
       as={as}
       className={className}
       data-hover={disableHoverEffect || !annotation ? undefined : ''}
+      data-ui="diff-card"
       ref={ref}
       radius={1}
-      style={{
-        ...style,
-        backgroundColor: color.background,
-        color: color.text,
-      }}
+      // Added annotation color to the card using css to make it possible to override by the ReleaseReview
+      $annotationColor={{backgroundColor: color.background, color: color.text}}
+      style={style}
     >
       {children}
     </StyledCard>

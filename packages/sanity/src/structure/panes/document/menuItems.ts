@@ -1,6 +1,7 @@
-import {EarthAmericasIcon, JsonIcon} from '@sanity/icons'
+import {EarthAmericasIcon, JsonIcon, LinkIcon, TransferIcon} from '@sanity/icons'
 import {type DocumentInspector, type DocumentInspectorMenuItem, type TFunction} from 'sanity'
 
+import {type DocumentIdStack} from '../../hooks/useDocumentIdStack'
 import {type PaneMenuItem, type StructureToolFeatures} from '../../types'
 import {INSPECT_ACTION_PREFIX} from './constants'
 
@@ -10,6 +11,7 @@ interface GetMenuItemsParams {
   hasValue: boolean
   inspectors: DocumentInspector[]
   previewUrl?: string | null
+  documentIdStack?: DocumentIdStack
   inspectorMenuItems: DocumentInspectorMenuItem[]
   t: TFunction
 }
@@ -52,6 +54,25 @@ function getInspectItem({hasValue, t}: GetMenuItemsParams): PaneMenuItem {
   }
 }
 
+function getCompareVersionsItem({documentIdStack, t}: GetMenuItemsParams): PaneMenuItem | null {
+  const isDisabled = typeof documentIdStack?.previousId === 'undefined'
+
+  // TODO: It would be preferable to display the option in an inert state, but the `isDisabled`
+  // property does not appear to have any impact. Instead, we simply exclude the option when
+  // there is no version to compare.
+  if (isDisabled) {
+    return null
+  }
+
+  return {
+    action: 'compareVersions',
+    group: 'inspectors',
+    title: t('compare-versions.menu-item.title'),
+    icon: TransferIcon,
+    isDisabled,
+  }
+}
+
 export function getProductionPreviewItem({previewUrl, t}: GetMenuItemsParams): PaneMenuItem | null {
   if (!previewUrl) return null
 
@@ -69,9 +90,17 @@ export function getMenuItems(params: GetMenuItemsParams): PaneMenuItem[] {
   const items = [
     // Get production preview item
     getProductionPreviewItem(params),
+    getCompareVersionsItem(params),
   ].filter(Boolean) as PaneMenuItem[]
 
   return [
+    // Always present document menu item to copy current url to clipboard
+    {
+      action: 'copy-document-url',
+      showAsAction: true,
+      title: params.t('action.copy-document-url.label'),
+      icon: LinkIcon,
+    },
     ...inspectorItems,
 
     // TODO: convert to inspector or document view?

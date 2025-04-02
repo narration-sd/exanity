@@ -1,4 +1,5 @@
 import {type ProjectTemplate} from '../initProject'
+import appTemplate from './appQuickstart'
 import blog from './blog'
 import clean from './clean'
 import getStartedTemplate from './getStarted'
@@ -10,6 +11,7 @@ import shopifyOnline from './shopifyOnline'
 const templates: Record<string, ProjectTemplate | undefined> = {
   blog,
   clean,
+  'app-quickstart': appTemplate,
   'get-started': getStartedTemplate,
   moviedb,
   shopify,

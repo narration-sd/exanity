@@ -6,7 +6,7 @@ import {
   PortableTextEditable,
   PortableTextEditor,
   type RangeDecoration,
-} from '@sanity/portable-text-editor'
+} from '@portabletext/editor'
 import {Schema} from '@sanity/schema'
 import {defineArrayMember, defineField, isKeySegment, type PortableTextBlock} from '@sanity/types'
 import {Box, Button, Card, Code, Container, Flex, Label, Stack, Text} from '@sanity/ui'
@@ -17,8 +17,8 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useCurrentUser} from '../../store'
 import {type CommentDocument} from '../types'
 import {
+  buildCommentRangeDecorations,
   buildCommentThreadItems,
-  buildRangeDecorations,
   buildTextSelectionFromFragment,
 } from '../utils'
 
@@ -149,7 +149,7 @@ export default function CommentInlineHighlightDebugStory() {
 
   const buildRangeDecorationsCallback = useCallback(
     () =>
-      buildRangeDecorations({
+      buildCommentRangeDecorations({
         comments: comments.map((c) => c.parentComment),
         value,
         onDecorationHoverStart: setCurrentHoveredCommentId,

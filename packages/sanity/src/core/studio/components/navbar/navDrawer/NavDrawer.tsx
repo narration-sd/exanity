@@ -7,6 +7,7 @@ import {styled} from 'styled-components'
 
 import {Button} from '../../../../../ui-components'
 import {UserAvatar} from '../../../../components'
+import {CapabilityGate} from '../../../../components/CapabilityGate'
 import {type NavbarAction, type Tool} from '../../../../config'
 import {useTranslation} from '../../../../i18n'
 import {useColorSchemeSetValue} from '../../../colorScheme'
@@ -53,7 +54,7 @@ const Root = styled(Layer)`
   height: 100%;
 `
 
-const BackdropMotion = styled(motion(Card))`
+const BackdropMotion = styled(motion.create(Card))`
   position: absolute;
   top: 0;
   left: 0;
@@ -62,7 +63,7 @@ const BackdropMotion = styled(motion(Card))`
   background: var(--card-shadow-penumbra-color);
 `
 
-const InnerCardMotion = styled(motion(Card))`
+const InnerCardMotion = styled(motion.create(Card))`
   position: relative;
   pointer-events: all;
   flex-direction: column;
@@ -111,6 +112,10 @@ export const NavDrawer = memo(function NavDrawer(props: NavDrawerProps) {
     return actions
       ?.filter((v) => v.location === 'sidebar')
       ?.map((action) => {
+        const {render: ActionComponent} = action
+
+        if (ActionComponent) return <ActionComponent key={action.name} />
+
         return (
           <Button
             icon={action?.icon}
@@ -158,18 +163,20 @@ export const NavDrawer = memo(function NavDrawer(props: NavDrawerProps) {
                   <Flex align="center">
                     {/* Current user */}
                     <Flex flex={1} align="center" paddingRight={2}>
-                      <Flex flex={1} align="center">
-                        <UserAvatar size={1} user="me" />
-                        <Box
-                          flex={1}
-                          marginLeft={3}
-                          title={currentUser?.name || currentUser?.email}
-                        >
-                          <Text size={1} textOverflow="ellipsis" weight="medium">
-                            {currentUser?.name || currentUser?.email}
-                          </Text>
-                        </Box>
-                      </Flex>
+                      <CapabilityGate capability="globalUserMenu">
+                        <Flex flex={1} align="center">
+                          <UserAvatar size={1} user="me" />
+                          <Box
+                            flex={1}
+                            marginLeft={3}
+                            title={currentUser?.name || currentUser?.email}
+                          >
+                            <Text size={1} textOverflow="ellipsis" weight="medium">
+                              {currentUser?.name || currentUser?.email}
+                            </Text>
+                          </Box>
+                        </Flex>
+                      </CapabilityGate>
                     </Flex>
 
                     <Button

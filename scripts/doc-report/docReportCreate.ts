@@ -10,7 +10,7 @@ import {
   set,
   setIfMissing,
   upsert,
-} from '@bjoerge/mutiny'
+} from '@sanity/mutate'
 import {filter, map, mergeMap, of, tap} from 'rxjs'
 import ts, {type JSDoc, type JSDocComment, SyntaxKind} from 'typescript'
 
@@ -220,7 +220,9 @@ studioMetricsClient.datasets.list().then(async (datasets) => {
       filter(({mutations}) => mutations.length > 0),
       mergeMap(({pkg, mutations}) => {
         console.log(`Submitting ${mutations.length} mutations for ${pkg.manifest.name}`)
-        return studioMetricsClient.observable.transaction(SanityEncoder.encode(mutations)).commit()
+        return studioMetricsClient.observable
+          .transaction(SanityEncoder.encodeAll(mutations))
+          .commit()
       }, 2),
     )
     .subscribe()

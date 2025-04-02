@@ -13,11 +13,6 @@
       "automerge": true
     },
     {
-      "description": "Slate upgrades are handled manually as they require extensive manual testing to verify it's safe to upgrade",
-      "matchPackageNames": ["slate", "slate-react"],
-      "enabled": false
-    },
-    {
       "description": "Dependency updates to examples and the root should always use the chore scope as they aren't published to npm",
       "matchFileNames": ["package.json", "dev/**/package.json", "examples/**/package.json"],
       "extends": [":semanticCommitTypeAll(chore)"]
@@ -29,27 +24,98 @@
       "matchUpdateTypes": [
         "bump",
         "digest",
-        "lockfileUpdate",
         "minor",
         "patch",
         "pin",
         "pinDigest",
         "replacement",
         "rollback"
+      ],
+      "matchPackageNames": [
+        "!@portabletext/block-tools",
+        "!@portabletext/editor",
+        "!@sanity/client",
+        "!@sanity/tsdoc",
+        "!@sanity/ui"
       ]
     },
     {
       "matchDepTypes": ["dependencies"],
       "matchPackageNames": [
-        "get-it",
+        "@portabletext/block-tools",
+        "@portabletext/editor",
+        "@sanity/bifur-client",
         "@sanity/client",
-        "@sanity/presentation",
+        "@sanity/import",
+        "@sanity/export",
+        "@sanity/comlink",
+        "@sanity/export",
+        "@sanity/icons",
+        "@sanity/insert-menu",
+        "@sanity/mutate",
+        "@sanity/presentation-comlink",
+        "@sanity/preview-url-secret",
+        "@sanity/template-validator",
         "@sanity/ui",
-        "groq-js"
+        "@sanity/visual-editing-csm",
+        "framer-motion",
+        "get-it",
+        "groq-js",
+        "react-rx"
       ],
       "rangeStrategy": "bump",
       "semanticCommitType": "fix"
+    },
+    {
+      "description": "Ensure internal and important packages open a PRs right away, without waiting for manual approval",
+      "matchPackageNames": [
+        "@portabletext/block-tools",
+        "@portabletext/editor",
+        "@sanity/bifur-client",
+        "@sanity/client",
+        "@sanity/comlink",
+        "@sanity/eslint-config-i18n",
+        "@sanity/import",
+        "@sanity/export",
+        "@sanity/icons",
+        "@sanity/insert-menu",
+        "@sanity/mutate",
+        "@sanity/pkg-utils",
+        "@sanity/presentation-comlink",
+        "@sanity/preview-url-secret",
+        "@sanity/template-validator",
+        "@sanity/tsdoc",
+        "@sanity/ui",
+        "@sanity/visual-editing-csm",
+        "esbuild",
+        "get-it",
+        "groq-js",
+        "lerna",
+        "react-dom",
+        "react-is",
+        "react-rx",
+        "react",
+        "styled-components",
+        "typescript"
+      ],
+      "dependencyDashboardApproval": false,
+      "schedule": ["every weekday"]
+    },
+    {
+      "description": "ESBuild 0.23 drops support for Windows 7 and 8, for now we don't want renovate to open PRs to bump them",
+      "allowedVersions": "<=0.21",
+      "matchPackageNames": ["esbuild"]
+    },
+    {
+      "description": "Group TypeScript related deps in a single PR, as they often have to update together",
+      "groupName": "typescript-tooling",
+      "matchPackageNames": ["@sanity/pkg-utils", "@sanity/tsdoc", "typescript"]
     }
   ],
-  "ignorePaths": ["packages/@sanity/cli/test/__fixtures__/v2/package.json"]
+  "ignorePaths": [
+    "packages/@sanity/cli/test/__fixtures__/v2/package.json",
+    "packages/sanity/fixtures/examples/prj-with-react-18/package.json",
+    "packages/sanity/fixtures/examples/prj-with-react-19/package.json",
+    "packages/sanity/fixtures/examples/prj-with-styled-components-5/package.json"
+  ]
 }

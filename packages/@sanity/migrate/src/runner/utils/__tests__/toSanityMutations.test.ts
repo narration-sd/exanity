@@ -1,29 +1,27 @@
 /* eslint-disable simple-import-sort/imports */
 // Note: for some reason, this needs to be imported before the mocked module
-import {afterEach, describe, expect, it, jest} from '@jest/globals'
+import {afterEach, describe, expect, it, vitest} from 'vitest'
 /* eslint-enable simple-import-sort/imports */
 
-import {SanityEncoder} from '@bjoerge/mutiny'
+import {SanityEncoder} from '@sanity/mutate'
 
 import {type Mutation, type Transaction} from '../../../mutations'
 import {toSanityMutations, type TransactionPayload} from '../toSanityMutations'
 
-jest.mock('@bjoerge/mutiny', () => {
+vitest.mock('@sanity/mutate', async () => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-  const actual = jest.requireActual<typeof import('@bjoerge/mutiny')>('@bjoerge/mutiny')
+  const actual = await vitest.importActual<typeof import('@sanity/mutate')>('@sanity/mutate')
   return {
     ...actual,
     SanityEncoder: {
-      ...actual.SanityEncoder.encode,
-      encode: jest
-        .fn<typeof actual.SanityEncoder.encode>()
-        .mockImplementation(actual.SanityEncoder.encode),
+      ...actual.SanityEncoder,
+      encodeAll: vitest.fn().mockImplementation(actual.SanityEncoder.encodeAll),
     },
   }
 })
 
 afterEach(() => {
-  jest.clearAllMocks()
+  vitest.clearAllMocks()
 })
 
 describe('#toSanityMutations', () => {
@@ -45,8 +43,8 @@ describe('#toSanityMutations', () => {
       result.push(mutation)
     }
 
-    expect(result.flat()).toEqual(SanityEncoder.encode([mockMutation] as any))
-    expect(SanityEncoder.encode).toHaveBeenCalledWith([mockMutation])
+    expect(result.flat()).toEqual(SanityEncoder.encodeAll([mockMutation] as any[]))
+    expect(SanityEncoder.encodeAll).toHaveBeenCalledWith([mockMutation])
   })
 
   it('should handle multiple mutations', async () => {
@@ -84,8 +82,8 @@ describe('#toSanityMutations', () => {
       result.push(mutation)
     }
 
-    expect(result.flat()).toEqual(SanityEncoder.encode(mockMutations as any))
-    expect(SanityEncoder.encode).toHaveBeenCalledWith(mockMutations)
+    expect(result.flat()).toEqual(SanityEncoder.encodeAll(mockMutations as any[]))
+    expect(SanityEncoder.encodeAll).toHaveBeenCalledWith(mockMutations)
   })
 
   it('should handle transaction', async () => {
@@ -114,10 +112,10 @@ describe('#toSanityMutations', () => {
 
     const expected: TransactionPayload = {
       transactionId: mockTransaction.id,
-      mutations: SanityEncoder.encode(mockTransaction.mutations as any),
+      mutations: SanityEncoder.encodeAll(mockTransaction.mutations as any[]),
     }
 
     expect(result).toEqual([expected])
-    expect(SanityEncoder.encode).toHaveBeenCalledWith(mockTransaction.mutations)
+    expect(SanityEncoder.encodeAll).toHaveBeenCalledWith(mockTransaction.mutations)
   })
 })

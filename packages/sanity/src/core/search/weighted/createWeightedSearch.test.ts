@@ -1,15 +1,20 @@
-import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {Schema} from '@sanity/schema'
 import {renderHook} from '@testing-library/react'
 import {defer, lastValueFrom, of} from 'rxjs'
+import {beforeEach, describe, expect, it, type Mock, vi} from 'vitest'
 
 import {useClient} from '../../hooks'
 import {getSearchableTypes, type SearchTerms} from '../common'
 import {createWeightedSearch} from './createWeightedSearch'
 
 // Mock client
-jest.mock('../../hooks', () => ({
-  useClient: () => ({observable: {fetch: jest.fn()}}),
+vi.mock('../../hooks', () => ({
+  useClient: () => ({
+    observable: {
+      fetch: vi.fn(),
+    },
+    withConfig: vi.fn().mockReturnValue({observable: {fetch: vi.fn().mockReturnValue(searchHits)}}),
+  }),
 }))
 
 const mockSchema = Schema.compile({
@@ -32,11 +37,19 @@ const {
 const search = createWeightedSearch(getSearchableTypes(mockSchema), client, {unique: true})
 
 beforeEach(() => {
-  ;(client.observable.fetch as jest.Mock).mockReset()
-  ;(client.observable.fetch as jest.Mock).mockReturnValue(searchHits)
+  ;(client.observable.fetch as Mock).mockReset()
+  ;(client.observable.fetch as Mock).mockReturnValue(searchHits)
 })
 
 describe('createWeightedSearch', () => {
+  it('overrides to use vX api version', async () => {
+    await lastValueFrom(
+      search({query: 'harry', types: []} as SearchTerms, {perspective: ['r123', 'drafts']}),
+    )
+
+    expect(client.withConfig).toHaveBeenCalledWith({apiVersion: 'v2025-02-19'})
+  })
+
   it('should order hits by score by default', async () => {
     const result = await lastValueFrom(search({query: 'harry', types: []} as SearchTerms))
 

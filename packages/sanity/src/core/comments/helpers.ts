@@ -1,15 +1,18 @@
 import {isPortableTextSpan, isPortableTextTextBlock} from '@sanity/types'
 import {isEqual} from 'lodash'
-import {useMemo, useRef} from 'react'
+import {useMemo, useState} from 'react'
 
 import {type CommentContext, type CommentDocument, type CommentMessage} from './types'
 
 export function useCommentHasChanged(message: CommentMessage): boolean {
-  const prevMessage = useRef<CommentMessage>(message)
+  const [prevMessage] = useState<CommentMessage>(message)
 
-  return useMemo(() => !isEqual(prevMessage.current, message), [message])
+  return useMemo(() => !isEqual(prevMessage, message), [prevMessage, message])
 }
 
+/**
+ * @internal
+ */
 export function hasCommentMessageValue(value: CommentMessage): boolean {
   if (!value) return false
 
@@ -43,6 +46,7 @@ export function commentIntentIfDiffers(
 
 /**
  * A function that checks whether a comment is a text selection comment
+ * @internal
  */
 export function isTextSelectionComment(comment: CommentDocument): boolean {
   if (!comment) return false

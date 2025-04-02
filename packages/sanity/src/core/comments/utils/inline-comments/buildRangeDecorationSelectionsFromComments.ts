@@ -1,3 +1,4 @@
+import {type RangeDecoration} from '@portabletext/editor'
 import {
   applyPatches,
   cleanupEfficiency,
@@ -9,7 +10,6 @@ import {
   makePatches,
   type Patch,
 } from '@sanity/diff-match-patch'
-import {type RangeDecoration} from '@sanity/portable-text-editor'
 import {
   isPortableTextSpan,
   isPortableTextTextBlock,
@@ -51,11 +51,17 @@ const COMMENT_INDICATORS_REGEX = new RegExp(`[${COMMENT_INDICATORS.join('')}]`, 
 
 const EMPTY_ARRAY: [] = []
 
+/**
+ * @internal
+ */
 export interface BuildCommentsRangeDecorationsProps {
   value: PortableTextBlock[] | undefined
   comments: CommentDocument[]
 }
 
+/**
+ * @internal
+ */
 export interface BuildCommentsRangeDecorationsResultItem {
   selection: RangeDecoration['selection']
   comment: CommentDocument
@@ -64,6 +70,7 @@ export interface BuildCommentsRangeDecorationsResultItem {
 
 /**
  * A function that builds range decoration selections from comments and their associated text.
+ * @internal
  */
 export function buildRangeDecorationSelectionsFromComments(
   props: BuildCommentsRangeDecorationsProps,

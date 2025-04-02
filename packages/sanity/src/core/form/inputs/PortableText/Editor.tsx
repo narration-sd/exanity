@@ -12,7 +12,7 @@ import {
   type RenderDecoratorFunction,
   type RenderListItemFunction,
   type RenderStyleFunction,
-} from '@sanity/portable-text-editor'
+} from '@portabletext/editor'
 import {type Path} from '@sanity/types'
 import {BoundaryElementProvider, useBoundaryElement, useGlobalKeyDown, useLayer} from '@sanity/ui'
 // eslint-disable-next-line camelcase
@@ -47,7 +47,7 @@ const PlaceholderWrapper = styled.span((props) => {
 })
 
 interface EditorProps {
-  elementRef: React.RefObject<HTMLDivElement>
+  elementRef: React.RefObject<HTMLDivElement | null>
   hideToolbar?: boolean
   hotkeys: HotkeyOptions
   initialSelection?: EditorSelection

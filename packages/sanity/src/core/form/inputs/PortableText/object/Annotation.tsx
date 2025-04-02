@@ -1,14 +1,7 @@
-import {PortableTextEditor, usePortableTextEditor} from '@sanity/portable-text-editor'
+import {PortableTextEditor, usePortableTextEditor} from '@portabletext/editor'
 import {type ObjectSchemaType, type Path, type PortableTextObject} from '@sanity/types'
 import {isEqual} from '@sanity/util/paths'
-import {
-  type ComponentType,
-  type ReactElement,
-  type ReactNode,
-  useCallback,
-  useMemo,
-  useState,
-} from 'react'
+import {type ComponentType, useCallback, useMemo, useState} from 'react'
 
 import {Tooltip} from '../../../../../ui-components'
 import {pathToString} from '../../../../field'
@@ -28,16 +21,16 @@ import {
 } from '../../../types'
 import {useFormBuilder} from '../../../useFormBuilder'
 import {DefaultMarkers} from '../_legacyDefaultParts/Markers'
+import {type SetPortableTextMemberItemElementRef} from '../contexts/PortableTextMemberItemElementRefsProvider'
 import {debugRender} from '../debugRender'
 import {useMemberValidation} from '../hooks/useMemberValidation'
 import {usePortableTextMarkers} from '../hooks/usePortableTextMarkers'
 import {usePortableTextMemberItem} from '../hooks/usePortableTextMembers'
 import {Root, TooltipBox} from './Annotation.styles'
 import {AnnotationToolbarPopover} from './AnnotationToolbarPopover'
-import {ObjectEditModal} from './modals/ObjectEditModal'
 
 interface AnnotationProps {
-  children: ReactElement
+  children: React.JSX.Element
   editorNodeFocused: boolean
   floatingBoundary: HTMLElement | null
   focused: boolean
@@ -56,11 +49,12 @@ interface AnnotationProps {
   renderItem: RenderArrayOfObjectsItemCallback
   renderPreview: RenderPreviewCallback
   selected: boolean
+  setElementRef: SetPortableTextMemberItemElementRef
   schemaType: ObjectSchemaType
   value: PortableTextObject
 }
 
-export function Annotation(props: AnnotationProps): ReactNode {
+export function Annotation(props: AnnotationProps): React.JSX.Element {
   const {
     children,
     editorNodeFocused,
@@ -82,6 +76,7 @@ export function Annotation(props: AnnotationProps): ReactNode {
     renderPreview,
     schemaType,
     selected,
+    setElementRef,
     value,
   } = props
   const {Markers = DefaultMarkers} = useFormBuilder().__internal.components
@@ -224,12 +219,12 @@ export function Annotation(props: AnnotationProps): ReactNode {
 
   const setRef = useCallback(
     (elm: HTMLSpanElement) => {
-      if (memberItem?.elementRef) {
-        memberItem.elementRef.current = elm
+      if (memberItem) {
+        setElementRef({key: memberItem.member.key, elementRef: elm})
       }
       setSpanElement(elm) // update state here so the reference element is available on first render
     },
-    [memberItem],
+    [memberItem, setElementRef, setSpanElement],
   )
 
   return useMemo(
@@ -246,21 +241,19 @@ export function Annotation(props: AnnotationProps): ReactNode {
   )
 }
 
-export const DefaultAnnotationComponent = (props: BlockAnnotationProps) => {
+export const DefaultAnnotationComponent = (props: BlockAnnotationProps): React.JSX.Element => {
   const {
     __unstable_floatingBoundary: floatingBoundary,
     __unstable_referenceBoundary: referenceBoundary,
     __unstable_referenceElement: referenceElement,
     children,
-    focused,
     markers,
-    onClose,
     onOpen,
     onRemove,
     open,
     readOnly,
-    selected,
     schemaType,
+    selected,
     textElement,
     validation,
   } = props
@@ -268,8 +261,10 @@ export const DefaultAnnotationComponent = (props: BlockAnnotationProps) => {
   const hasError = validation.some((v) => v.level === 'error')
   const hasWarning = validation.some((v) => v.level === 'warning')
   const hasMarkers = markers.length > 0
+  const isReady = Boolean(children)
 
   const {t} = useTranslation()
+
   const toneKey = useMemo(() => {
     if (hasError) {
       return 'critical'
@@ -296,30 +291,21 @@ export const DefaultAnnotationComponent = (props: BlockAnnotationProps) => {
       onClick={readOnly ? onOpen : undefined}
     >
       {textElement}
-      <AnnotationToolbarPopover
-        annotationOpen={open}
-        floatingBoundary={floatingBoundary}
-        onOpen={onOpen}
-        onRemove={onRemove}
-        referenceBoundary={referenceBoundary}
-        referenceElement={referenceElement}
-        selected={selected}
-        title={
-          schemaType.i18nTitleKey ? t(schemaType.i18nTitleKey) : schemaType.title || schemaType.name
-        }
-      />
-      {open && (
-        <ObjectEditModal
-          defaultType="popover"
+      {isReady && (
+        <AnnotationToolbarPopover
+          annotationOpen={open}
           floatingBoundary={floatingBoundary}
-          onClose={onClose}
-          autoFocus={focused}
+          onOpenAnnotation={onOpen}
+          onRemoveAnnotation={onRemove}
           referenceBoundary={referenceBoundary}
           referenceElement={referenceElement}
-          schemaType={schemaType}
-        >
-          {children}
-        </ObjectEditModal>
+          annotationTextSelected={selected}
+          title={
+            schemaType.i18nTitleKey
+              ? t(schemaType.i18nTitleKey)
+              : schemaType.title || schemaType.name
+          }
+        />
       )}
     </Root>
   )

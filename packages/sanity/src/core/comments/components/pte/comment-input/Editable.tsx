@@ -3,9 +3,9 @@ import {
   PortableTextEditable,
   type RenderBlockFunction,
   usePortableTextEditorSelection,
-} from '@sanity/portable-text-editor'
+} from '@portabletext/editor'
 import {isPortableTextSpan, isPortableTextTextBlock} from '@sanity/types'
-import {useClickOutside} from '@sanity/ui'
+import {useClickOutsideEvent} from '@sanity/ui'
 // eslint-disable-next-line camelcase
 import {getTheme_v2} from '@sanity/ui/theme'
 import {isEqual} from 'lodash'
@@ -84,9 +84,9 @@ export function Editable(props: EditableProps) {
     placeholder = t('compose.create-comment-placeholder'),
     renderBlock,
   } = props
-  const [popoverElement, setPopoverElement] = useState<HTMLDivElement | null>(null)
-  const rootElementRef = useRef<HTMLDivElement | null>(null)
-  const editableRef = useRef<HTMLDivElement | null>(null)
+  const popoverRef = useRef<HTMLDivElement | null>(null)
+  const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null)
+  const [inputElement, setInputElement] = useState<HTMLDivElement | null>(null)
   const mentionsMenuRef = useRef<MentionsMenuHandle | null>(null)
 
   const selection = usePortableTextEditorSelection()
@@ -104,7 +104,7 @@ export function Editable(props: EditableProps) {
 
   const cursorElement = useCursorElement({
     disabled: !mentionsMenuOpen,
-    rootElement: rootElementRef.current,
+    rootElement: rootElement,
   })
 
   const renderPlaceholder = useCallback(
@@ -112,13 +112,7 @@ export function Editable(props: EditableProps) {
     [placeholder],
   )
 
-  const handleClickOutside = useCallback(() => {
-    if (mentionsMenuOpen) {
-      closeMentions()
-    }
-  }, [closeMentions, mentionsMenuOpen])
-
-  useClickOutside(handleClickOutside, [popoverElement])
+  useClickOutsideEvent(mentionsMenuOpen && closeMentions, () => [popoverRef.current])
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -201,7 +195,7 @@ export function Editable(props: EditableProps) {
 
   const popoverContent = (
     <MentionsMenu
-      inputElement={editableRef.current}
+      inputElement={inputElement}
       loading={mentionOptions.loading}
       onSelect={insertMention}
       options={mentionOptions.data || EMPTY_ARRAY}
@@ -210,7 +204,7 @@ export function Editable(props: EditableProps) {
   )
 
   return (
-    <div ref={rootElementRef}>
+    <div ref={setRootElement}>
       <StyledPopover
         arrow={false}
         constrainSize
@@ -219,10 +213,9 @@ export function Editable(props: EditableProps) {
         fallbackPlacements={POPOVER_FALLBACK_PLACEMENTS}
         open={mentionsMenuOpen}
         placement="bottom"
-        ref={setPopoverElement}
+        ref={popoverRef}
         referenceElement={cursorElement}
       />
-
       <PortableTextEditable
         data-testid="comment-input-editable"
         data-ui="EditableElement"
@@ -230,7 +223,7 @@ export function Editable(props: EditableProps) {
         onBlur={onBlur}
         onFocus={onFocus}
         onKeyDown={handleKeyDown}
-        ref={editableRef}
+        ref={setInputElement}
         renderBlock={renderBlock}
         renderChild={renderChild}
         renderPlaceholder={renderPlaceholder}
@@ -241,3 +234,4 @@ export function Editable(props: EditableProps) {
     </div>
   )
 }
+Editable.displayName = 'Editable'

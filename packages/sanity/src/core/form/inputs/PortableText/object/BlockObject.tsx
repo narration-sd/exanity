@@ -1,16 +1,11 @@
 /* eslint-disable complexity */
-import {
-  type EditorSelection,
-  PortableTextEditor,
-  usePortableTextEditor,
-} from '@sanity/portable-text-editor'
+import {type EditorSelection, PortableTextEditor, usePortableTextEditor} from '@portabletext/editor'
 import {isImage, type ObjectSchemaType, type Path, type PortableTextBlock} from '@sanity/types'
 import {Box, Flex, type ResponsivePaddingProps} from '@sanity/ui'
 import {isEqual} from '@sanity/util/paths'
 import {
   type MouseEvent,
   type PropsWithChildren,
-  type RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -38,6 +33,7 @@ import {type RenderBlockActionsCallback} from '../../../types/_transitional'
 import {useFormBuilder} from '../../../useFormBuilder'
 import {ReviewChangesHighlightBlock, StyledChangeIndicatorWithProvidedFullPath} from '../_common'
 import {BlockActions} from '../BlockActions'
+import {type SetPortableTextMemberItemElementRef} from '../contexts/PortableTextMemberItemElementRefsProvider'
 import {debugRender} from '../debugRender'
 import {useMemberValidation} from '../hooks/useMemberValidation'
 import {usePortableTextMarkers} from '../hooks/usePortableTextMarkers'
@@ -77,6 +73,7 @@ interface BlockObjectProps extends PropsWithChildren {
   renderPreview: RenderPreviewCallback
   schemaType: ObjectSchemaType
   selected: boolean
+  setElementRef: SetPortableTextMemberItemElementRef
   value: PortableTextBlock
 }
 
@@ -103,6 +100,7 @@ export function BlockObject(props: BlockObjectProps) {
     renderPreview,
     schemaType,
     selected,
+    setElementRef,
     value,
   } = props
   const {onChange} = useFormCallbacks()
@@ -110,6 +108,7 @@ export function BlockObject(props: BlockObjectProps) {
   const [reviewChangesHovered, setReviewChangesHovered] = useState<boolean>(false)
   const markers = usePortableTextMarkers(path)
   const editor = usePortableTextEditor()
+  const [divElement, setDivElement] = useState<HTMLDivElement | null>(null)
   const memberItem = usePortableTextMemberItem(pathToString(path))
   const isDeleting = useRef<boolean>(false)
 
@@ -213,13 +212,13 @@ export function BlockObject(props: BlockObjectProps) {
   const isOpen = Boolean(memberItem?.member.open)
   const input = memberItem?.input
   const nodePath = memberItem?.node.path || EMPTY_ARRAY
-  const referenceElement = memberItem?.elementRef?.current
+  const referenceElement = divElement
 
   const componentProps: BlockProps = useMemo(
     () => ({
       __unstable_floatingBoundary: floatingBoundary,
       __unstable_referenceBoundary: referenceBoundary,
-      __unstable_referenceElement: (referenceElement || null) as HTMLElement | null,
+      __unstable_referenceElement: referenceElement,
       children: input,
       focused,
       markers,
@@ -278,22 +277,21 @@ export function BlockObject(props: BlockObjectProps) {
   const blockActionsEnabled = renderBlockActions && value && !readOnly
   const changeIndicatorVisible = isFullscreen && memberItem
 
+  const setRef = useCallback(
+    (elm: HTMLDivElement) => {
+      if (memberItem) {
+        setElementRef({key: memberItem.member.key, elementRef: elm})
+      }
+      setDivElement(elm) // update state here so the reference element is available on first render
+    },
+    [memberItem, setElementRef, setDivElement],
+  )
+
   return useMemo(
     () => (
-      <Box
-        ref={memberItem?.elementRef as RefObject<HTMLDivElement> | undefined}
-        contentEditable={false}
-      >
-        <Flex
-          data-object-block="" // used by create
-          paddingBottom={1}
-          marginY={3}
-          style={debugRender()}
-        >
-          <PreviewContainer
-            data-object-block-inner="" // used by create
-            {...innerPaddingProps}
-          >
+      <Box ref={setRef} contentEditable={false}>
+        <Flex paddingBottom={1} marginY={3} style={debugRender()}>
+          <PreviewContainer {...innerPaddingProps}>
             <Box flex={1}>
               <Tooltip
                 placement="top"
@@ -353,6 +351,7 @@ export function BlockObject(props: BlockObjectProps) {
       renderBlock,
       renderBlockActions,
       reviewChangesHovered,
+      setRef,
       toolTipContent,
       tooltipEnabled,
       value,
@@ -436,7 +435,7 @@ export const DefaultBlockObjectComponent = (props: BlockProps) => {
           floatingBoundary={__unstable_floatingBoundary}
           defaultType="dialog"
           onClose={onClose}
-          autoFocus={focused}
+          autoFocus
           schemaType={schemaType}
           referenceBoundary={__unstable_referenceBoundary}
           referenceElement={__unstable_referenceElement}

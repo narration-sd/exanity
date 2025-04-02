@@ -1,4 +1,3 @@
-import {describe, it} from '@jest/globals'
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // noinspection JSUnusedLocalSymbols
 import {
@@ -37,7 +36,7 @@ import {
 // We use a type import to ensure this change does not affect the runtime.
 // The 'sanity' package re-exports the '@sanity/types' module, which is why this
 // approach works.
-// eslint-disable-next-line import/consistent-type-specifier-style
+// eslint-disable-next-line import/consistent-type-specifier-style, no-restricted-imports
 import type {
   ArrayOfObjectsComponents,
   ArrayOfPrimitivesComponents,
@@ -58,6 +57,7 @@ import type {
   TextComponents,
   UrlComponents,
 } from 'sanity'
+import {describe, it} from 'vitest'
 
 import {type PreviewProps} from '../../components'
 import {type CrossDatasetReferenceInputProps, type ReferenceInputProps} from '../studio'

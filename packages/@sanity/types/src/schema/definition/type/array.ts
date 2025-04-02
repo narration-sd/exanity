@@ -8,10 +8,49 @@ import {
   type IntrinsicTypeName,
   type TypeAliasDefinition,
 } from '../schemaDefinition'
-import {type BaseSchemaDefinition, type SearchConfiguration, type TitledListValue} from './common'
+import {
+  type BaseSchemaDefinition,
+  type BaseSchemaTypeOptions,
+  type SearchConfiguration,
+  type TitledListValue,
+} from './common'
+
+export type {InsertMenuOptions}
+
+/**
+ * Types of array actions that can be performed
+ * @beta
+ */
+export type ArrayActionName =
+  /**
+   * Add any item to the array at any position
+   */
+  | 'add'
+  /**
+   * Add item after an existing item
+   */
+  | 'addBefore'
+
+  /**
+   * Add item after an existing item
+   */
+  | 'addAfter'
+  /**
+   * Remove any item
+   */
+  | 'remove'
+  /**
+   * Duplicate item
+   */
+  | 'duplicate'
+
+  /**
+   * Copy item
+   */
+  | 'copy'
 
 /** @public */
-export interface ArrayOptions<V = unknown> extends SearchConfiguration {
+export interface ArrayOptions<V = unknown> extends SearchConfiguration, BaseSchemaTypeOptions {
   list?: TitledListValue<V>[] | V[]
   // inferring the array.of value for ArrayDefinition cause too much code-noise and was removed.
   // Since we don't have the type-info needed here, we allow values
@@ -22,6 +61,19 @@ export interface ArrayOptions<V = unknown> extends SearchConfiguration {
   modal?: {type?: 'dialog' | 'popover'; width?: number | 'auto'}
   /** @alpha This API may change */
   insertMenu?: InsertMenuOptions
+  /**
+   * A boolean flag to enable or disable tree editing for the array.
+   * If there are any nested arrays, they will inherit this value.
+   * @deprecated tree editing beta feature has been disabled
+   */
+  treeEditing?: boolean
+
+  /**
+   * A list of array actions to disable
+   * Possible options are defined by {@link ArrayActionName}
+   * @beta
+   */
+  disableActions?: ArrayActionName[]
 }
 
 /** @public */

@@ -1,11 +1,4 @@
-import {
-  type ComponentType,
-  createElement,
-  type CSSProperties,
-  type ReactElement,
-  useMemo,
-  useState,
-} from 'react'
+import {type ComponentType, type CSSProperties, useMemo, useState} from 'react'
 
 import {type PreviewProps} from '../../components'
 import {type RenderPreviewCallbackProps} from '../../form'
@@ -27,11 +20,11 @@ export function PreviewLoader(
   props: RenderPreviewCallbackProps & {
     component: ComponentType<Omit<PreviewProps, 'renderDefault'>>
   },
-): ReactElement {
+): React.JSX.Element {
   const {
     layout,
     value,
-    component,
+    component: Component,
     style: styleProp,
     schemaType,
     skipVisibilityCheck,
@@ -42,10 +35,12 @@ export function PreviewLoader(
   const [element, setElement] = useState<HTMLDivElement | null>(null)
 
   // Subscribe to visibility
-  const isVisible = useVisibility({
-    element: skipVisibilityCheck ? null : element,
-    hideDelay: _HIDE_DELAY,
-  })
+  const isVisible =
+    useVisibility({
+      disabled: skipVisibilityCheck,
+      element: element,
+      hideDelay: _HIDE_DELAY,
+    }) || skipVisibilityCheck
 
   // Subscribe document preview value
   const preview = useValuePreview({
@@ -85,15 +80,15 @@ export function PreviewLoader(
 
   return (
     <div ref={setElement} style={style}>
-      {createElement(component, {
-        ...restProps,
-        ...(preview?.value || {}),
-        media,
-        error: preview?.error,
-        isPlaceholder: preview?.isLoading,
-        layout,
-        schemaType,
-      })}
+      <Component
+        {...restProps}
+        {...(preview?.value || {})}
+        media={media}
+        error={preview?.error}
+        isPlaceholder={preview?.isLoading}
+        layout={layout}
+        schemaType={schemaType}
+      />
     </div>
   )
 }

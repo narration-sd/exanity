@@ -1,5 +1,4 @@
 /* eslint-disable i18next/no-literal-string */
-import {type ReactElement} from 'react'
 
 import {Favicons} from './Favicons'
 import {GlobalErrorHandler} from './globalErrorHandler'
@@ -106,10 +105,14 @@ const globalStyles = `
 
 /**
  * @hidden
- * @beta */
+ * @beta
+ */
 export interface DefaultDocumentProps {
   entryPath: string
   css?: string[]
+
+  // Currently unused, but kept for potential future use
+  // eslint-disable-next-line react/no-unused-prop-types
   basePath?: string
 }
 
@@ -117,9 +120,12 @@ const EMPTY_ARRAY: never[] = []
 
 /**
  * @hidden
- * @beta */
-export function DefaultDocument(props: DefaultDocumentProps): ReactElement {
-  const {entryPath, css = EMPTY_ARRAY, basePath = '/'} = props
+ * @beta
+ *
+ * @deprecated Moved to `_internal` package
+ */
+export function DefaultDocument(props: DefaultDocumentProps): React.JSX.Element {
+  const {entryPath, css = EMPTY_ARRAY} = props
 
   return (
     <html lang="en">
@@ -132,7 +138,7 @@ export function DefaultDocument(props: DefaultDocumentProps): ReactElement {
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="same-origin" />
 
-        <Favicons basePath={basePath} />
+        <Favicons />
 
         <title>Sanity Studio</title>
 

@@ -3,6 +3,7 @@ import {type Reference, type ReferenceSchemaType} from '@sanity/types'
 import {Box, Card, type CardTone, Flex, Menu, MenuDivider, Stack} from '@sanity/ui'
 import {
   type ComponentProps,
+  type FocusEvent,
   type ForwardedRef,
   forwardRef,
   useCallback,
@@ -16,6 +17,8 @@ import {MenuButton, MenuItem, TooltipDelayGroupProvider} from '../../../../ui-co
 import {ContextMenuButton} from '../../../components/contextMenuButton'
 import {type DocumentFieldActionNode} from '../../../config'
 import {useTranslation} from '../../../i18n'
+import {usePerspective} from '../../../perspective/usePerspective'
+import {EMPTY_ARRAY} from '../../../util/empty'
 import {FormField} from '../../components'
 import {usePublishedId} from '../../contexts/DocumentIdProvider'
 import {FieldActionsProvider, FieldActionsResolver} from '../../field'
@@ -28,7 +31,8 @@ import {ReferenceFinalizeAlertStrip} from './ReferenceFinalizeAlertStrip'
 import {ReferenceLinkCard} from './ReferenceLinkCard'
 import {ReferenceMetadataLoadErrorAlertStrip} from './ReferenceMetadataLoadFailure'
 import {ReferenceStrengthMismatchAlertStrip} from './ReferenceStrengthMismatchAlertStrip'
-import {useReferenceInfo} from './useReferenceInfo'
+import {type ReferenceInfo} from './types'
+import {type Loadable, useReferenceInfo} from './useReferenceInfo'
 import {useReferenceInput} from './useReferenceInput'
 
 interface ReferenceFieldProps extends Omit<ObjectFieldProps, 'renderDefault'> {
@@ -59,6 +63,7 @@ export function ReferenceField(props: ReferenceFieldProps) {
   const elementRef = useRef<HTMLDivElement | null>(null)
   const {schemaType, path, open, inputId, children, inputProps} = props
   const {readOnly, focused, renderPreview, onChange} = props.inputProps
+  const {selectedReleaseId} = usePerspective()
 
   const [fieldActionsNodes, setFieldActionNodes] = useState<DocumentFieldActionNode[]>([])
   const documentId = usePublishedId()
@@ -71,6 +76,7 @@ export function ReferenceField(props: ReferenceFieldProps) {
       path,
       schemaType,
       value,
+      version: selectedReleaseId,
     })
 
   // this is here to make sure the item is visible if it's being edited behind a modal
@@ -86,7 +92,10 @@ export function ReferenceField(props: ReferenceFieldProps) {
   const hasErrors = props.validation.some((v) => v.level === 'error')
   const hasWarnings = props.validation.some((v) => v.level === 'warning')
 
-  const loadableReferenceInfo = useReferenceInfo(value?._ref, getReferenceInfo)
+  const loadableReferenceInfo: Loadable<ReferenceInfo> = useReferenceInfo(
+    value?._ref,
+    getReferenceInfo,
+  )
 
   const refTypeName = loadableReferenceInfo.result?.type || value?._strengthenOnPublish?.type
 
@@ -97,7 +106,7 @@ export function ReferenceField(props: ReferenceFieldProps) {
   const selected = selectedState === 'selected'
 
   const hasRef = value?._ref
-  const publishedReferenceExists = hasRef && loadableReferenceInfo.result?.preview?.published?._id
+  const publishedReferenceExists = hasRef && loadableReferenceInfo.result?.isPublished
 
   const handleRemoveStrengthenOnPublish = useCallback(() => {
     onChange([
@@ -222,6 +231,15 @@ export function ReferenceField(props: ReferenceFieldProps) {
     [handleClear, handleReplace, inputId, OpenLink, readOnly, t, value?._ref],
   )
 
+  const handleFocus = useCallback(
+    (event: FocusEvent) => {
+      if (event.target === elementRef.current) {
+        inputProps.onPathFocus(EMPTY_ARRAY)
+      }
+    },
+    [inputProps],
+  )
+
   return (
     <>
       {documentId && props.actions && props.actions.length > 0 && (
@@ -271,6 +289,7 @@ export function ReferenceField(props: ReferenceFieldProps) {
                       ref={elementRef}
                       selected={selected}
                       tone="inherit"
+                      onFocus={handleFocus}
                     >
                       <PreviewReferenceValue
                         value={value}

@@ -1,32 +1,34 @@
-import path from 'node:path'
+import {type AliasOptions} from 'vite'
 
-import {type SanityMonorepo} from './sanityMonorepo'
+import {getSanityPkgExportAliases} from './getBrowserAliases'
+import {getMonorepoAliases} from './sanityMonorepo'
 
 /**
- * Returns an object of aliases for vite to use
+ * @internal
+ */
+export interface GetAliasesOptions {
+  /** An optional monorepo path. */
+  monorepoPath?: string
+  /** The path to the sanity package.json file. */
+  sanityPkgPath: string
+}
+
+/**
+ * Returns an object of aliases for Vite to use.
+ *
+ * This function is used within our build tooling to prevent multiple context errors
+ * due to multiple instances of our library. It resolves the appropriate paths for
+ * modules based on whether the current project is inside the Sanity monorepo or not.
+ *
+ * If the project is within the monorepo, it uses the source files directly for a better
+ * development experience. Otherwise, it uses the `sanityPkgPath` and `conditions` to locate
+ * the entry points for each subpath of the Sanity module exports.
  *
  * @internal
  */
-export function getAliases(opts: {monorepo?: SanityMonorepo}): Record<string, string> {
-  const {monorepo} = opts
-
-  if (!monorepo?.path) {
-    return {}
-  }
-
-  // Load monorepo aliases (if the current Studio is located within the sanity monorepo)
-  // This is done in order for the Vite server to use the source files instead of
-  // the compiled output, allowing for a better dev experience.
-  const aliasesPath = path.resolve(monorepo.path, 'dev/aliases.cjs')
-
-  // eslint-disable-next-line import/no-dynamic-require
-  const devAliases: Record<string, string> = require(aliasesPath)
-
-  const monorepoAliases = Object.fromEntries(
-    Object.entries(devAliases).map(([key, modulePath]) => {
-      return [key, path.resolve(monorepo.path, modulePath)]
-    }),
-  )
-
-  return monorepoAliases
+export async function getAliases({
+  monorepoPath,
+  sanityPkgPath,
+}: GetAliasesOptions): Promise<AliasOptions> {
+  return monorepoPath ? getMonorepoAliases(monorepoPath) : getSanityPkgExportAliases(sanityPkgPath)
 }

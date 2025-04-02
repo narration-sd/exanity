@@ -14,6 +14,11 @@ import {
 const REFERENCE_SYMBOL_NAME = 'internalGroqTypeReferenceTo'
 const ALL_SCHEMA_TYPES = 'AllSanitySchemaTypes'
 
+type QueryWithTypeNode = {
+  query: string
+  typeNode: TypeNode
+}
+
 /**
  * A class used to generate TypeScript types from a given schema
  * @internal
@@ -21,7 +26,8 @@ const ALL_SCHEMA_TYPES = 'AllSanitySchemaTypes'
  */
 export class TypeGenerator {
   private generatedTypeName: Set<string> = new Set()
-  private typeNameMap: Map<string, string> = new Map()
+  private typeNameMap: Map<TypeNode | DocumentSchemaType | TypeDeclarationSchemaType, string> =
+    new Map()
 
   private readonly schema: SchemaType
 
@@ -38,14 +44,13 @@ export class TypeGenerator {
   generateSchemaTypes(): string {
     const typeDeclarations: (t.TSTypeAliasDeclaration | t.ExportNamedDeclaration)[] = []
 
+    const schemaNames = new Set<string>()
     this.schema.forEach((schema) => {
       const typeLiteral = this.getTypeNodeType(schema)
 
-      const typeAlias = t.tsTypeAliasDeclaration(
-        t.identifier(this.getTypeName(schema.name)),
-        null,
-        typeLiteral,
-      )
+      const schemaName = this.getTypeName(schema.name, schema)
+      schemaNames.add(schemaName)
+      const typeAlias = t.tsTypeAliasDeclaration(t.identifier(schemaName), null, typeLiteral)
 
       typeDeclarations.push(t.exportNamedDeclaration(typeAlias))
     })
@@ -56,15 +61,7 @@ export class TypeGenerator {
           t.identifier(this.getTypeName(ALL_SCHEMA_TYPES)),
           null,
           t.tsUnionType(
-            this.schema.map(({name}) => {
-              const typeName = this.typeNameMap.get(name)
-              if (!typeName) {
-                // this is a type guard since maps return undefined if the key is not found, however this map should
-                // be set inside the loop above by `this.getTypeName(...)`
-                throw new Error(`Unexpected error: Could not find type name for schema ${name}`)
-              }
-              return t.tsTypeReference(t.identifier(typeName))
-            }),
+            [...schemaNames].map((typeName) => t.tsTypeReference(t.identifier(typeName))),
           ),
         ),
       ),
@@ -85,11 +82,8 @@ export class TypeGenerator {
   generateTypeNodeTypes(identifierName: string, typeNode: TypeNode): string {
     const type = this.getTypeNodeType(typeNode)
 
-    const typeAlias = t.tsTypeAliasDeclaration(
-      t.identifier(this.getTypeName(identifierName)),
-      null,
-      type,
-    )
+    const typeName = this.getTypeName(identifierName, typeNode)
+    const typeAlias = t.tsTypeAliasDeclaration(t.identifier(typeName), null, type)
 
     return new CodeGenerator(t.exportNamedDeclaration(typeAlias)).generate().code.trim()
   }
@@ -107,11 +101,65 @@ export class TypeGenerator {
   }
 
   /**
+   * Takes a list of queries from the codebase and generates a type declaration
+   * for SanityClient to consume.
+   *
+   * Note: only types that have previously been generated with `generateTypeNodeTypes`
+   * will be included in the query map.
+   *
+   * @param queries - A list of queries to generate a type declaration for
+   * @returns
+   * @internal
+   * @beta
+   */
+  generateQueryMap(queries: QueryWithTypeNode[]): string {
+    const typesByQuerystring: {[query: string]: string[]} = {}
+
+    for (const query of queries) {
+      const name = this.typeNameMap.get(query.typeNode)
+      if (!name) {
+        continue
+      }
+
+      typesByQuerystring[query.query] ??= []
+      typesByQuerystring[query.query].push(name)
+    }
+
+    const queryReturnInterface = t.tsInterfaceDeclaration(
+      t.identifier('SanityQueries'),
+      null,
+      [],
+      t.tsInterfaceBody(
+        Object.entries(typesByQuerystring).map(([query, types]) => {
+          return t.tsPropertySignature(
+            t.stringLiteral(query),
+            t.tsTypeAnnotation(
+              t.tsUnionType(types.map((type) => t.tsTypeReference(t.identifier(type)))),
+            ),
+          )
+        }),
+      ),
+    )
+
+    const declareModule = t.declareModule(
+      t.stringLiteral('@sanity/client'),
+      t.blockStatement([queryReturnInterface]),
+    )
+
+    const clientImport = t.importDeclaration([], t.stringLiteral('@sanity/client'))
+
+    return new CodeGenerator(t.program([clientImport, declareModule])).generate().code.trim()
+  }
+
+  /**
    * Since we are sanitizing identifiers we migt end up with collisions. Ie there might be a type mux.video and muxVideo, both these
    * types would be sanityized into MuxVideo. To avoid this we keep track of the generated type names and add a index to the name.
    * When we reference a type we also keep track of the original name so we can reference the correct type later.
    */
-  private getTypeName(name: string): string {
+  private getTypeName(
+    name: string,
+    typeNode?: TypeNode | DocumentSchemaType | TypeDeclarationSchemaType,
+  ): string {
     const desiredName = uppercaseFirstLetter(sanitizeIdentifier(name))
 
     let generatedName = desiredName
@@ -121,7 +169,10 @@ export class TypeGenerator {
       generatedName = `${desiredName}_${i++}`
     }
     this.generatedTypeName.add(generatedName)
-    this.typeNameMap.set(name, generatedName)
+    if (typeNode) {
+      this.typeNameMap.set(typeNode, generatedName)
+    }
+
     return generatedName
   }
 
@@ -209,31 +260,44 @@ export class TypeGenerator {
     Object.entries(typeNode.attributes).forEach(([key, attribute]) => {
       props.push(this.generateObjectProperty(key, attribute))
     })
-    if (typeNode.rest !== undefined) {
-      switch (typeNode.rest.type) {
+    const rest = typeNode.rest
+    if (rest !== undefined) {
+      switch (rest.type) {
         case 'unknown': {
           return t.tsUnknownKeyword()
         }
         case 'object': {
-          Object.entries(typeNode.rest.attributes).forEach(([key, attribute]) => {
+          Object.entries(rest.attributes).forEach(([key, attribute]) => {
             props.push(this.generateObjectProperty(key, attribute))
           })
           break
         }
         case 'inline': {
+          const referencedTypeNode = this.schema.find((schema) => schema.name === rest.name)
+          if (referencedTypeNode === undefined) {
+            const missing = t.tsUnknownKeyword()
+            missing.trailingComments = [
+              {
+                type: 'CommentLine',
+                value: ` Unable to locate the referenced type "${rest.name}" in schema`,
+              },
+            ]
+            return missing
+          }
+
           return t.tsIntersectionType([
             t.tsTypeLiteral(props),
             t.tsTypeReference(
               t.identifier(
-                this.typeNameMap.get(typeNode.rest.name) ||
-                  uppercaseFirstLetter(sanitizeIdentifier(typeNode.rest.name)),
+                this.typeNameMap.get(referencedTypeNode) ||
+                  uppercaseFirstLetter(sanitizeIdentifier(rest.name)),
               ),
             ),
           ])
         }
         default: {
           // @ts-expect-error This should never happen
-          throw new Error(`Type "${typeNode.rest.type}" not found in schema`)
+          throw new Error(`Type "${rest.type}" not found in schema`)
         }
       }
     }

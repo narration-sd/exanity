@@ -1,18 +1,16 @@
 import path from 'node:path'
 
-import {type UserViteConfig} from '@sanity/cli'
-import viteReact from '@vitejs/plugin-react'
+import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli'
 import debug from 'debug'
 import readPkgUp from 'read-pkg-up'
-import {type ConfigEnv, type InlineConfig, mergeConfig} from 'vite'
+import {type ConfigEnv, type InlineConfig, type Rollup} from 'vite'
 
-import {getAliases} from './aliases'
 import {createExternalFromImportMap} from './createExternalFromImportMap'
+import {getSanityPkgExportAliases} from './getBrowserAliases'
 import {getStudioEnvironmentVariables} from './getStudioEnvironmentVariables'
 import {normalizeBasePath} from './helpers'
-import {loadSanityMonorepo} from './sanityMonorepo'
+import {getMonorepoAliases, loadSanityMonorepo} from './sanityMonorepo'
 import {sanityBuildEntries} from './vite/plugin-sanity-build-entries'
-import {sanityDotWorkaroundPlugin} from './vite/plugin-sanity-dot-workaround'
 import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite'
 
@@ -54,6 +52,8 @@ export interface ViteOptions {
   mode: 'development' | 'production'
 
   importMap?: {imports?: Record<string, string>}
+  reactCompiler: ReactCompilerConfig | undefined
+  isApp?: boolean
 }
 
 /**
@@ -72,6 +72,8 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     minify,
     basePath: rawBasePath = '/',
     importMap,
+    reactCompiler,
+    isApp,
   } = options
 
   const monorepo = await loadSanityMonorepo(cwd)
@@ -86,6 +88,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const defaultFaviconsPath = path.join(path.dirname(sanityPkgPath), 'static', 'favicons')
   const staticPath = `${basePath}static`
 
+  const {default: viteReact} = await import('@vitejs/plugin-react')
   const viteConfig: InlineConfig = {
     // Define a custom cache directory so that sanity's vite cache
     // does not conflict with any potential local vite projects
@@ -104,21 +107,35 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     configFile: false,
     mode,
     plugins: [
-      viteReact(),
+      viteReact(
+        reactCompiler ? {babel: {plugins: [['babel-plugin-react-compiler', reactCompiler]]}} : {},
+      ),
       sanityFaviconsPlugin({defaultFaviconsPath, customFaviconsPath, staticUrlPath: staticPath}),
-      sanityDotWorkaroundPlugin(),
       sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({basePath, cwd, monorepo, importMap}),
+      sanityBuildEntries({basePath, cwd, monorepo, importMap, isApp}),
     ],
-    envPrefix: 'SANITY_STUDIO_',
+    envPrefix: isApp ? 'VITE_' : 'SANITY_STUDIO_',
     logLevel: mode === 'production' ? 'silent' : 'info',
     resolve: {
-      alias: getAliases({monorepo}),
+      alias: monorepo?.path
+        ? await getMonorepoAliases(monorepo.path)
+        : getSanityPkgExportAliases(sanityPkgPath),
+      dedupe: ['styled-components'],
     },
     define: {
       // eslint-disable-next-line no-process-env
       '__SANITY_STAGING__': process.env.SANITY_INTERNAL_ENV === 'staging',
       'process.env.MODE': JSON.stringify(mode),
+      /**
+       * Yes, double negatives are confusing.
+       * The default value of `SC_DISABLE_SPEEDY` is `process.env.NODE_ENV === 'production'`: https://github.com/styled-components/styled-components/blob/99c02f52d69e8e509c0bf012cadee7f8e819a6dd/packages/styled-components/src/constants.ts#L34
+       * Which means that in production, use the much faster way of inserting CSS rules, based on the CSSStyleSheet API (https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/insertRule)
+       * while in dev mode, use the slower way of inserting CSS rules, which appends text nodes to the `<style>` tag: https://github.com/styled-components/styled-components/blob/99c02f52d69e8e509c0bf012cadee7f8e819a6dd/packages/styled-components/src/sheet/Tag.ts#L74-L76
+       * There are historical reasons for this, primarily that browsers initially did not support editing CSS rules in the DevTools inspector if `CSSStyleSheet.insetRule` were used.
+       * However, that's no longer the case (since Chrome 81 back in April 2020: https://developer.chrome.com/docs/css-ui/css-in-js), the latest version of FireFox also supports it,
+       * and there is no longer any reason to use the much slower method in dev mode.
+       */
+      'process.env.SC_DISABLE_SPEEDY': JSON.stringify('false'),
       ...getStudioEnvironmentVariables({prefix: 'process.env.', jsonEncode: true}),
     },
   }
@@ -132,6 +149,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       emptyOutDir: false, // Rely on CLI to do this
 
       rollupOptions: {
+        onwarn: onRollupWarn,
         external: createExternalFromImportMap(importMap),
         input: {
           sanity: path.join(cwd, '.sanity', 'runtime', 'app.js'),
@@ -143,6 +161,32 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   return viteConfig
 }
 
+function onRollupWarn(warning: Rollup.RollupLog, warn: Rollup.LoggingFunction) {
+  if (suppressUnusedImport(warning)) {
+    return
+  }
+
+  warn(warning)
+}
+
+function suppressUnusedImport(warning: Rollup.RollupLog & {ids?: string[]}): boolean {
+  if (warning.code !== 'UNUSED_EXTERNAL_IMPORT') return false
+
+  // Suppress:
+  // ```
+  // "useDebugValue" is imported from external module "react"…
+  // ```
+  if (warning.names?.includes('useDebugValue')) {
+    warning.names = warning.names.filter((n) => n !== 'useDebugValue')
+    if (warning.names.length === 0) return true
+  }
+
+  // If some library does something unexpected, we suppress since it isn't actionable
+  if (warning.ids?.every((id) => id.includes('/node_modules/'))) return true
+
+  return false
+}
+
 /**
  * Ensure Sanity entry chunk is always loaded
  *
@@ -150,7 +194,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
  * @returns Merged configuration
  * @internal
  */
-export function finalizeViteConfig(config: InlineConfig): InlineConfig {
+export async function finalizeViteConfig(config: InlineConfig): Promise<InlineConfig> {
   if (typeof config.build?.rollupOptions?.input !== 'object') {
     throw new Error(
       'Vite config must contain `build.rollupOptions.input`, and it must be an object',
@@ -163,6 +207,7 @@ export function finalizeViteConfig(config: InlineConfig): InlineConfig {
     )
   }
 
+  const {mergeConfig} = await import('vite')
   return mergeConfig(config, {
     build: {
       rollupOptions: {
@@ -194,6 +239,7 @@ export async function extendViteConfigWithUserConfig(
     config = await userConfig(config, env)
   } else if (typeof userConfig === 'object') {
     debug('Merging vite config using user-specified object')
+    const {mergeConfig} = await import('vite')
     config = mergeConfig(config, userConfig)
   }
 

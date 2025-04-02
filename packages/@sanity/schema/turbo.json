@@ -1,9 +1,9 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "extends": ["//"],
-  "pipeline": {
+  "tasks": {
     "build": {
-      "outputs": ["lib/**", "index.js", "_internal.js"]
+      "outputs": ["lib/**"]
     }
   }
 }

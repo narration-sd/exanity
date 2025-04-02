@@ -2,9 +2,8 @@ import {constants as fsConstants} from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {type UserViteConfig} from '@sanity/cli'
+import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli'
 import readPkgUp from 'read-pkg-up'
-import {build} from 'vite'
 
 import {debug as serverDebug} from './debug'
 import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig'
@@ -34,6 +33,9 @@ export interface StaticBuildOptions {
   importMap?: {imports?: Record<string, string>}
 
   vite?: UserViteConfig
+  reactCompiler: ReactCompilerConfig | undefined
+  entry?: string
+  isApp?: boolean
 }
 
 export async function buildStaticFiles(
@@ -47,10 +49,20 @@ export async function buildStaticFiles(
     basePath,
     vite: extendViteConfig,
     importMap,
+    reactCompiler,
+    entry,
+    isApp,
   } = options
 
   debug('Writing Sanity runtime files')
-  await writeSanityRuntime({cwd, reactStrictMode: false, watch: false, basePath})
+  await writeSanityRuntime({
+    cwd,
+    reactStrictMode: false,
+    watch: false,
+    basePath,
+    entry,
+    isApp,
+  })
 
   debug('Resolving vite config')
   const mode = 'production'
@@ -62,6 +74,8 @@ export async function buildStaticFiles(
     sourceMap,
     mode,
     importMap,
+    reactCompiler,
+    isApp,
   })
 
   // Extend Vite configuration with user-provided config
@@ -71,7 +85,7 @@ export async function buildStaticFiles(
       viteConfig,
       extendViteConfig,
     )
-    viteConfig = finalizeViteConfig(viteConfig)
+    viteConfig = await finalizeViteConfig(viteConfig)
   }
 
   // Copy files placed in /static to the built /static
@@ -85,6 +99,7 @@ export async function buildStaticFiles(
   await writeFavicons(faviconBasePath, staticPath)
 
   debug('Bundling using vite')
+  const {build} = await import('vite')
   const bundle = await build(viteConfig)
   debug('Bundling complete')
 

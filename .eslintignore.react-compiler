@@ -6,6 +6,7 @@
 **/static/*
 **/coverage/*
 **/lib/*
+**/__tests__/*
 **/node_modules/*
 **/dist/*
 *.json
@@ -18,7 +19,6 @@ dev/test-studio/workshop/scopes.js
 dev/design-studio/*
 dev/embedded-studio/*
 dev/starter-cra-studio/*
-dev/starter-next-studio/*
 dev/starter-studio/*
 dev/strict-studio/*
 dev/studio-e2e-studio/*
@@ -28,3 +28,4 @@ scripts/*
 test/*
 **/__workshop__/*
 packages/sanity/playwright-ct/**
+**/@sanity/cli/templates/**

@@ -1,3 +1,4 @@
+import {type StackablePerspective} from '@sanity/client'
 import {isCrossDatasetReference, isReference} from '@sanity/types'
 import {uniq} from 'lodash'
 import {type Observable, of as observableOf} from 'rxjs'
@@ -29,6 +30,7 @@ type ObserveFieldsFn = (
   id: string,
   fields: FieldName[],
   apiConfig?: ApiConfig,
+  perspective?: StackablePerspective[],
 ) => Observable<Record<string, unknown> | null>
 
 function observePaths(
@@ -36,6 +38,7 @@ function observePaths(
   paths: PreviewPath[],
   observeFields: ObserveFieldsFn,
   apiConfig?: ApiConfig,
+  perspective?: StackablePerspective[],
 ): Observable<Record<string, unknown> | null> {
   if (!value || typeof value !== 'object') {
     // Reached a leaf. Return as is
@@ -67,7 +70,7 @@ function observePaths(
       ? {projectId: value._projectId, dataset: value._dataset}
       : apiConfig
 
-    return observeFields(id, nextHeads, refApiConfig).pipe(
+    return observeFields(id, nextHeads, refApiConfig, perspective).pipe(
       switchMap((snapshot) => {
         if (snapshot === null) {
           return observableOf(null)
@@ -82,6 +85,7 @@ function observePaths(
           paths,
           observeFields,
           refApiConfig,
+          perspective,
         )
       }),
     )
@@ -102,7 +106,7 @@ function observePaths(
     if (tails.length === 0) {
       res[head] = isRecord(value) ? (value as Record<string, unknown>)[head] : undefined
     } else {
-      res[head] = observePaths((value as any)[head], tails, observeFields, apiConfig)
+      res[head] = observePaths((value as any)[head], tails, observeFields, apiConfig, perspective)
     }
     return res
   }, currentValue)
@@ -119,16 +123,21 @@ function normalizePaths(path: (FieldName | PreviewPath)[]): PreviewPath[] {
   )
 }
 
-export function createPathObserver(context: {observeFields: ObserveFieldsFn}) {
-  const {observeFields} = context
+/**
+ * Creates a function that allows observing nested paths on a document.
+ * If the path includes a reference, the reference will be "followed", allowing for selecting paths within the referenced document.
+ * @param options - Requires a function that can observe fields on a document
+ * @internal
+ */
+export function createPathObserver(options: {observeFields: ObserveFieldsFn}) {
+  const {observeFields} = options
 
-  return {
-    observePaths(
-      value: Previewable,
-      paths: (FieldName | PreviewPath)[],
-      apiConfig?: ApiConfig,
-    ): Observable<Record<string, unknown> | null> {
-      return observePaths(value, normalizePaths(paths), observeFields, apiConfig)
-    },
+  return (
+    value: Previewable,
+    paths: (FieldName | PreviewPath)[],
+    apiConfig?: ApiConfig,
+    perspective?: StackablePerspective[],
+  ): Observable<Record<string, unknown> | null> => {
+    return observePaths(value, normalizePaths(paths), observeFields, apiConfig, perspective)
   }
 }

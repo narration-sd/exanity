@@ -8,13 +8,13 @@ import {styled} from 'styled-components'
 import {
   type CommentBaseCreatePayload,
   type CommentCreatePayload,
-  CommentDeleteDialog,
   type CommentInputProps,
   type CommentReactionOption,
   type CommentThreadItem,
   type CommentUpdatePayload,
   useComments,
 } from '../../../comments'
+import {CommentDeleteDialog} from '../../../comments/components'
 import {LoadingBlock} from '../../../components'
 import {type FormPatch, type PatchEvent, set} from '../../../form'
 import {useTranslation} from '../../../i18n'
@@ -37,7 +37,7 @@ const VARIANTS: Variants = {
   visible: {opacity: 1, x: 0},
 }
 
-const MotionStack = styled(motion(Stack))``
+const MotionStack = styled(motion.create(Stack))``
 
 interface TasksActivityLogProps {
   onChange: (patch: FormPatch | PatchEvent | FormPatch[]) => void

@@ -105,7 +105,7 @@ export interface SortOrderingItem {
   direction: 'asc' | 'desc'
 }
 
-/** @beta */
+/** @public */
 export type I18nTextRecord<K extends string> = {[P in K]?: {key: string; ns: string}}
 
 /** @beta */
@@ -388,6 +388,7 @@ export interface FieldGroup {
   icon?: ComponentType
   title?: string
   description?: string
+  i18n?: I18nTextRecord<'title'>
   hidden?: ConditionalProperty
   default?: boolean
   fields?: ObjectField[]
@@ -407,7 +408,7 @@ export interface ObjectSchemaType extends BaseSchemaType {
   // string/number array in the schema normalization/compilation step
   // a path segment is a number when specified like array.0.prop in preview config.
   /** @deprecated Unused. Use the new field-level search config. */
-  __experimental_search: {path: (string | number)[]; weight: number; mapWith?: string}[]
+  __experimental_search?: {path: (string | number)[]; weight: number; mapWith?: string}[]
   /** @alpha */
   __experimental_omnisearch_visibility?: boolean
   /** @alpha */

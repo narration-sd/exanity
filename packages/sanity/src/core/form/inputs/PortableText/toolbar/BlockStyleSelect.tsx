@@ -1,5 +1,5 @@
+import {PortableTextEditor, usePortableTextEditor} from '@portabletext/editor'
 import {ChevronDownIcon} from '@sanity/icons'
-import {PortableTextEditor, usePortableTextEditor} from '@sanity/portable-text-editor'
 import {
   Menu,
   // eslint-disable-next-line no-restricted-imports
@@ -70,7 +70,7 @@ const emptyStyle: BlockStyleItem = {
 
 export const BlockStyleSelect = memo(function BlockStyleSelect(
   props: BlockStyleSelectProps,
-): JSX.Element {
+): React.JSX.Element {
   const {disabled, items: itemsProp, boundaryElement} = props
   const editor = usePortableTextEditor()
   const focusBlock = useFocusBlock()

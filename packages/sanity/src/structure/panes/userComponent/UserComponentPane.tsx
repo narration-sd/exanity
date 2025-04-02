@@ -1,4 +1,4 @@
-import {createElement, isValidElement, useState} from 'react'
+import {isValidElement, useState} from 'react'
 import {isValidElementType} from 'react-is'
 import {useI18nText} from 'sanity'
 
@@ -17,7 +17,7 @@ export function UserComponentPane(props: UserComponentPaneProps) {
   const {index, pane, paneKey, ...restProps} = props
   const {
     child,
-    component,
+    component: UserComponent,
     menuItems,
     menuItemGroups,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -28,6 +28,8 @@ export function UserComponentPane(props: UserComponentPaneProps) {
     actionHandlers?: Record<string, StructureToolPaneActionHandler>
   } | null>(null)
   const {title = ''} = useI18nText(pane)
+
+  const {key, ...componentProps} = {...restProps, ...restPane}
 
   return (
     <Pane id={paneKey} minWidth={320} selected={restProps.isSelected}>
@@ -40,18 +42,18 @@ export function UserComponentPane(props: UserComponentPaneProps) {
       />
 
       <UserComponentPaneContent>
-        {isValidElementType(component) &&
-          createElement(component, {
-            ...restProps,
-            ...restPane,
+        {isValidElementType(UserComponent) && (
+          <UserComponent
+            key={key}
+            {...componentProps}
             // NOTE: here we're utilizing the function form of refs so setting
             // the ref causes a re-render for `UserComponentPaneHeader`
-            ...({ref: setRef} as any),
-            child: child as any, // @todo: Fix typings
-            paneKey,
-          })}
-
-        {isValidElement(component) && component}
+            ref={setRef as any}
+            child={child}
+            paneKey={paneKey}
+          />
+        )}
+        {isValidElement(UserComponent) && UserComponent}
       </UserComponentPaneContent>
     </Pane>
   )

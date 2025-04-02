@@ -1,7 +1,8 @@
-import {CopyIcon as DuplicateIcon, TrashIcon} from '@sanity/icons'
+/* eslint-disable no-nested-ternary, react/jsx-no-bind */
+import {AddDocumentIcon, CopyIcon, TrashIcon} from '@sanity/icons'
 import {type SchemaType} from '@sanity/types'
 import {Box, Card, type CardTone, Menu} from '@sanity/ui'
-import {useCallback, useMemo, useRef} from 'react'
+import {useCallback, useImperativeHandle, useMemo, useRef, useState} from 'react'
 
 import {MenuButton, MenuItem} from '../../../../../../ui-components'
 import {ChangeIndicator} from '../../../../../changeIndicators'
@@ -16,11 +17,12 @@ import {useDidUpdate} from '../../../../hooks/useDidUpdate'
 import {useScrollIntoViewOnFocusWithin} from '../../../../hooks/useScrollIntoViewOnFocusWithin'
 import {useChildPresence} from '../../../../studio/contexts/Presence'
 import {useChildValidation} from '../../../../studio/contexts/Validation'
+import {TreeEditingEnabledProvider, useTreeEditingEnabled} from '../../../../studio/tree-editing'
 import {type ObjectItem, type ObjectItemProps} from '../../../../types'
 import {randomKey} from '../../../../utils/randomKey'
 import {RowLayout} from '../../layouts/RowLayout'
 import {createProtoArrayValue} from '../createProtoArrayValue'
-import {InsertMenuGroups} from '../InsertMenuGroups'
+import {useInsertMenuMenuItems} from '../InsertMenuMenuItems'
 
 type PreviewItemProps<Item extends ObjectItem> = Omit<ObjectItemProps<Item>, 'renderDefault'>
 
@@ -44,7 +46,7 @@ function getTone({
 const MENU_POPOVER_PROPS = {portal: true, tone: 'default'} as const
 
 const BUTTON_CARD_STYLE = {position: 'relative'} as const
-
+const EMPTY_ARRAY: never[] = []
 export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: PreviewItemProps<Item>) {
   const {
     schemaType,
@@ -55,6 +57,7 @@ export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: Preview
     value,
     open,
     onInsert,
+    onCopy,
     onFocus,
     onOpen,
     onClose,
@@ -65,10 +68,25 @@ export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: Preview
   } = props
   const {t} = useTranslation()
 
+  const treeEditing = useTreeEditingEnabled()
+  const treeEditingDisabledByOption = parentSchemaType?.options?.treeEditing === false
+  const legacyEditing = treeEditingDisabledByOption || treeEditing.legacyEditing
+
+  // The edit portal should open if the item is open and:
+  // - tree array editing is disabled
+  // - legacy array editing is enabled (e.g. in a Portable Text editor)
+  const openPortal = open && (!treeEditing.enabled || legacyEditing)
+
   const sortable = parentSchemaType.options?.sortable !== false
   const insertableTypes = parentSchemaType.of
 
+  const [previewCardElement, setPreviewCardElement] = useState<HTMLDivElement | null>(null)
   const previewCardRef = useRef<HTMLDivElement | null>(null)
+  useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(
+    previewCardRef,
+    () => previewCardElement,
+    [previewCardElement],
+  )
 
   // this is here to make sure the item is visible if it's being edited behind a modal
   useScrollIntoViewOnFocusWithin(previewCardRef, open)
@@ -88,6 +106,12 @@ export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: Preview
       position: 'after',
     })
   }, [onInsert, value])
+
+  const handleCopy = useCallback(() => {
+    onCopy({
+      items: [{...value, _key: randomKey()}],
+    })
+  }, [onCopy, value])
 
   const handleInsert = useCallback(
     (pos: 'before' | 'after', insertType: SchemaType) => {
@@ -117,33 +141,86 @@ export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: Preview
 
   const hasErrors = childValidation.some((v) => v.level === 'error')
   const hasWarnings = childValidation.some((v) => v.level === 'warning')
+  const [contextMenuButtonElement, setContextMenuButtonElement] =
+    useState<HTMLButtonElement | null>(null)
+  const {insertBefore, insertAfter} = useInsertMenuMenuItems({
+    schemaTypes: insertableTypes,
+    insertMenuOptions: parentSchemaType.options?.insertMenu,
+    onInsert: handleInsert,
+    referenceElement: contextMenuButtonElement,
+  })
+
+  const disableActions = parentSchemaType.options?.disableActions || EMPTY_ARRAY
+
+  const menuItems = useMemo(() => {
+    return [
+      !disableActions.includes('remove') && (
+        <MenuItem
+          key="remove"
+          text={t('inputs.array.action.remove')}
+          tone="critical"
+          icon={TrashIcon}
+          onClick={onRemove}
+        />
+      ),
+      !disableActions.includes('copy') && (
+        <MenuItem
+          key="copy"
+          text={t('inputs.array.action.copy')}
+          icon={CopyIcon}
+          onClick={handleCopy}
+        />
+      ),
+      !disableActions.includes('duplicate') && (
+        <MenuItem
+          key="duplicate"
+          text={t('inputs.array.action.duplicate')}
+          icon={AddDocumentIcon}
+          onClick={handleDuplicate}
+        />
+      ),
+      !disableActions.includes('add') &&
+        !disableActions.includes('addBefore') &&
+        insertBefore.menuItem,
+      !disableActions.includes('add') &&
+        !disableActions.includes('addAfter') &&
+        insertAfter.menuItem,
+    ].filter(Boolean)
+  }, [
+    disableActions,
+    handleCopy,
+    handleDuplicate,
+    insertAfter.menuItem,
+    insertBefore.menuItem,
+    onRemove,
+    t,
+  ])
 
   const menu = useMemo(
     () =>
-      readOnly ? null : (
-        <MenuButton
-          button={<ContextMenuButton />}
-          id={`${props.inputId}-menuButton`}
-          menu={
-            <Menu>
-              <MenuItem
-                text={t('inputs.array.action.remove')}
-                tone="critical"
-                icon={TrashIcon}
-                onClick={onRemove}
+      readOnly || menuItems.length === 0 ? null : (
+        <>
+          <MenuButton
+            ref={setContextMenuButtonElement}
+            onOpen={() => {
+              insertBefore.send({type: 'close'})
+              insertAfter.send({type: 'close'})
+            }}
+            button={
+              <ContextMenuButton
+                data-testid="array-item-menu-button"
+                selected={insertBefore.state.open || insertAfter.state.open ? true : undefined}
               />
-              <MenuItem
-                text={t('inputs.array.action.duplicate')}
-                icon={DuplicateIcon}
-                onClick={handleDuplicate}
-              />
-              <InsertMenuGroups types={insertableTypes} onInsert={handleInsert} />
-            </Menu>
-          }
-          popover={MENU_POPOVER_PROPS}
-        />
+            }
+            id={`${props.inputId}-menuButton`}
+            menu={<Menu>{menuItems}</Menu>}
+            popover={MENU_POPOVER_PROPS}
+          />
+          {insertBefore.popover}
+          {insertAfter.popover}
+        </>
       ),
-    [handleDuplicate, handleInsert, onRemove, insertableTypes, props.inputId, readOnly, t],
+    [menuItems, readOnly, insertBefore, insertAfter, props.inputId],
   )
 
   const tone = getTone({readOnly, hasErrors, hasWarnings})
@@ -165,7 +242,7 @@ export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: Preview
         radius={1}
         disabled={resolvingInitialValue}
         onClick={onOpen}
-        ref={previewCardRef}
+        ref={setPreviewCardElement}
         onFocus={onFocus}
         __unstable_focusRing
         style={BUTTON_CARD_STYLE}
@@ -184,12 +261,14 @@ export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: Preview
   )
 
   const itemTypeTitle = getSchemaTypeTitle(schemaType)
+
   return (
-    <>
+    <TreeEditingEnabledProvider legacyEditing={treeEditingDisabledByOption}>
       <ChangeIndicator path={path} isChanged={changed} hasFocus={Boolean(focused)}>
         <Box paddingX={1}>{item}</Box>
       </ChangeIndicator>
-      {open && (
+
+      {openPortal && (
         <EditPortal
           header={
             readOnly
@@ -201,11 +280,11 @@ export function PreviewItem<Item extends ObjectItem = ObjectItem>(props: Preview
           id={value._key}
           onClose={onClose}
           autofocus={focused}
-          legacy_referenceElement={previewCardRef.current}
+          legacy_referenceElement={previewCardElement}
         >
           {children}
         </EditPortal>
       )}
-    </>
+    </TreeEditingEnabledProvider>
   )
 }

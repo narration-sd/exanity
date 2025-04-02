@@ -5,7 +5,6 @@ import {
   forwardRef,
   type MouseEvent,
   type PropsWithChildren,
-  type ReactElement,
   type Ref,
   useCallback,
   useEffect,
@@ -34,7 +33,7 @@ const POPOVER_PROPS: MenuButtonProps['popover'] = {
   tone: 'default',
 }
 
-export function BlockObjectActionsMenu(props: BlockObjectActionsMenuProps): ReactElement {
+export function BlockObjectActionsMenu(props: BlockObjectActionsMenuProps): React.JSX.Element {
   const {children, focused, isOpen, onOpen, onRemove, readOnly, value} = props
   const {t} = useTranslation()
   const menuButtonId = useId()
@@ -106,7 +105,7 @@ export function BlockObjectActionsMenu(props: BlockObjectActionsMenuProps): Reac
           menu={
             <Menu>
               <>
-                {'_ref' in value && value._ref && (
+                {'_ref' in value && !!value._ref && (
                   <MenuItem
                     as={referenceLink}
                     data-as="a"
@@ -123,19 +122,19 @@ export function BlockObjectActionsMenu(props: BlockObjectActionsMenuProps): Reac
                   />
                 )}
                 {!readOnly && (
-                  <MenuItem
-                    icon={EditIcon}
-                    onClick={onOpen}
-                    text={t('inputs.portable-text.block.edit')}
-                  />
-                )}
-                {!readOnly && (
-                  <MenuItem
-                    icon={TrashIcon}
-                    onClick={handleDelete}
-                    text={t('inputs.portable-text.block.remove')}
-                    tone="critical"
-                  />
+                  <>
+                    <MenuItem
+                      icon={EditIcon}
+                      onClick={onOpen}
+                      text={t('inputs.portable-text.block.edit')}
+                    />
+                    <MenuItem
+                      icon={TrashIcon}
+                      onClick={handleDelete}
+                      text={t('inputs.portable-text.block.remove')}
+                      tone="critical"
+                    />
+                  </>
                 )}
               </>
             </Menu>

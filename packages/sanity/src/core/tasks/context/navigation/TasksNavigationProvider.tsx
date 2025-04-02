@@ -1,7 +1,7 @@
 import {useTelemetry} from '@sanity/telemetry/react'
 import {useToast} from '@sanity/ui'
 import {uuid} from '@sanity/uuid'
-import {type ReactNode, useCallback, useEffect, useReducer} from 'react'
+import {type ReactNode, useCallback, useEffect, useMemo, useReducer} from 'react'
 import {TasksNavigationContext} from 'sanity/_singletons'
 import {useRouter} from 'sanity/router'
 
@@ -124,11 +124,6 @@ export const TasksNavigationProvider = ({children}: {children: ReactNode}) => {
     navigator.clipboard
       .writeText(url.toString())
       .then(() => {
-        toast.push({
-          closable: true,
-          status: 'info',
-          title: 'Copied link to clipboard',
-        })
         telemetry.log(TaskLinkCopied)
       })
       .catch(() => {
@@ -140,39 +135,34 @@ export const TasksNavigationProvider = ({children}: {children: ReactNode}) => {
       })
   }, [state.selectedTask, state.viewMode, telemetry, toast])
 
-  // This is casted to a string to make it stable across renders so it doesn't trigger multiple times the effect.
-  const searchParamsAsString = new URLSearchParams(router.state._searchParams).toString()
+  const searchParams = new URLSearchParams(router.state._searchParams)
+  const sidebar = searchParams.get('sidebar')
+  const viewMode = searchParams.get('viewMode')
+  const selectedTask = searchParams.get('selectedTask')
+
   useEffect(() => {
     // listen to the URL to open the tasks view if the sidebar is set to task.
-    if (searchParamsAsString) {
-      const searchParams = new URLSearchParams(searchParamsAsString)
-
-      const sidebar = searchParams.get('sidebar')
-      if (sidebar !== 'tasks') {
-        return
-      }
-      dispatch({type: 'TOGGLE_TASKS_VIEW', payload: true})
-      const viewMode = searchParams.get('viewMode')
-      const selectedTask = searchParams.get('selectedTask')
-      if (viewMode === 'edit' && selectedTask) {
-        dispatch({type: 'EDIT_TASK', payload: {id: selectedTask}})
-        telemetry.log(TaskLinkOpened)
-      }
+    if (sidebar !== 'tasks') {
+      return
     }
-  }, [searchParamsAsString, telemetry])
+    dispatch({type: 'TOGGLE_TASKS_VIEW', payload: true})
+    if (viewMode === 'edit' && selectedTask) {
+      dispatch({type: 'EDIT_TASK', payload: {id: selectedTask}})
+      telemetry.log(TaskLinkOpened)
+    }
+  }, [selectedTask, sidebar, telemetry, viewMode])
 
-  return (
-    <TasksNavigationContext.Provider
-      value={{
-        state,
-        setViewMode,
-        setActiveTab,
-        handleCloseTasks,
-        handleOpenTasks,
-        handleCopyLinkToTask,
-      }}
-    >
-      {children}
-    </TasksNavigationContext.Provider>
+  const value = useMemo(
+    () => ({
+      state,
+      setViewMode,
+      setActiveTab,
+      handleCloseTasks,
+      handleOpenTasks,
+      handleCopyLinkToTask,
+    }),
+    [handleCloseTasks, handleCopyLinkToTask, handleOpenTasks, setActiveTab, setViewMode, state],
   )
+
+  return <TasksNavigationContext.Provider value={value}>{children}</TasksNavigationContext.Provider>
 }

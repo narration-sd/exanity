@@ -1,8 +1,9 @@
 import {type SanityDocument} from '@sanity/types'
-import {type ReactElement} from 'react'
 
 import {useReferringDocuments} from '../hooks/useReferringDocuments'
 import {type DocumentStore} from '../store'
+
+const EMPTY: never[] = []
 
 /**
  * @internal
@@ -12,12 +13,12 @@ export function WithReferringDocuments({
   children,
   id,
 }: {
-  children: (props: {isLoading: boolean; referringDocuments: SanityDocument[]}) => ReactElement
+  children: (props: {isLoading: boolean; referringDocuments: SanityDocument[]}) => React.JSX.Element
   /**
    * @deprecated - no longer required
    */
   documentStore?: DocumentStore
   id: string
 }) {
-  return children(useReferringDocuments(id))
+  return children(useReferringDocuments(id, EMPTY))
 }

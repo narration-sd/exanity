@@ -4,22 +4,30 @@ import {
   type ValidationContext,
   type ValidationMarker,
 } from '@sanity/types'
+import {BoundaryElementProvider, Box} from '@sanity/ui'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {
   createPatchChannel,
+  type DocumentFieldAction,
   EMPTY_ARRAY,
   FormBuilder,
   type FormBuilderProps,
   type FormNodePresence,
   getExpandOperations,
   type PatchEvent,
+  ScrollContainer,
   setAtPath,
   type StateTree,
+  useCopyPaste,
   useFormState,
+  useGlobalCopyPasteElementHandler,
+  useSource,
   useWorkspace,
   validateDocument,
+  VirtualizerScrollInstanceProvider,
   type Workspace,
 } from 'sanity'
+import {css, styled} from 'styled-components'
 
 import {applyAll} from '../../../../src/core/form/patch/applyPatch'
 import {PresenceProvider} from '../../../../src/core/form/studio/contexts/Presence'
@@ -35,12 +43,27 @@ declare global {
 }
 
 interface TestFormProps {
-  focusPath?: Path
-  onPathFocus?: (path: Path) => void
   document?: SanityDocument
+  focusPath?: Path
   id?: string
+  onPathFocus?: (path: Path) => void
+  openPath?: Path
   presence?: FormNodePresence[]
 }
+
+const Scroller = styled(ScrollContainer)<{$disabled: boolean}>(({$disabled}) => {
+  if ($disabled) {
+    return {height: '100%'}
+  }
+
+  return css`
+    height: 100%;
+    overflow: auto;
+    position: relative;
+    scroll-behavior: smooth;
+    outline: none;
+  `
+})
 
 export function TestForm(props: TestFormProps) {
   const {
@@ -48,25 +71,38 @@ export function TestForm(props: TestFormProps) {
     focusPath: focusPathFromProps,
     id: idFromProps = 'root',
     onPathFocus: onPathFocusFromProps,
+    openPath: openPathFromProps = EMPTY_ARRAY,
     presence: presenceFromProps = EMPTY_ARRAY,
   } = props
 
+  const {setDocumentMeta} = useCopyPaste()
+  const [wrapperElement, setWrapperElement] = useState<HTMLDivElement | null>(null)
   const [validation, setValidation] = useState<ValidationMarker[]>([])
-  const [openPath, onSetOpenPath] = useState<Path>([])
+  const [openPath, onSetOpenPath] = useState<Path>(openPathFromProps)
   const [fieldGroupState, onSetFieldGroupState] = useState<StateTree<string>>()
   const [collapsedPaths, onSetCollapsedPath] = useState<StateTree<boolean>>()
   const [collapsedFieldSets, onSetCollapsedFieldSets] = useState<StateTree<boolean>>()
+  const [documentScrollElement, setDocumentScrollElement] = useState<HTMLDivElement | null>(null)
+  const formContainerElement = useRef<HTMLDivElement | null>(null)
+  const documentId = '123'
+  const documentType = 'test'
   const [document, setDocument] = useState<SanityDocument>(
     documentFromProps || {
-      _id: '123',
-      _type: 'test',
+      _id: documentId,
+      _type: documentType,
       _createdAt: new Date().toISOString(),
       _updatedAt: new Date().toISOString(),
       _rev: '123',
     },
   )
   const [focusPath, setFocusPath] = useState<Path>(() => focusPathFromProps || [])
-  const patchChannel = useMemo(() => createPatchChannel(), [])
+  const [patchChannel] = useState(() => createPatchChannel())
+
+  useGlobalCopyPasteElementHandler({
+    element: wrapperElement,
+    focusPath,
+    value: document,
+  })
 
   useEffect(() => {
     if (documentFromProps) {
@@ -94,6 +130,15 @@ export function TestForm(props: TestFormProps) {
 
   const workspace = useWorkspace()
   const schemaType = workspace.schema.get('test')
+  const {
+    document: {
+      // actions: documentActions,
+      // badges: documentBadges,
+      unstable_fieldActions: fieldActionsResolver,
+      // unstable_languageFilter: languageFilterResolver,
+      // inspectors: inspectorsResolver,
+    },
+  } = useSource()
 
   if (!schemaType) {
     throw new Error('missing schema type')
@@ -103,11 +148,17 @@ export function TestForm(props: TestFormProps) {
     throw new Error('schema type is not an object')
   }
 
+  const fieldActions: DocumentFieldAction[] = useMemo(
+    () => (schemaType ? fieldActionsResolver({documentId, documentType, schemaType}) : []),
+    [documentId, documentType, fieldActionsResolver, schemaType],
+  )
+
   useEffect(() => {
     validateStaticDocument(document, workspace, (result) => setValidation(result))
   }, [document, workspace])
 
-  const formState = useFormState(schemaType, {
+  const formState = useFormState({
+    schemaType,
     focusPath,
     collapsedPaths,
     collapsedFieldSets,
@@ -116,11 +167,13 @@ export function TestForm(props: TestFormProps) {
     openPath,
     presence: presenceFromProps,
     validation,
-    value: document,
+    documentValue: document,
   })
 
   const formStateRef = useRef(formState)
-  formStateRef.current = formState
+  useEffect(() => {
+    formStateRef.current = formState
+  }, [formState])
 
   const handleFocus = useCallback(
     (nextFocusPath: Path) => {
@@ -134,11 +187,7 @@ export function TestForm(props: TestFormProps) {
     setFocusPath([])
   }, [setFocusPath])
 
-  const patchRef = useRef<(event: PatchEvent) => void>(() => {
-    throw new Error('Nope')
-  })
-
-  patchRef.current = (event: PatchEvent) => {
+  const patchRef = useRef<(event: PatchEvent) => void>((event: PatchEvent) => {
     setDocument((currentDocumentValue) => {
       const result = applyAll(currentDocumentValue, event.patches)
 
@@ -147,9 +196,9 @@ export function TestForm(props: TestFormProps) {
 
       return result
     })
-  }
+  })
 
-  const handleChange = useCallback((event: any) => patchRef.current(event), [])
+  const handleChange = useCallback((event: PatchEvent) => patchRef.current(event), [])
 
   const handleOnSetCollapsedPath = useCallback((path: Path, collapsed: boolean) => {
     onSetCollapsedPath((prevState) => setAtPath(prevState, path, collapsed))
@@ -184,10 +233,21 @@ export function TestForm(props: TestFormProps) {
     [formStateRef],
   )
 
+  useEffect(() => {
+    setDocumentMeta({
+      documentId,
+      documentType,
+      schemaType: schemaType,
+      onChange: handleChange,
+    })
+  }, [schemaType, handleChange, setDocumentMeta])
+
   const formBuilderProps: FormBuilderProps = useMemo(
     () => ({
       // eslint-disable-next-line camelcase
       __internal_patchChannel: patchChannel,
+      // eslint-disable-next-line camelcase
+      __internal_fieldActions: fieldActions,
       changed: false,
       changesOpen: false,
       collapsedFieldSets: undefined,
@@ -206,6 +266,7 @@ export function TestForm(props: TestFormProps) {
       onSelectFieldGroup: handleSetActiveFieldGroup,
       onSetFieldSetCollapsed: handleOnSetCollapsedFieldSet,
       onSetPathCollapsed: handleOnSetCollapsedPath,
+      openPath,
       path: EMPTY_ARRAY,
       presence: presenceFromProps,
       schemaType: formState?.schemaType || schemaType,
@@ -213,8 +274,9 @@ export function TestForm(props: TestFormProps) {
       value: formState?.value as FormDocumentValue,
     }),
     [
-      formState?.focusPath,
+      fieldActions,
       formState?.focused,
+      formState?.focusPath,
       formState?.groups,
       formState?.level,
       formState?.members,
@@ -227,6 +289,7 @@ export function TestForm(props: TestFormProps) {
       handleOnSetCollapsedPath,
       handleSetActiveFieldGroup,
       idFromProps,
+      openPath,
       patchChannel,
       presenceFromProps,
       schemaType,
@@ -235,9 +298,26 @@ export function TestForm(props: TestFormProps) {
     ],
   )
   return (
-    <PresenceProvider presence={presenceFromProps}>
-      <FormBuilder {...formBuilderProps} />
-    </PresenceProvider>
+    <div ref={setWrapperElement}>
+      <BoundaryElementProvider element={documentScrollElement}>
+        <VirtualizerScrollInstanceProvider
+          scrollElement={documentScrollElement}
+          containerElement={formContainerElement}
+        >
+          <PresenceProvider presence={presenceFromProps}>
+            <Scroller
+              $disabled={false}
+              data-testid="document-panel-scroller"
+              ref={setDocumentScrollElement}
+            >
+              <Box ref={formContainerElement}>
+                <FormBuilder {...formBuilderProps} />
+              </Box>
+            </Scroller>
+          </PresenceProvider>
+        </VirtualizerScrollInstanceProvider>
+      </BoundaryElementProvider>
+    </div>
   )
 }
 

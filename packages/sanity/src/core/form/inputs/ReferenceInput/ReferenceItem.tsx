@@ -1,6 +1,7 @@
 import {
+  AddDocumentIcon,
   CloseIcon,
-  CopyIcon as DuplicateIcon,
+  CopyIcon,
   LaunchIcon as OpenInNewTabIcon,
   SyncIcon as ReplaceIcon,
   TrashIcon,
@@ -14,6 +15,7 @@ import {
   useCallback,
   useMemo,
   useRef,
+  useState,
 } from 'react'
 import {IntentLink} from 'sanity/router'
 
@@ -23,6 +25,7 @@ import {ContextMenuButton} from '../../../components/contextMenuButton'
 import {LoadingBlock} from '../../../components/loadingBlock'
 import {useTranslation} from '../../../i18n'
 import {FieldPresence} from '../../../presence'
+import {EMPTY_ARRAY} from '../../../util/empty'
 import {FormFieldSet, FormFieldValidationStatus} from '../../components/formField'
 import {useDidUpdate} from '../../hooks/useDidUpdate'
 import {useScrollIntoViewOnFocusWithin} from '../../hooks/useScrollIntoViewOnFocusWithin'
@@ -30,7 +33,7 @@ import {set, unset} from '../../patch'
 import {type ObjectItem, type ObjectItemProps} from '../../types'
 import {randomKey} from '../../utils/randomKey'
 import {createProtoArrayValue} from '../arrays/ArrayOfObjectsInput/createProtoArrayValue'
-import {InsertMenuGroups} from '../arrays/ArrayOfObjectsInput/InsertMenuGroups'
+import {useInsertMenuMenuItems} from '../arrays/ArrayOfObjectsInput/InsertMenuMenuItems'
 import {RowLayout} from '../arrays/layouts/RowLayout'
 import {PreviewReferenceValue} from './PreviewReferenceValue'
 import {ReferenceFinalizeAlertStrip} from './ReferenceFinalizeAlertStrip'
@@ -80,6 +83,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
     value,
     open,
     onInsert,
+    onCopy,
     presence,
     validation,
     inputId,
@@ -94,6 +98,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
 
   const elementRef = useRef<HTMLDivElement | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
 
   const {EditReferenceLink, getReferenceInfo, selectedState, isCurrentDocumentLiveEdit} =
@@ -124,6 +129,12 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
     })
   }, [onInsert, value])
 
+  const handleCopy = useCallback(() => {
+    onCopy({
+      items: [{...value, _key: randomKey()}],
+    })
+  }, [onCopy, value])
+
   const handleInsert = useCallback(
     (pos: 'before' | 'after', insertType: SchemaType) => {
       onInsert({
@@ -137,7 +148,7 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
 
   const hasRef = value._ref
   const refTypeName = loadableReferenceInfo.result?.type || value?._strengthenOnPublish?.type
-  const publishedReferenceExists = hasRef && loadableReferenceInfo.result?.preview?.published?._id
+  const publishedReferenceExists = hasRef && loadableReferenceInfo.result?.isPublished
 
   const handleRemoveStrengthenOnPublish = useCallback(() => {
     onChange([
@@ -185,66 +196,117 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
       onPathFocus(['_ref'])
     }
   }, [hasRef, isEditing, onPathFocus])
+  const [contextMenuButtonElement, setContextMenuButtonElement] =
+    useState<HTMLButtonElement | null>(null)
+  const setMenuButtonRef = useCallback((element: HTMLButtonElement | null) => {
+    // Sets the contextMenuButtonElement that useInsertMenuMenuItems needs and has to be a element from useState
+    // while also updating the menuButtonRef that useClickOutsideEvent needs inside ReferenceInput
+    setContextMenuButtonElement(element)
+    menuButtonRef.current = element
+  }, [])
+  const {insertBefore, insertAfter} = useInsertMenuMenuItems({
+    schemaTypes: insertableTypes,
+    insertMenuOptions: parentSchemaType.options?.insertMenu,
+    onInsert: handleInsert,
+    referenceElement: contextMenuButtonElement,
+  })
+
+  const disableActions = parentSchemaType.options?.disableActions || EMPTY_ARRAY
 
   const menu = useMemo(
     () =>
       readOnly ? null : (
-        <MenuButton
-          button={<ContextMenuButton />}
-          id={`${inputId}-menuButton`}
-          menu={
-            <Menu ref={menuRef}>
-              {!readOnly && (
-                <>
-                  <MenuItem
-                    text={t('inputs.reference.action.remove')}
-                    tone="critical"
-                    icon={TrashIcon}
-                    onClick={onRemove}
-                  />
-                  <MenuItem
-                    text={t(
-                      hasRef && isEditing
-                        ? 'inputs.reference.action.replace-cancel'
-                        : 'inputs.reference.action.replace',
+        <>
+          <MenuButton
+            ref={setMenuButtonRef}
+            onOpen={() => {
+              insertBefore.send({type: 'close'})
+              insertAfter.send({type: 'close'})
+            }}
+            button={
+              <ContextMenuButton
+                selected={insertBefore.state.open || insertAfter.state.open ? true : undefined}
+                tooltipProps={{
+                  fallbackPlacements: ['top', 'bottom'],
+                  placement: 'right',
+                }}
+              />
+            }
+            id={`${inputId}-menuButton`}
+            menu={
+              <Menu ref={menuRef}>
+                {!readOnly && (
+                  <>
+                    {!disableActions.includes('remove') && (
+                      <MenuItem
+                        text={t('inputs.reference.action.remove')}
+                        tone="critical"
+                        icon={TrashIcon}
+                        onClick={onRemove}
+                      />
                     )}
-                    icon={hasRef && isEditing ? CloseIcon : ReplaceIcon}
-                    onClick={handleReplace}
-                  />
-                  <MenuItem
-                    text={t('inputs.reference.action.duplicate')}
-                    icon={DuplicateIcon}
-                    onClick={handleDuplicate}
-                  />
-                  <InsertMenuGroups onInsert={handleInsert} types={insertableTypes} />
-                </>
-              )}
+                    <MenuItem
+                      text={t(
+                        hasRef && isEditing
+                          ? 'inputs.reference.action.replace-cancel'
+                          : 'inputs.reference.action.replace',
+                      )}
+                      icon={hasRef && isEditing ? CloseIcon : ReplaceIcon}
+                      onClick={handleReplace}
+                    />
+                    {!disableActions.includes('copy') && (
+                      <MenuItem
+                        text={t('inputs.reference.action.copy')}
+                        icon={CopyIcon}
+                        onClick={handleCopy}
+                      />
+                    )}
+                    {!disableActions.includes('duplicate') && (
+                      <MenuItem
+                        text={t('inputs.reference.action.duplicate')}
+                        icon={AddDocumentIcon}
+                        onClick={handleDuplicate}
+                      />
+                    )}
+                    {!(disableActions.includes('add') || disableActions.includes('addBefore')) &&
+                      insertBefore.menuItem}
+                    {!disableActions.includes('add') &&
+                      !disableActions.includes('addAfter') &&
+                      insertAfter.menuItem}
+                  </>
+                )}
 
-              {!readOnly && !isEditing && hasRef && <MenuDivider />}
-              {!isEditing && hasRef && (
-                <MenuItem
-                  as={OpenLink}
-                  data-as="a"
-                  text={t('inputs.reference.action.open-in-new-tab')}
-                  icon={OpenInNewTabIcon}
-                />
-              )}
-            </Menu>
-          }
-          popover={MENU_POPOVER_PROPS}
-        />
+                {!readOnly && !isEditing && hasRef && <MenuDivider />}
+                {!isEditing && hasRef && (
+                  <MenuItem
+                    as={OpenLink}
+                    data-as="a"
+                    text={t('inputs.reference.action.open-in-new-tab')}
+                    icon={OpenInNewTabIcon}
+                  />
+                )}
+              </Menu>
+            }
+            popover={MENU_POPOVER_PROPS}
+          />
+          {insertBefore.popover}
+          {insertAfter.popover}
+        </>
       ),
     [
+      OpenLink,
+      disableActions,
+      handleCopy,
       handleDuplicate,
-      handleInsert,
       handleReplace,
       hasRef,
       inputId,
-      insertableTypes,
+      insertAfter,
+      insertBefore,
       isEditing,
       onRemove,
-      OpenLink,
       readOnly,
+      setMenuButtonRef,
       t,
     ],
   )
@@ -293,7 +355,11 @@ export function ReferenceItem<Item extends ReferenceItemValue = ReferenceItemVal
   )
 
   const item = (
-    <ReferenceItemRefProvider menuRef={menuRef} containerRef={containerRef}>
+    <ReferenceItemRefProvider
+      menuRef={menuRef}
+      menuButtonRef={menuButtonRef}
+      containerRef={containerRef}
+    >
       <RowLayout
         dragHandle={sortable}
         readOnly={!!readOnly}

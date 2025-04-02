@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 import {TrashIcon} from '@sanity/icons'
-import {useCallback, useState} from 'react'
+import {useCallback, useMemo, useState} from 'react'
 import {
   type DocumentActionComponent,
   InsufficientPermissionsMessage,
@@ -21,9 +21,9 @@ const DISABLED_REASON_TITLE_KEY = {
 }
 
 /** @internal */
-export const DeleteAction: DocumentActionComponent = ({id, type, draft, onComplete}) => {
+export const DeleteAction: DocumentActionComponent = ({id, type, draft, onComplete, release}) => {
   const {setIsDeleting: paneSetIsDeleting} = useDocumentPane()
-  const {delete: deleteOp} = useDocumentOperation(id, type)
+  const {delete: deleteOp} = useDocumentOperation(id, type, release)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isConfirmDialogOpen, setConfirmDialogOpen] = useState(false)
 
@@ -49,43 +49,63 @@ export const DeleteAction: DocumentActionComponent = ({id, type, draft, onComple
   const [permissions, isPermissionsLoading] = useDocumentPairPermissions({
     id,
     type,
+    version: release,
     permission: 'delete',
   })
 
   const currentUser = useCurrentUser()
 
-  if (!isPermissionsLoading && !permissions?.granted) {
+  return useMemo(() => {
+    if (!isPermissionsLoading && !permissions?.granted) {
+      return {
+        tone: 'critical',
+        icon: TrashIcon,
+        disabled: true,
+        label: t('action.delete.label'),
+        title: (
+          <InsufficientPermissionsMessage context="delete-document" currentUser={currentUser} />
+        ),
+      }
+    }
+
     return {
       tone: 'critical',
       icon: TrashIcon,
-      disabled: true,
-      label: t('action.delete.label'),
-      title: <InsufficientPermissionsMessage context="delete-document" currentUser={currentUser} />,
+      disabled: isDeleting || Boolean(deleteOp.disabled) || isPermissionsLoading,
+      title: (deleteOp.disabled && t(DISABLED_REASON_TITLE_KEY[deleteOp.disabled])) || '',
+      label: isDeleting ? t('action.delete.running.label') : t('action.delete.label'),
+      shortcut: 'Ctrl+Alt+D',
+      onHandle: handle,
+      dialog: isConfirmDialogOpen && {
+        type: 'custom',
+        component: (
+          <ConfirmDeleteDialog
+            // eslint-disable-next-line @sanity/i18n/no-attribute-string-literals
+            action="delete"
+            id={draft?._id || id}
+            type={type}
+            onCancel={handleCancel}
+            onConfirm={handleConfirm}
+          />
+        ),
+      },
     }
-  }
-
-  return {
-    tone: 'critical',
-    icon: TrashIcon,
-    disabled: isDeleting || Boolean(deleteOp.disabled) || isPermissionsLoading,
-    title: (deleteOp.disabled && t(DISABLED_REASON_TITLE_KEY[deleteOp.disabled])) || '',
-    label: isDeleting ? t('action.delete.running.label') : t('action.delete.label'),
-    shortcut: 'Ctrl+Alt+D',
-    onHandle: handle,
-    dialog: isConfirmDialogOpen && {
-      type: 'custom',
-      component: (
-        <ConfirmDeleteDialog
-          // eslint-disable-next-line @sanity/i18n/no-attribute-string-literals
-          action="delete"
-          id={draft?._id || id}
-          type={type}
-          onCancel={handleCancel}
-          onConfirm={handleConfirm}
-        />
-      ),
-    },
-  }
+  }, [
+    currentUser,
+    deleteOp.disabled,
+    draft?._id,
+    handle,
+    handleCancel,
+    handleConfirm,
+    id,
+    isConfirmDialogOpen,
+    isDeleting,
+    isPermissionsLoading,
+    permissions?.granted,
+    t,
+    type,
+  ])
 }
 
 DeleteAction.action = 'delete'
+DeleteAction.displayName = 'DeleteAction'

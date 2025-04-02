@@ -1,25 +1,34 @@
+import {colorInput} from '@sanity/color-input'
 import {googleMapsInput} from '@sanity/google-maps-input'
 import {BookIcon} from '@sanity/icons'
 import {visionTool} from '@sanity/vision'
-import {defineConfig, definePlugin} from 'sanity'
+import {defineConfig} from 'sanity'
+import {presentationTool} from 'sanity/presentation'
 import {structureTool} from 'sanity/structure'
+import {markdownSchema} from 'sanity-plugin-markdown'
+import {media} from 'sanity-plugin-media'
 import {muxInput} from 'sanity-plugin-mux-input'
 import {imageAssetSource} from 'sanity-test-studio/assetSources'
 import {resolveDocumentActions as documentActions} from 'sanity-test-studio/documentActions'
 import {assistFieldActionGroup} from 'sanity-test-studio/fieldActions/assistFieldActionGroup'
-import {copyAction} from 'sanity-test-studio/fieldActions/copyAction'
-import {pasteAction} from 'sanity-test-studio/fieldActions/pasteAction'
 import {resolveInitialValueTemplates} from 'sanity-test-studio/initialValueTemplates'
 import {customInspector} from 'sanity-test-studio/inspectors/custom'
 import {languageFilter} from 'sanity-test-studio/plugins/language-filter'
-import {presenceTool} from 'sanity-test-studio/plugins/presence'
 import {defaultDocumentNode, newDocumentOptions, structure} from 'sanity-test-studio/structure'
 
 import {customComponents} from './components-api'
+import {e2eI18nBundles} from './i18n/bundles'
 import {schemaTypes} from './schemaTypes'
 
-const sharedSettings = definePlugin({
-  name: 'sharedSettings',
+export default defineConfig({
+  name: 'default',
+  title: 'studio-e2e-testing',
+
+  projectId: process.env.SANITY_E2E_PROJECT_ID!,
+  dataset: process.env.SANITY_E2E_DATASET!,
+
+  basePath: '/test',
+
   schema: {
     types: schemaTypes,
     templates: resolveInitialValueTemplates,
@@ -28,6 +37,10 @@ const sharedSettings = definePlugin({
     image: {
       assetSources: [imageAssetSource],
     },
+  },
+
+  i18n: {
+    bundles: e2eI18nBundles,
   },
 
   document: {
@@ -41,7 +54,7 @@ const sharedSettings = definePlugin({
     },
     unstable_fieldActions: (prev, ctx) => {
       if (['fieldActionsTest', 'stringsTest'].includes(ctx.documentType)) {
-        return [...prev, assistFieldActionGroup, copyAction, pasteAction]
+        return [...prev, assistFieldActionGroup]
       }
 
       return prev
@@ -56,6 +69,14 @@ const sharedSettings = definePlugin({
       title: 'Content',
       structure,
       defaultDocumentNode,
+    }),
+    presentationTool({
+      name: 'presentation',
+      title: 'Presentation',
+      previewUrl: {
+        origin: 'https://test-studio.sanity.dev',
+        preview: '/preview/index.html',
+      },
     }),
     languageFilter({
       defaultLanguages: ['nb'],
@@ -77,26 +98,24 @@ const sharedSettings = definePlugin({
         lng: -74.1180863,
       },
     }),
+    colorInput(),
     visionTool({
       defaultApiVersion: '2022-08-08',
     }),
     // eslint-disable-next-line camelcase
     muxInput({mp4_support: 'standard'}),
-    presenceTool(),
+    media(),
+    markdownSchema(),
   ],
-})
-
-export default defineConfig({
-  name: 'default',
-  title: 'studio-e2e-testing',
-
-  projectId: process.env.SANITY_E2E_PROJECT_ID!,
-  dataset: process.env.SANITY_E2E_DATASET!,
-
-  plugins: [sharedSettings()],
-  basePath: '/test',
-  // eslint-disable-next-line camelcase
-  __internal_serverDocumentActions: {
+  beta: {
+    treeArrayEditing: {
+      enabled: true,
+    },
+  },
+  announcements: {
+    enabled: false,
+  },
+  releases: {
     enabled: true,
   },
 })

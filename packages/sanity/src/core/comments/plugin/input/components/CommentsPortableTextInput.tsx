@@ -5,7 +5,7 @@ import {
   PortableTextEditor,
   type RangeDecoration,
   type RangeDecorationOnMovedDetails,
-} from '@sanity/portable-text-editor'
+} from '@portabletext/editor'
 import {isPortableTextTextBlock} from '@sanity/types'
 import {BoundaryElementProvider, Stack, usePortal} from '@sanity/ui'
 import * as PathUtils from '@sanity/util/paths'
@@ -33,7 +33,7 @@ import {
   type CommentUpdatePayload,
 } from '../../../types'
 import {
-  buildRangeDecorations,
+  buildCommentRangeDecorations,
   buildRangeDecorationSelectionsFromComments,
   buildTextSelectionFromFragment,
 } from '../../../utils'
@@ -223,6 +223,8 @@ export const CommentsPortableTextInputInner = memo(function CommentsPortableText
     [getComment, onCommentsOpen, scrollToComment, setSelectedPath],
   )
 
+  const blurred = useRef<boolean>(false)
+
   const handleSelectionChange = useCallback(
     (selection: EditorSelection | null) => {
       const isRangeSelected = selection?.anchor.offset !== selection?.focus.offset
@@ -234,7 +236,15 @@ export const CommentsPortableTextInputInner = memo(function CommentsPortableText
         setCanSubmit(false)
         return
       }
-
+      /**
+       * When the portable text editor loses focus we will save the blurred.current to true.
+       * Later, when it restores focus the editor will emit a selection change event, but we don't want to immediately show the comment input
+       * instead, we want to wait until the user selects a new range.
+       */
+      if (blurred.current) {
+        blurred.current = false
+        return
+      }
       // If the mouse is not down, we want to set the current selection rect
       // when the selection changes. Otherwise, we want to wait until the mouse
       // is up to set the current selection rect (see `handleMouseUp`).
@@ -363,7 +373,7 @@ export const CommentsPortableTextInputInner = memo(function CommentsPortableText
       if (!editorRef.current) return EMPTY_ARRAY
       const editorValue = PortableTextEditor.getValue(editorRef.current) || EMPTY_ARRAY
 
-      return buildRangeDecorations({
+      return buildCommentRangeDecorations({
         comments: commentsToDecorate,
         currentHoveredCommentId,
         onDecorationClick: handleDecoratorClick,
@@ -386,6 +396,9 @@ export const CommentsPortableTextInputInner = memo(function CommentsPortableText
     (change: EditorChange) => {
       if (change.type === 'mutation') {
         updateCommentRange()
+      }
+      if (change.type === 'blur') {
+        blurred.current = true
       }
       if (change.type === 'selection') {
         debounceSelectionChange(change.selection)

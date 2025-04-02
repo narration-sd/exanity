@@ -1,4 +1,4 @@
-import {createElement, type ElementType, type ReactNode} from 'react'
+import {type ElementType, type ReactNode} from 'react'
 import {isValidElementType} from 'react-is'
 
 import {type PreviewLayoutKey, type PreviewMediaDimensions} from './types'
@@ -9,7 +9,8 @@ export function renderPreviewMedia<Layout = PreviewLayoutKey>(
   dimensions: PreviewMediaDimensions,
 ): ReactNode {
   if (isValidElementType(value)) {
-    return createElement(value, {layout, dimensions})
+    const Value = value
+    return <Value layout={layout} dimensions={dimensions} />
   }
 
   if (typeof value === 'string') {
@@ -30,7 +31,8 @@ export function renderPreviewNode<Layout = PreviewLayoutKey>(
   }
 
   if (isValidElementType(value)) {
-    return createElement(value, {layout})
+    const Value = value
+    return <Value layout={layout} />
   }
 
   // @todo: find out why `value` isn't infered as `ReactNode` here

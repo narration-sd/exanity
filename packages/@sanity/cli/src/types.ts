@@ -24,6 +24,7 @@ export interface SanityModuleInternal {
 export interface PackageJson {
   name: string
   version: string
+  scripts?: Record<string, string>
 
   description?: string
   author?: string
@@ -82,7 +83,6 @@ export interface CliBaseCommandContext {
   output: CliOutputter
   prompt: CliPrompter
   apiClient: CliApiClient
-  yarn: CliStubbedYarn
   sanityMajorVersion: 2 | 3
   cliConfigPath?: string
   cliRoot: string
@@ -94,7 +94,6 @@ export interface CliBaseCommandContext {
 }
 
 export interface TelemetryUserProperties {
-  deviceId: string
   runtime: string
   runtimeVersion: string
   cliVersion: string
@@ -152,6 +151,7 @@ export interface CommandRunnerOptions {
 
 export interface CliOutputter {
   print: (...args: unknown[]) => void
+  success: (...args: unknown[]) => void
   warn: (...args: unknown[]) => void
   error: (...args: unknown[]) => void
   clear: () => void
@@ -287,6 +287,39 @@ export interface GraphQLAPIConfig {
   filterSuffix?: string
 }
 
+/**
+ * Until these types are on npm: https://github.com/facebook/react/blob/0bc30748730063e561d87a24a4617526fdd38349/compiler/packages/babel-plugin-react-compiler/src/Entrypoint/Options.ts#L39-L122
+ * @beta
+ */
+export interface ReactCompilerConfig {
+  /**
+   * @see https://react.dev/learn/react-compiler#existing-projects
+   */
+  sources?: Array<string> | ((filename: string) => boolean) | null
+
+  /**
+   * The minimum major version of React that the compiler should emit code for. If the target is 19
+   * or higher, the compiler emits direct imports of React runtime APIs needed by the compiler. On
+   * versions prior to 19, an extra runtime package react-compiler-runtime is necessary to provide
+   * a userspace approximation of runtime APIs.
+   * @see https://react.dev/learn/react-compiler#using-react-compiler-with-react-17-or-18
+   */
+  target: '18' | '19'
+
+  panicThreshold?: 'ALL_ERRORS' | 'CRITICAL_ERRORS' | 'NONE'
+
+  compilationMode?: 'infer' | 'syntax' | 'annotation' | 'all'
+}
+
+interface AppConfig {
+  organizationId: string
+  /**
+   * Defaults to './src/App'
+   */
+  entry?: string
+  id?: string
+}
+
 export interface CliConfig {
   api?: CliApiConfig
 
@@ -302,6 +335,13 @@ export interface CliConfig {
    */
   reactStrictMode?: boolean
 
+  /**
+   * The React Compiler is currently in beta, and is disabled by default.
+   * @see https://react.dev/learn/react-compiler
+   * @beta
+   */
+  reactCompiler?: ReactCompilerConfig
+
   server?: {
     hostname?: string
     port?: number
@@ -312,8 +352,25 @@ export interface CliConfig {
   vite?: UserViteConfig
 
   autoUpdates?: boolean
+
+  studioHost?: string
+
+  /**
+   * Parameter used to configure other kinds of applications.
+   * Signals to `sanity` commands that this is not a studio.
+   */
+  app?: AppConfig
 }
 
 export type UserViteConfig =
   | InlineConfig
   | ((config: InlineConfig, env: ConfigEnv) => InlineConfig | Promise<InlineConfig>)
+
+export type SanityUser = {
+  id: string
+  name: string
+  email: string
+  profileImage?: string
+  tosAcceptedAt?: string
+  provider: 'google' | 'github' | 'sanity' | `saml-${string}`
+}

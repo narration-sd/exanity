@@ -13,6 +13,7 @@ export const STANDARD_INPUT_TYPES = [
   'stringsTest',
   'textsTest',
   'urlsTest',
+  'globalDocumentReferenceTest',
 ]
 
 export const STANDARD_PORTABLE_TEXT_INPUT_TYPES = [
@@ -55,6 +56,7 @@ export const DEBUG_INPUT_TYPES = [
   'fieldsetsTest',
   'fieldValidationInferReproDoc',
   'focusTest',
+  'patchOnMountDebug',
   'formInputDebug',
   'initialValuesTest',
   'inspectorsTest',
@@ -62,6 +64,7 @@ export const DEBUG_INPUT_TYPES = [
   'languageFilterDebug',
   'manyFieldsTest',
   'noTitleField',
+  'objectsDebug',
   'poppers',
   'presence',
   'previewImageUrlTest',
@@ -79,6 +82,7 @@ export const DEBUG_INPUT_TYPES = [
   'scrollBug',
   'select',
   'simpleArrayOfObjects',
+  'arrayCapabilities',
   'simpleReferences',
   'thesis',
   'typeWithNoToplevelStrings',
@@ -93,9 +97,11 @@ export const DEBUG_FIELD_GROUP_TYPES = [
   'fieldGroups',
   'fieldGroupsDefault',
   'fieldGroupsMany',
+  'fieldGroupsWithI18n',
   'fieldGroupsWithValidation',
   'fieldGroupsWithFieldsets',
   'fieldGroupsWithFieldsetsAndValidation',
+  'fieldGroupsWithFieldsetsHidden',
 ]
 
 export const EXTERNAL_PLUGIN_INPUT_TYPES = ['markdownTest', 'muxVideoPost']

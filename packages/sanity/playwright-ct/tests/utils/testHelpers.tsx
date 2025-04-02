@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs'
 import path from 'node:path'
 
-import {type Locator, type PlaywrightTestArgs} from '@playwright/test'
+import {expect, type Locator, type PlaywrightTestArgs} from '@playwright/test'
 
 export const DEFAULT_TYPE_DELAY = 20
 
@@ -10,9 +10,10 @@ export function testHelpers({page}: {page: PlaywrightTestArgs['page']}) {
     const $overlay = $pteField.getByTestId('activate-overlay')
     if (await $overlay.isVisible()) {
       await $overlay.focus()
-      await page.keyboard.press('Space')
+      await $overlay.press('Space')
     }
-    await $overlay.waitFor({state: 'detached', timeout: 1000})
+
+    await expect($overlay).not.toBeVisible()
   }
   return {
     /**
@@ -72,11 +73,11 @@ export function testHelpers({page}: {page: PlaywrightTestArgs['page']}) {
       // Wait for field to get ready (without this tests fails randomly on Webkit)
       await page.locator(`[data-testid='${testId}']`).waitFor()
       const $pteField: Locator = page.getByTestId(testId)
+      await $pteField.locator('[contenteditable="true"]').waitFor()
+      const $pteTextbox = $pteField.locator('[contenteditable="true"]')
       // Activate the input if needed
       await activatePTInputOverlay($pteField)
       // Ensure focus on the contentEditable element of the Portable Text Editor
-      const $pteTextbox = $pteField.getByRole('textbox')
-      await $pteTextbox.isEditable()
       await $pteTextbox.focus()
       return $pteField
     },
@@ -92,11 +93,11 @@ export function testHelpers({page}: {page: PlaywrightTestArgs['page']}) {
       // Wait for field to get ready (without this tests fails randomly on Webkit)
       await page.locator(`[data-testid='${testId}']`).waitFor()
       const $pteField: Locator = page.getByTestId(testId)
+      await $pteField.locator('[contenteditable="true"]').waitFor()
+      const $pteTextbox = $pteField.locator('[contenteditable="true"]')
       // Activate the input if needed
       await activatePTInputOverlay($pteField)
       // Ensure focus on the contentEditable element of the Portable Text Editor
-      const $pteTextbox = $pteField.getByRole('textbox')
-      await $pteTextbox.isEditable()
       await $pteTextbox.focus()
       return $pteTextbox
     },
@@ -104,11 +105,20 @@ export function testHelpers({page}: {page: PlaywrightTestArgs['page']}) {
      * Gets the appropriate modifier key for the current platform.
      * @returns The modifier key name ('Meta' for macOS, 'Control' for other platforms).
      */
-    getModifierKey: () => {
-      if (process.platform === 'darwin') {
+    getModifierKey: (options?: {browserName?: string}) => {
+      // There's a bug with Firefox and Chromium on macOS where it use 'Control' instead of 'Meta' inside Playwright for some reason
+      if (
+        process.platform === 'darwin' &&
+        options?.browserName &&
+        ['chromium', 'firefox'].includes(options.browserName)
+      ) {
+        return 'Control'
+      }
+      // Webkit on Linux uses 'Meta' instead of 'Control' as the modifier key for some reason
+      if (process.platform === 'linux' && options?.browserName === 'webkit') {
         return 'Meta'
       }
-      return 'Control'
+      return 'ControlOrMeta'
     },
     /**
      * Types text with a delay using `page.keyboard.type`. Default delay emulates a human typing.
@@ -287,6 +297,40 @@ export function testHelpers({page}: {page: PlaywrightTestArgs['page']}) {
      */
     toggleHotkey: async (hotkey: string, modifierKey?: string) => {
       await page.keyboard.press(modifierKey ? `${modifierKey}+${hotkey}` : hotkey)
+    },
+    mockClipboard: async () => {
+      await page.evaluate(() => {
+        const clipboardData = {text: ''}
+
+        // Mock the clipboard writeText method
+        navigator.clipboard.writeText = async (text) => {
+          clipboardData.text = text
+          return Promise.resolve()
+        }
+
+        // Mock the clipboard readText method
+        navigator.clipboard.readText = async () => {
+          return Promise.resolve(clipboardData.text)
+        }
+      })
+    },
+    setClipboardText: async (text: string) => {
+      await page.evaluate((checkText) => {
+        navigator.clipboard.writeText(checkText)
+      }, text)
+    },
+
+    getClipboardText: async () => {
+      return await page.evaluate(() => {
+        return navigator.clipboard.readText()
+      })
+    },
+    hasClipboardText: async (text: string) => {
+      const value = await page.evaluate(() => {
+        return navigator.clipboard.readText()
+      })
+
+      return value === text
     },
     /**
      * Will wait for the documentState evaulate callback to be true before the docmueentState is returned

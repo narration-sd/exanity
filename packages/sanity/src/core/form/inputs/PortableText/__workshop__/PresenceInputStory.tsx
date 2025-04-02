@@ -4,14 +4,14 @@ import {
   PortableTextEditable,
   PortableTextEditor,
   type RenderBlockFunction,
-} from '@sanity/portable-text-editor'
+} from '@portabletext/editor'
 import {Schema} from '@sanity/schema'
-import {type PortableTextBlock} from '@sanity/types'
+import {defineArrayMember, defineField, type PortableTextBlock} from '@sanity/types'
 import {Card, Container, Flex, Stack, Text} from '@sanity/ui'
 import {useCallback, useMemo, useRef, useState} from 'react'
-import {defineArrayMember, defineField, type FormNodePresence} from 'sanity'
 import {css, styled} from 'styled-components'
 
+import {type FormNodePresence} from '../../../../presence/types'
 import {PresenceProvider} from '../../../studio/contexts/Presence'
 import {usePresenceCursorDecorations} from '../presence-cursors'
 

@@ -1,11 +1,11 @@
+import {type StackablePerspective} from '@sanity/client'
 import {Card, Flex} from '@sanity/ui'
-import {useCallback} from 'react'
+import {type MouseEvent, useCallback} from 'react'
 import {styled} from 'styled-components'
 
 import {CommandList, type CommandListRenderItemCallback} from '../../../../../../components'
 import {useTranslation} from '../../../../../../i18n'
 import {type WeightedHit} from '../../../../../../search'
-import {getPublishedId} from '../../../../../../util/draftUtils'
 import {useSearchState} from '../../contexts/search/useSearchState'
 import {useRecentSearchesStore} from '../../datastores/recentSearches'
 import {NoResults} from '../NoResults'
@@ -17,8 +17,8 @@ import {type ItemSelectHandler, SearchResultItem} from './item/SearchResultItem'
 const VIRTUAL_LIST_SEARCH_RESULT_ITEM_HEIGHT = 57 // px
 const VIRTUAL_LIST_OVERSCAN = 4
 
-const SearchResultsInnerFlex = styled(Flex)<{$loading: boolean}>`
-  opacity: ${({$loading}) => ($loading ? 0.5 : 1)};
+const SearchResultsInnerFlex = styled(Flex)<{$loadingFirstPage: boolean}>`
+  opacity: ${({$loadingFirstPage}) => ($loadingFirstPage ? 0.5 : 1)};
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;
@@ -30,14 +30,20 @@ interface SearchResultsProps {
   disableIntentLink?: boolean
   inputElement: HTMLInputElement | null
   onItemSelect?: ItemSelectHandler
+  previewPerspective?: StackablePerspective[]
 }
 
-export function SearchResults({disableIntentLink, inputElement, onItemSelect}: SearchResultsProps) {
+export function SearchResults({
+  disableIntentLink,
+  inputElement,
+  onItemSelect,
+  previewPerspective,
+}: SearchResultsProps) {
   const {
     dispatch,
     onClose,
     setSearchCommandList,
-    state: {debug, filters, fullscreen, lastActiveIndex, result, terms},
+    state: {debug, filters, fullscreen, lastActiveIndex, result, terms, cursor},
   } = useSearchState()
   const {t} = useTranslation()
   const recentSearchesStore = useRecentSearchesStore()
@@ -49,12 +55,18 @@ export function SearchResults({disableIntentLink, inputElement, onItemSelect}: S
   /**
    * Add current search to recent searches, trigger child item click and close search
    */
-  const handleSearchResultClick = useCallback(() => {
-    if (recentSearchesStore) {
-      recentSearchesStore.addSearch(terms, filters)
-    }
-    onClose?.()
-  }, [filters, onClose, recentSearchesStore, terms])
+  const handleSearchResultClick = useCallback(
+    (e: MouseEvent<HTMLElement>) => {
+      if (recentSearchesStore) {
+        recentSearchesStore.addSearch(terms, filters)
+      }
+      // We don't want to close the search if they are opening their result in a new tab
+      if (!e.metaKey && !e.ctrlKey) {
+        onClose?.()
+      }
+    },
+    [filters, onClose, recentSearchesStore, terms],
+  )
 
   const handleEndReached = useCallback(() => {
     dispatch({type: 'PAGE_INCREMENT'})
@@ -66,17 +78,18 @@ export function SearchResults({disableIntentLink, inputElement, onItemSelect}: S
         <>
           <SearchResultItem
             disableIntentLink={disableIntentLink}
-            documentId={getPublishedId(item.hit._id) || ''}
+            documentId={item.hit._id || ''}
             documentType={item.hit._type}
             onClick={handleSearchResultClick}
             onItemSelect={onItemSelect}
+            previewPerspective={previewPerspective}
             paddingY={1}
           />
           {debug && <DebugOverlay data={item} />}
         </>
       )
     },
-    [debug, disableIntentLink, handleSearchResultClick, onItemSelect],
+    [debug, disableIntentLink, handleSearchResultClick, onItemSelect, previewPerspective],
   )
 
   return (
@@ -90,7 +103,11 @@ export function SearchResults({disableIntentLink, inputElement, onItemSelect}: S
           {hasSearchResults && <SortMenu />}
 
           {/* Results */}
-          <SearchResultsInnerFlex $loading={result.loading} aria-busy={result.loading} flex={1}>
+          <SearchResultsInnerFlex
+            $loadingFirstPage={result.loading && cursor === null}
+            aria-busy={result.loading}
+            flex={1}
+          >
             {hasError ? (
               <SearchError />
             ) : (

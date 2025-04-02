@@ -24,14 +24,61 @@ const playwrightConfig = createPlaywrightConfig({
   projectId: readEnv('SANITY_E2E_PROJECT_ID'),
   token: readEnv('SANITY_E2E_SESSION_TOKEN'),
   playwrightOptions(config): PlaywrightTestConfig {
+    const projects = [
+      ...(config?.projects?.map((project) => {
+        const projectConfig = {
+          ...project,
+        }
+
+        if (project.name === 'chromium') {
+          return {
+            ...projectConfig,
+            permissions: ['clipboard-read', 'clipboard-write'],
+            launchOptions: {
+              args: ['--disable-gpu', '--disable-software-rasterizer'],
+            },
+            contextOptions: {
+              ...projectConfig.use?.contextOptions,
+              // chromium-specific permissions
+              permissions: ['clipboard-read', 'clipboard-write'],
+              reducedMotion: 'reduce',
+            },
+          }
+        }
+
+        if (project.name === 'firefox') {
+          return {
+            ...projectConfig,
+            launchOptions: {
+              firefoxUserPrefs: {
+                'dom.events.asyncClipboard.readText': true,
+                'dom.events.testing.asyncClipboard': true,
+              },
+            },
+            contextOptions: {
+              ...projectConfig.use?.contextOptions,
+              reducedMotion: 'reduce',
+            },
+          }
+        }
+
+        return projectConfig
+      }) || []),
+    ]
+
     return {
       ...config,
-      reporter: excludeGithub(config.reporter),
+      /* We allow 1 retry to root out flaky tests */
+      retries: 1,
+      reporter: excludeGithub([['list'], ['blob']]),
       use: {
         ...config.use,
+        video: 'retain-on-failure',
         baseURL: 'http://localhost:3339',
         headless: HEADLESS,
+        contextOptions: {reducedMotion: 'reduce'},
       },
+      projects,
       webServer: {
         ...config.webServer,
         command: CI ? 'pnpm e2e:start' : 'pnpm e2e:dev',

@@ -1,5 +1,5 @@
-import {htmlToBlocks} from '@sanity/block-tools'
-import {type OnPasteFn, type PortableTextBlock} from '@sanity/portable-text-editor'
+import {htmlToBlocks} from '@portabletext/block-tools'
+import {type OnPasteFn, type PortableTextBlock} from '@portabletext/editor'
 import {useCallback, useMemo} from 'react'
 import {PortableTextInput, type PortableTextInputProps, type PortableTextMarker} from 'sanity'
 

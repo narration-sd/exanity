@@ -1,6 +1,5 @@
 import path from 'node:path'
 
-import {describe, expect, test} from '@jest/globals'
 import {
   createReferenceTypeNode,
   type DocumentSchemaType,
@@ -10,6 +9,7 @@ import {
   type StringTypeNode,
   type TypeNode,
 } from 'groq-js'
+import {describe, expect, test} from 'vitest'
 
 import {readSchema} from '../../readSchema'
 import {TypeGenerator} from '../typeGenerator'
@@ -262,21 +262,21 @@ export type AllSanitySchemaTypes = Impossible;"
     const actualOutput = typeGenerator.generateSchemaTypes()
 
     expect(actualOutput).toMatchInlineSnapshot(`
-"export type BlogPost = {
-  author: {
-    _ref: string;
-    _type: \\"reference\\";
-    _weak?: boolean;
-    [internalGroqTypeReferenceTo]?: \\"author\\";
-  };
-};
+      "export type BlogPost = {
+        author: {
+          _ref: string;
+          _type: "reference";
+          _weak?: boolean;
+          [internalGroqTypeReferenceTo]?: "author";
+        };
+      };
 
-export type Author = {
-  name: string;
-};
+      export type Author = {
+        name: string;
+      };
 
-export type AllSanitySchemaTypes = BlogPost | Author;"
-`)
+      export type AllSanitySchemaTypes = BlogPost | Author;"
+    `)
   })
 
   test('should generate correct types for document schema with union fields', () => {
@@ -415,7 +415,16 @@ export type AllSanitySchemaTypes = OptionalData;"
       },
     } satisfies TypeNode
 
-    const typeGenerator = new TypeGenerator([])
+    const typeGenerator = new TypeGenerator([
+      {
+        type: 'type',
+        name: 'test',
+        value: {
+          type: 'object',
+          attributes: {test: {type: 'objectAttribute', value: {type: 'string'}}},
+        },
+      },
+    ])
     const objectNodeOut = typeGenerator.generateTypeNodeTypes('myObject', objectNode)
     expect(objectNodeOut).toMatchSnapshot()
 
@@ -424,5 +433,119 @@ export type AllSanitySchemaTypes = OptionalData;"
       name: 'myObject',
     })
     expect(someOtherTypeOut).toMatchSnapshot()
+  })
+
+  test('Adds a comment when missing referenced inline type', () => {
+    const objectNode = {
+      type: 'object',
+      attributes: {
+        test: {
+          type: 'objectAttribute',
+          value: {type: 'string'},
+        },
+      },
+      rest: {
+        type: 'inline',
+        name: 'test',
+      },
+    } satisfies TypeNode
+
+    const typeGenerator = new TypeGenerator([])
+    const objectNodeOut = typeGenerator.generateTypeNodeTypes('myObject', objectNode)
+    expect(objectNodeOut).toMatchSnapshot()
+  })
+})
+
+describe('generateQueryMap', () => {
+  test('should generate a map of query results', () => {
+    const schema: SchemaType = []
+
+    const queries = [
+      {
+        typeNode: {type: 'unknown'} satisfies TypeNode,
+        query: '*[_type == "author"]',
+      },
+      {
+        typeNode: {type: 'unknown'} satisfies TypeNode,
+        query: '*[_type == "author"][0]',
+      },
+    ]
+
+    const typeGenerator = new TypeGenerator(schema)
+    typeGenerator.generateTypeNodeTypes('AuthorsResult', queries[0].typeNode)
+    typeGenerator.generateTypeNodeTypes('FirstAuthorResult', queries[1].typeNode)
+
+    const actualOutput = typeGenerator.generateQueryMap(queries)
+
+    expect(actualOutput).toMatchInlineSnapshot(`
+      "import "@sanity/client";
+      declare module "@sanity/client" {
+        interface SanityQueries {
+          "*[_type == \\"author\\"]": AuthorsResult;
+          "*[_type == \\"author\\"][0]": FirstAuthorResult;
+        }
+      }"
+    `)
+  })
+
+  test('should generate a map of query results with duplicate type names', () => {
+    const schema: SchemaType = []
+
+    const queries = [
+      {
+        typeNode: {type: 'unknown'} satisfies TypeNode,
+        query: '*[_type == "foo"]',
+      },
+      {
+        typeNode: {type: 'unknown'} satisfies TypeNode,
+        query: '*[_type == "bar"]',
+      },
+    ]
+
+    const typeGenerator = new TypeGenerator(schema)
+    typeGenerator.generateTypeNodeTypes('Foo', queries[0].typeNode)
+    typeGenerator.generateTypeNodeTypes('Foo', queries[1].typeNode)
+
+    const actualOutput = typeGenerator.generateQueryMap(queries)
+
+    expect(actualOutput).toMatchInlineSnapshot(`
+      "import "@sanity/client";
+      declare module "@sanity/client" {
+        interface SanityQueries {
+          "*[_type == \\"foo\\"]": Foo;
+          "*[_type == \\"bar\\"]": Foo_2;
+        }
+      }"
+    `)
+  })
+
+  test('should generate a map of query results with duplicate query strings', () => {
+    const schema: SchemaType = []
+
+    const queries = [
+      {
+        typeNode: {type: 'unknown'} satisfies TypeNode,
+        query: '*[_type == "foo"]',
+      },
+      {
+        typeNode: {type: 'unknown'} satisfies TypeNode,
+        query: '*[_type == "foo"]',
+      },
+    ]
+
+    const typeGenerator = new TypeGenerator(schema)
+    typeGenerator.generateTypeNodeTypes('Foo', queries[0].typeNode)
+    typeGenerator.generateTypeNodeTypes('Bar', queries[1].typeNode)
+
+    const actualOutput = typeGenerator.generateQueryMap(queries)
+
+    expect(actualOutput).toMatchInlineSnapshot(`
+      "import "@sanity/client";
+      declare module "@sanity/client" {
+        interface SanityQueries {
+          "*[_type == \\"foo\\"]": Foo | Bar;
+        }
+      }"
+    `)
   })
 })

@@ -26,7 +26,7 @@ import {type BaseImageInputProps, type BaseImageInputValue, type FileInfo} from 
 
 export {BaseImageInputProps, BaseImageInputValue}
 
-function BaseImageInputComponent(props: BaseImageInputProps): JSX.Element {
+function BaseImageInputComponent(props: BaseImageInputProps): React.JSX.Element {
   const {
     assetSources,
     client,
@@ -67,28 +67,6 @@ function BaseImageInputComponent(props: BaseImageInputProps): JSX.Element {
 
   const uploadSubscription = useRef<null | Subscription>(null)
 
-  /**
-   * The upload progress state wants to use the same height as any previous image
-   * to avoid layout shifts and jumps
-   */
-  const previewElementRef = useRef<{el: HTMLDivElement | null; height: number}>({
-    el: null,
-    height: 0,
-  })
-  const setPreviewElementHeight = useCallback((node: HTMLDivElement | null) => {
-    if (node) {
-      previewElementRef.current.el = node
-      previewElementRef.current.height = node.offsetHeight
-    } else {
-      /**
-       * If `node` is `null` then it means the `FileTarget` in `ImageInputAsset` is being unmounted and we want to
-       * capture its height before it's removed from the DOM.
-       */
-
-      previewElementRef.current.height = previewElementRef.current.el?.offsetHeight || 0
-      previewElementRef.current.el = null
-    }
-  }, [])
   const getFileTone = useCallback(() => {
     const acceptedFiles = hoveringFiles.filter((file) => resolveUploader(schemaType, file))
     const rejectedFilesCount = hoveringFiles.length - acceptedFiles.length
@@ -174,7 +152,7 @@ function BaseImageInputComponent(props: BaseImageInputProps): JSX.Element {
           clearUploadStatus()
         },
         complete: () => {
-          onChange([unset(['hotspot']), unset(['crop'])])
+          onChange([unset(['hotspot']), unset(['crop']), unset(['media'])])
           setIsUploading(false)
           // push({
           //   status: 'success',
@@ -200,10 +178,7 @@ function BaseImageInputComponent(props: BaseImageInputProps): JSX.Element {
   )
 
   const handleClearField = useCallback(() => {
-    onChange([unset(['asset']), unset(['crop']), unset(['hotspot'])])
-
-    previewElementRef.current.el = null
-    previewElementRef.current.height = 0
+    onChange([unset(['asset']), unset(['crop']), unset(['hotspot']), unset(['media'])])
   }, [onChange])
   const handleRemoveButtonClick = useCallback(() => {
     // When removing the image, we should also remove any crop and hotspot
@@ -215,18 +190,15 @@ function BaseImageInputComponent(props: BaseImageInputProps): JSX.Element {
     // the array logic will check for an "empty" value and remove it for us
     const allKeys = Object.keys(value || {})
     const remainingKeys = allKeys.filter(
-      (key) => !['_type', '_key', '_upload', 'asset', 'crop', 'hotspot'].includes(key),
+      (key) => !['_type', '_key', '_upload', 'asset', 'crop', 'hotspot', 'media'].includes(key),
     )
 
     const isEmpty = remainingKeys.length === 0
-    const removeKeys = ['asset']
+    const removeKeys = ['asset', 'media']
       .concat(allKeys.filter((key) => ['crop', 'hotspot', '_upload'].includes(key)))
       .map((key) => unset([key]))
 
     onChange(isEmpty && !valueIsArrayElement() ? unset() : removeKeys)
-
-    previewElementRef.current.el = null
-    previewElementRef.current.height = 0
   }, [onChange, value, valueIsArrayElement])
   const handleOpenDialog = useCallback(() => {
     onPathFocus(['hotspot'])
@@ -303,15 +275,16 @@ function BaseImageInputComponent(props: BaseImageInputProps): JSX.Element {
     menuButtonElement?.focus()
   }, [menuButtonElement])
 
-  const renderPreview = useCallback(() => {
+  const renderPreview = useCallback<() => React.JSX.Element>(() => {
+    if (!value) {
+      return <></>
+    }
     return (
       <ImageInputPreview
         directUploads={directUploads}
         handleOpenDialog={handleOpenDialog}
         hoveringFiles={hoveringFiles}
         imageUrlBuilder={imageUrlBuilder}
-        // if there previously was a preview image, preserve the height to avoid jumps
-        initialHeight={previewElementRef.current.height}
         readOnly={readOnly}
         resolveUploader={resolveUploader}
         schemaType={schemaType}
@@ -404,8 +377,6 @@ function BaseImageInputComponent(props: BaseImageInputProps): JSX.Element {
           uploadState={uploadState}
           onCancel={isUploading ? handleCancelUpload : undefined}
           onStale={handleStaleUpload}
-          // if there previously was a preview image, preserve the height to avoid jumps
-          height={previewElementRef.current.height}
         />
       )
     },
@@ -420,7 +391,6 @@ function BaseImageInputComponent(props: BaseImageInputProps): JSX.Element {
     // eslint-disable-next-line react/display-name
     return (inputProps: Omit<InputProps, 'renderDefault'>) => (
       <ImageInputAsset
-        ref={setPreviewElementHeight}
         elementProps={elementProps}
         handleClearUploadState={handleClearUploadState}
         handleFilesOut={handleFilesOut}
@@ -437,6 +407,7 @@ function BaseImageInputComponent(props: BaseImageInputProps): JSX.Element {
         renderUploadState={renderUploadState}
         tone={getFileTone()}
         value={value}
+        imageUrlBuilder={imageUrlBuilder}
       />
     )
   }, [
@@ -449,13 +420,13 @@ function BaseImageInputComponent(props: BaseImageInputProps): JSX.Element {
     handleFilesOver,
     handleSelectFiles,
     hoveringFiles,
+    imageUrlBuilder,
     isStale,
     readOnly,
     renderAssetMenu,
     renderPreview,
     renderUploadPlaceholder,
     renderUploadState,
-    setPreviewElementHeight,
     value,
   ])
   const renderHotspotInput = useCallback(

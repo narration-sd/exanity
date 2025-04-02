@@ -4,6 +4,7 @@ import {
   type DocumentActionComponent,
   type DocumentActionModalDialogProps,
   InsufficientPermissionsMessage,
+  isDraftId,
   useCurrentUser,
   useDocumentOperation,
   useDocumentPairPermissions,
@@ -12,6 +13,7 @@ import {
 
 import {ConfirmDeleteDialog} from '../components'
 import {structureLocaleNamespace} from '../i18n'
+import {useDocumentPane} from '../panes/document/useDocumentPane'
 
 const DISABLED_REASON_KEY = {
   NOT_PUBLISHED: 'action.unpublish.disabled.not-published',
@@ -26,6 +28,7 @@ export const UnpublishAction: DocumentActionComponent = ({
   draft,
   onComplete,
   liveEdit,
+  release,
 }) => {
   const {unpublish} = useDocumentOperation(id, type)
   const [isConfirmDialogOpen, setConfirmDialogOpen] = useState(false)
@@ -35,7 +38,10 @@ export const UnpublishAction: DocumentActionComponent = ({
     permission: 'unpublish',
   })
   const currentUser = useCurrentUser()
+  const {displayed} = useDocumentPane()
   const {t} = useTranslation(structureLocaleNamespace)
+
+  const isDraft = displayed?._id && isDraftId(displayed?._id)
 
   const handleCancel = useCallback(() => {
     setConfirmDialogOpen(false)
@@ -69,31 +75,49 @@ export const UnpublishAction: DocumentActionComponent = ({
     return null
   }, [draft, id, handleCancel, handleConfirm, isConfirmDialogOpen, onComplete, type])
 
-  if (liveEdit) {
-    return null
-  }
+  return useMemo(() => {
+    if (release || isDraft) {
+      // Version documents cannot be unpublished by this action, they should be unpublished as part of a release
+      // Draft documents can't either
+      return null
+    }
+    if (liveEdit) {
+      return null
+    }
 
-  if (!isPermissionsLoading && !permissions?.granted) {
+    if (!isPermissionsLoading && !permissions?.granted) {
+      return {
+        tone: 'critical',
+        icon: UnpublishIcon,
+        label: 'Unpublish',
+        title: (
+          <InsufficientPermissionsMessage context="unpublish-document" currentUser={currentUser} />
+        ),
+        disabled: true,
+      }
+    }
+
     return {
       tone: 'critical',
       icon: UnpublishIcon,
-      label: 'Unpublish',
-      title: (
-        <InsufficientPermissionsMessage context="unpublish-document" currentUser={currentUser} />
-      ),
-      disabled: true,
+      disabled: Boolean(unpublish.disabled) || isPermissionsLoading,
+      label: t('action.unpublish.label'),
+      title: unpublish.disabled ? t(DISABLED_REASON_KEY[unpublish.disabled]) : '',
+      onHandle: () => setConfirmDialogOpen(true),
+      dialog,
     }
-  }
-
-  return {
-    tone: 'critical',
-    icon: UnpublishIcon,
-    disabled: Boolean(unpublish.disabled) || isPermissionsLoading,
-    label: t('action.unpublish.label'),
-    title: unpublish.disabled ? t(DISABLED_REASON_KEY[unpublish.disabled]) : '',
-    onHandle: () => setConfirmDialogOpen(true),
+  }, [
+    release,
+    isDraft,
+    liveEdit,
+    isPermissionsLoading,
+    permissions?.granted,
+    unpublish.disabled,
+    t,
     dialog,
-  }
+    currentUser,
+  ])
 }
 
 UnpublishAction.action = 'unpublish'
+UnpublishAction.displayName = 'UnpublishAction'

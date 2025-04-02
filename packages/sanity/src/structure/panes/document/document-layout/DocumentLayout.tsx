@@ -1,10 +1,4 @@
-import {
-  DialogProvider,
-  type DialogProviderProps,
-  Flex,
-  PortalProvider,
-  useElementRect,
-} from '@sanity/ui'
+import {DialogProvider, type DialogProviderProps, Flex, useElementRect} from '@sanity/ui'
 import {isHotkey} from 'is-hotkey-esm'
 import {useCallback, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
@@ -14,14 +8,15 @@ import {
   type DocumentInspectorMenuItem,
   FieldActionsProvider,
   FieldActionsResolver,
+  GetFormValueProvider,
+  type Path,
+  useGlobalCopyPasteElementHandler,
   useZIndex,
 } from 'sanity'
-import {type Path} from 'sanity-diff-patch'
 import {styled} from 'styled-components'
 
-import {TooltipDelayGroupProvider} from '../../../../ui-components'
-import {Pane, PaneFooter, usePaneLayout} from '../../../components'
-import {DOCUMENT_PANEL_PORTAL_ELEMENT} from '../../../constants'
+import {Pane, usePaneLayout, usePaneRouter} from '../../../components'
+import {useDocumentIdStack} from '../../../hooks/useDocumentIdStack'
 import {structureLocaleNamespace} from '../../../i18n'
 import {useStructureTool} from '../../../useStructureTool'
 import {
@@ -35,10 +30,9 @@ import {DocumentPanel} from '../documentPanel'
 import {DocumentPanelHeader} from '../documentPanel/header'
 import {DocumentActionShortcuts} from '../keyboardShortcuts'
 import {getMenuItems} from '../menuItems'
-import {DocumentStatusBar} from '../statusBar'
 import {useDocumentPane} from '../useDocumentPane'
-import {usePreviewUrl} from '../usePreviewUrl'
 import {DocumentLayoutError} from './DocumentLayoutError'
+import {DocumentLayoutFooter} from './DocumentLayoutFooter'
 
 const EMPTY_ARRAY: [] = []
 
@@ -61,9 +55,12 @@ const StyledChangeConnectorRoot = styled(ChangeConnectorRoot)`
 export function DocumentLayout() {
   const {
     changesOpen,
+    displayed,
     documentId,
     documentType,
+    editState,
     fieldActions,
+    focusPath,
     inspectOpen,
     inspector,
     inspectors,
@@ -74,13 +71,16 @@ export function DocumentLayout() {
     paneKey,
     schemaType,
     value,
+    isInitialValueLoading,
+    ready,
+    previewUrl,
   } = useDocumentPane()
-
+  const {params: paneParams} = usePaneRouter()
   const {features} = useStructureTool()
   const {t} = useTranslation(structureLocaleNamespace)
   const {collapsed: layoutCollapsed} = usePaneLayout()
+
   const zOffsets = useZIndex()
-  const previewUrl = usePreviewUrl(value)
 
   const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null)
   const [footerElement, setFooterElement] = useState<HTMLDivElement | null>(null)
@@ -90,6 +90,12 @@ export function DocumentLayout() {
   const [documentPanelPortalElement, setDocumentPanelPortalElement] = useState<HTMLElement | null>(
     null,
   )
+
+  useGlobalCopyPasteElementHandler({
+    element: rootElement,
+    focusPath,
+    value,
+  })
 
   const [inspectorMenuItems, setInspectorMenuItems] = useState<DocumentInspectorMenuItem[]>([])
   const [rootFieldActionNodes, setRootFieldActionNodes] = useState<DocumentFieldActionNode[]>([])
@@ -107,6 +113,8 @@ export function DocumentLayout() {
     [inspectors, inspector?.name],
   )
 
+  const documentIdStack = useDocumentIdStack({displayed, documentId, editState})
+
   const hasValue = Boolean(value)
 
   const menuItems = useMemo(
@@ -118,9 +126,19 @@ export function DocumentLayout() {
         inspectorMenuItems,
         inspectors,
         previewUrl,
+        documentIdStack,
         t,
       }),
-    [currentInspector, features, hasValue, inspectorMenuItems, inspectors, previewUrl, t],
+    [
+      currentInspector,
+      documentIdStack,
+      features,
+      hasValue,
+      inspectorMenuItems,
+      inspectors,
+      previewUrl,
+      t,
+    ],
   )
 
   const handleKeyUp = useCallback(
@@ -160,7 +178,7 @@ export function DocumentLayout() {
   }
 
   return (
-    <>
+    <GetFormValueProvider value={value}>
       {inspectors.length > 0 && (
         <DocumentInspectorMenuItemsResolver
           documentId={documentId}
@@ -194,12 +212,11 @@ export function DocumentLayout() {
           rootRef={setRootElement}
         >
           <DocumentPanelHeader ref={setHeaderElement} menuItems={menuItems} />
-
           <DialogProvider position={DIALOG_PROVIDER_POSITION} zOffset={zOffsets.paneDialog}>
             <Flex direction="column" flex={1} height={layoutCollapsed ? undefined : 'fill'}>
               <StyledChangeConnectorRoot
                 data-testid="change-connector-root"
-                isReviewChangesOpen={changesOpen}
+                isReviewChangesOpen={changesOpen && paneParams?.changesInspectorTab === 'review'}
                 onOpenReviewChanges={onHistoryOpen}
                 onSetFocus={onConnectorSetFocus}
               >
@@ -209,27 +226,20 @@ export function DocumentLayout() {
                   isInspectOpen={inspectOpen}
                   rootElement={rootElement}
                   setDocumentPanelPortalElement={setDocumentPanelPortalElement}
+                  footer={
+                    <DocumentLayoutFooter
+                      documentPanelPortalElement={documentPanelPortalElement}
+                      setFooterElement={setFooterElement}
+                      setActionsBoxElement={setActionsBoxElement}
+                    />
+                  }
                 />
               </StyledChangeConnectorRoot>
             </Flex>
           </DialogProvider>
-
-          {/* These providers are added because we want the dialogs in `DocumentStatusBar` to be scoped to the document pane. */}
-          {/* The portal element comes from `DocumentPanel`. */}
-          <PortalProvider
-            __unstable_elements={{[DOCUMENT_PANEL_PORTAL_ELEMENT]: documentPanelPortalElement}}
-          >
-            <DialogProvider position={DIALOG_PROVIDER_POSITION} zOffset={zOffsets.portal}>
-              <PaneFooter ref={setFooterElement}>
-                <TooltipDelayGroupProvider>
-                  <DocumentStatusBar actionsBoxRef={setActionsBoxElement} />
-                </TooltipDelayGroupProvider>
-              </PaneFooter>
-            </DialogProvider>
-          </PortalProvider>
           <DocumentOperationResults />
         </DocumentActionShortcuts>
       </FieldActionsProvider>
-    </>
+    </GetFormValueProvider>
   )
 }

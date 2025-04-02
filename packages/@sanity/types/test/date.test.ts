@@ -1,4 +1,4 @@
-import {describe, it} from '@jest/globals'
+import {describe, it} from 'vitest'
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /**
@@ -22,7 +22,7 @@ describe('date types', () => {
         validation: (Rule) => [
           Rule.required()
             .required()
-            .custom((value) => (value?.indexOf('2021-01-01') ?? -1 >= 0 ? 'Error' : true))
+            .custom((value) => ((value?.indexOf('2021-01-01') ?? -1 >= 0) ? 'Error' : true))
             .warning(),
           // @ts-expect-error greaterThan does not exist on dateRule
           Rule.greaterThan(5).error(),

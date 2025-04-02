@@ -1,4 +1,4 @@
-import {type EditorSelection} from '@sanity/portable-text-editor'
+import {type EditorSelection} from '@portabletext/editor'
 import {type Path, type User} from '@sanity/types'
 
 import {type Session, type Status} from '../store/_legacy'
@@ -22,7 +22,7 @@ export type RegionWithIntersectionDetails = {
 
 /** @internal */
 export type FieldPresenceData = {
-  element: HTMLElement
+  element: HTMLElement | null
   presence: FormNodePresence[]
   maxAvatars: number
 }

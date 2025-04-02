@@ -1,6 +1,5 @@
 import {isHotkey} from 'is-hotkey-esm'
 import {
-  createElement,
   type ElementType,
   type HTMLProps,
   memo,
@@ -28,13 +27,13 @@ export interface KeyboardShortcutResponderProps {
   states: DocumentActionDescription[]
 }
 
-function KeyboardShortcutResponder(
+const KeyboardShortcutResponder = memo(function KeyboardShortcutResponder(
   props: KeyboardShortcutResponderProps & Omit<HTMLProps<HTMLDivElement>, 'as' | 'height'>,
 ) {
   const {
     actionsBoxElement,
     activeIndex,
-    as = 'div',
+    as: As = 'div',
     children,
     id,
     onActionStart,
@@ -75,25 +74,17 @@ function KeyboardShortcutResponder(
     [onActionStart, onKeyDown, states],
   )
 
-  return createElement(
-    as,
-    {
-      id,
-      onKeyDown: handleKeyDown,
-      tabIndex: -1,
-      ...rest,
-      ref: rootRef,
-    },
-    [
-      children,
-      activeAction && activeAction.dialog && (
+  return (
+    <As id={id} onKeyDown={handleKeyDown} tabIndex={-1} {...rest} ref={rootRef}>
+      {children}
+      {activeAction && activeAction.dialog && (
         <LegacyLayerProvider zOffset="paneFooter">
           <ActionStateDialog dialog={activeAction.dialog} referenceElement={actionsBoxElement} />
         </LegacyLayerProvider>
-      ),
-    ],
+      )}
+    </As>
   )
-}
+})
 
 export interface DocumentActionShortcutsProps {
   actionsBoxElement: HTMLElement | null
@@ -130,25 +121,32 @@ export const DocumentActionShortcuts = memo(
       [editState],
     )
 
+    const renderDocumentActionShortcuts = useCallback<
+      (props: {states: DocumentActionDescription[]}) => React.ReactNode
+    >(
+      ({states}) => (
+        <KeyboardShortcutResponder
+          {...rest}
+          activeIndex={activeIndex}
+          actionsBoxElement={actionsBoxElement}
+          as={as}
+          onActionStart={onActionStart}
+          states={states}
+        >
+          {children}
+        </KeyboardShortcutResponder>
+      ),
+      [actionsBoxElement, activeIndex, as, children, onActionStart, rest],
+    )
+
     if (!actionProps || !actions) return null
 
     return (
       <RenderActionCollectionState actionProps={actionProps} actions={actions}>
-        {({states}) => (
-          <KeyboardShortcutResponder
-            {...rest}
-            activeIndex={activeIndex}
-            actionsBoxElement={actionsBoxElement}
-            as={as}
-            onActionStart={onActionStart}
-            states={states}
-          >
-            {children}
-          </KeyboardShortcutResponder>
-        )}
+        {renderDocumentActionShortcuts}
       </RenderActionCollectionState>
     )
   },
 )
 
-DocumentActionShortcuts.displayName = 'DocumentActionShortcuts'
+DocumentActionShortcuts.displayName = 'Memo(DocumentActionShortcuts)'

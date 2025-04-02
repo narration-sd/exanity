@@ -6,7 +6,7 @@ import {
   type OnPasteFn,
   type PortableTextEditor,
   type RangeDecoration,
-} from '@sanity/portable-text-editor'
+} from '@portabletext/editor'
 import {
   type ArraySchemaType,
   type BooleanSchemaType,
@@ -28,7 +28,7 @@ import {
   type FocusEventHandler,
   type FormEventHandler,
   type MutableRefObject,
-  type ReactElement,
+  type ReactNode,
 } from 'react'
 
 import {type RenderPortableTextInputEditableProps} from '../inputs'
@@ -71,7 +71,7 @@ export interface OnPathFocusPayload {
  * @hidden
  * @public */
 export interface BaseInputProps {
-  renderDefault: (props: InputProps) => ReactElement
+  renderDefault: (props: InputProps) => React.JSX.Element
 }
 
 /**
@@ -171,6 +171,17 @@ export interface ObjectInputProps<
    * @hidden
    * @beta */
   elementProps: ComplexElementProps
+
+  /**
+   * @deprecated – DO NOT USE
+   *
+   * The node for the array editing modal.
+   * This node renders the array editing modal as a child of the root input.
+   * It is necessary for the array editing dialog to be a child of the root input
+   * because the root input may be wrapped in a React context using the Components API,
+   * which is utilized by inputs in the form.
+   */
+  __internal_arrayEditingModal?: ReactNode
 }
 
 /**
@@ -567,7 +578,7 @@ export interface PortableTextInputProps
    * @hidden
    * @beta
    */
-  renderEditable?: (props: RenderPortableTextInputEditableProps) => JSX.Element
+  renderEditable?: (props: RenderPortableTextInputEditableProps) => React.JSX.Element
   /**
    * Array of {@link RangeDecoration} that can be used to decorate the content.
    */

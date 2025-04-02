@@ -1,5 +1,5 @@
+import {type EditorSelection} from '@portabletext/editor'
 import {toPlainText} from '@portabletext/react'
-import {type EditorSelection} from '@sanity/portable-text-editor'
 import {
   isKeySegment,
   isPortableTextSpan,
@@ -16,6 +16,9 @@ interface BuildSelectionFromFragmentProps {
   selection: EditorSelection
 }
 
+/**
+ * @internal
+ */
 export function buildTextSelectionFromFragment(
   props: BuildSelectionFromFragmentProps,
 ): CommentTextSelection {

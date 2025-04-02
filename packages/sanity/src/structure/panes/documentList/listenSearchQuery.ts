@@ -1,4 +1,4 @@
-import {type SanityClient} from '@sanity/client'
+import {type ClientPerspective, type SanityClient} from '@sanity/client'
 import {
   asyncScheduler,
   defer,
@@ -15,11 +15,17 @@ import {
   timer,
 } from 'rxjs'
 import {exhaustMapWithTrailing} from 'rxjs-exhaustmap-with-trailing'
-import {createSearch, getSearchableTypes, type SanityDocumentLike, type Schema} from 'sanity'
+import {
+  createSearch,
+  createSWR,
+  getSearchableTypes,
+  type SanityDocumentLike,
+  type Schema,
+  type SearchOptions,
+  type SearchStrategy,
+} from 'sanity'
 
 import {getExtendedProjection} from '../../structureBuilder/util/getExtendedProjection'
-// FIXME
-// eslint-disable-next-line boundaries/element-types
 import {type SortOrder} from './types'
 
 interface ListenQueryOptions {
@@ -30,23 +36,32 @@ interface ListenQueryOptions {
   schema: Schema
   searchQuery: string
   sort: SortOrder
+  perspective?: ClientPerspective
   staticTypeNames?: string[] | null
   maxFieldDepth?: number
-  enableLegacySearch?: boolean
+  searchStrategy?: SearchStrategy
 }
 
-export function listenSearchQuery(options: ListenQueryOptions): Observable<SanityDocumentLike[]> {
+export interface SearchQueryResult {
+  fromCache: boolean
+  documents: SanityDocumentLike[]
+}
+
+const swr = createSWR<SanityDocumentLike[]>({maxSize: 100})
+
+export function listenSearchQuery(options: ListenQueryOptions): Observable<SearchQueryResult> {
   const {
     client,
     schema,
     sort,
+    perspective,
     limit,
     params,
     filter,
     searchQuery,
     staticTypeNames,
     maxFieldDepth,
-    enableLegacySearch,
+    searchStrategy,
   } = options
   const sortBy = sort.by
   const extendedProjection = sort?.extendedProjection
@@ -57,8 +72,10 @@ export function listenSearchQuery(options: ListenQueryOptions): Observable<Sanit
   const events$ = defer(() => {
     return client.listen(`*[${filter}]`, params, {
       events: ['welcome', 'mutation', 'reconnect'],
+      includeAllVersions: true,
       includeResult: false,
       visibility: 'query',
+      tag: 'listen-search-query',
     })
   }).pipe(
     mergeMap((ev, i) => {
@@ -81,6 +98,16 @@ export function listenSearchQuery(options: ListenQueryOptions): Observable<Sanit
   )
 
   const [welcome$, mutationAndReconnect$] = partition(events$, (ev) => ev.type === 'welcome')
+
+  const swrKey = JSON.stringify({
+    filter,
+    limit,
+    params,
+    searchQuery,
+    perspective,
+    sort,
+    staticTypeNames,
+  })
 
   return merge(
     welcome$.pipe(take(1)),
@@ -110,7 +137,7 @@ export function listenSearchQuery(options: ListenQueryOptions): Observable<Sanit
           const search = createSearch(types, client, {
             filter,
             params,
-            enableLegacySearch,
+            strategy: searchStrategy,
             maxDepth: maxFieldDepth,
           })
 
@@ -120,12 +147,13 @@ export function listenSearchQuery(options: ListenQueryOptions): Observable<Sanit
               types,
             }
 
-            const searchOptions = {
+            const searchOptions: SearchOptions = {
               __unstable_extendedProjection: extendedProjection,
               comments: [`findability-source: ${searchQuery ? 'list-query' : 'list'}`],
               limit,
               skipSortByScore: true,
               sort: sortBy,
+              perspective,
             }
 
             return search(searchTerms, searchOptions).pipe(
@@ -146,5 +174,7 @@ export function listenSearchQuery(options: ListenQueryOptions): Observable<Sanit
         }),
       )
     }),
+    swr(swrKey),
+    map(({fromCache, value}) => ({fromCache, documents: value})),
   )
 }

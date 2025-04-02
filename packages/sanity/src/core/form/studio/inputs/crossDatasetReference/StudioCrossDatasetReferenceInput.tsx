@@ -7,7 +7,7 @@ import {
   type SanityDocument,
 } from '@sanity/types'
 import {get} from '@sanity/util/paths'
-import {useCallback, useMemo, useRef} from 'react'
+import {useCallback, useEffect, useMemo, useRef} from 'react'
 import {from, throwError} from 'rxjs'
 import {catchError, mergeMap} from 'rxjs/operators'
 
@@ -58,7 +58,9 @@ export type StudioCrossDatasetReferenceInputProps = ObjectInputProps<
 
 function useValueRef<T>(value: T): {current: T} {
   const ref = useRef(value)
-  ref.current = value
+  useEffect(() => {
+    ref.current = value
+  }, [value])
   return ref
 }
 
@@ -81,7 +83,7 @@ export function StudioCrossDatasetReferenceInput(props: StudioCrossDatasetRefere
   const client = source.getClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
   const documentPreviewStore = useDocumentPreviewStore()
   const getClient = source.getClient
-  const {enableLegacySearch = false} = source.search
+  const {strategy: searchStrategy} = source.search
 
   const crossDatasetClient = useMemo(() => {
     return (
@@ -110,7 +112,7 @@ export function StudioCrossDatasetReferenceInput(props: StudioCrossDatasetRefere
             params,
             tag: 'search.cross-dataset-reference',
             maxFieldDepth,
-            enableLegacySearch,
+            strategy: searchStrategy,
           }),
         ),
 
@@ -123,15 +125,7 @@ export function StudioCrossDatasetReferenceInput(props: StudioCrossDatasetRefere
         }),
       ),
 
-    [
-      schemaType,
-      documentRef,
-      path,
-      getClient,
-      crossDatasetClient,
-      maxFieldDepth,
-      enableLegacySearch,
-    ],
+    [schemaType, documentRef, path, getClient, crossDatasetClient, maxFieldDepth, searchStrategy],
   )
 
   const getReferenceInfo = useMemo(

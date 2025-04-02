@@ -1,4 +1,4 @@
-import {Stack, Text, useToast} from '@sanity/ui'
+import {Stack, Text, useClickOutsideEvent, useToast} from '@sanity/ui'
 import {uuid} from '@sanity/uuid'
 import {type FocusEvent, type KeyboardEvent, useCallback, useMemo, useRef, useState} from 'react'
 import {useObservableEvent} from 'react-rx'
@@ -8,10 +8,10 @@ import {catchError, filter, map, scan, switchMap, tap} from 'rxjs/operators'
 import {Button} from '../../../../ui-components'
 import {ReferenceInputPreviewCard} from '../../../components'
 import {Translate, useTranslation} from '../../../i18n'
+import {usePerspective} from '../../../perspective/usePerspective'
 import {getPublishedId, isNonNullable} from '../../../util'
 import {Alert} from '../../components/Alert'
 import {useDidUpdate} from '../../hooks/useDidUpdate'
-import {useOnClickOutside} from '../../hooks/useOnClickOutside'
 import {set, setIfMissing, unset} from '../../patch'
 import {AutocompleteContainer} from './AutocompleteContainer'
 import {CreateButton} from './CreateButton'
@@ -53,16 +53,19 @@ export function ReferenceInput(props: ReferenceInputProps) {
     id,
     onPathFocus,
     value,
+    version,
     renderPreview,
     path,
     elementProps,
     focusPath,
   } = props
+  const {selectedReleaseId} = usePerspective()
 
   const {getReferenceInfo} = useReferenceInput({
     path,
     schemaType,
     value,
+    version,
   })
 
   const [searchState, setSearchState] = useState<ReferenceSearchState>(INITIAL_SEARCH_STATE)
@@ -71,22 +74,49 @@ export function ReferenceInput(props: ReferenceInputProps) {
     (option: CreateReferenceOption) => {
       const newDocumentId = uuid()
 
+      // The strengthen-on-publish process is not necessary for documents inside a release, and in
+      // fact must be skipped in order for release preflight checks to function.
+      //
+      // Strengthen-on-publish is still necessary for drafts, and for documents in a bundle
+      // *that isn't a release* (this isn't a scenario Studio supports today, but it may need to in
+      // the future).
+      const shouldStrengthenOnPublish = typeof selectedReleaseId === 'undefined'
+      const strengthenOnPublishPatches = shouldStrengthenOnPublish ? [set(true, ['_weak'])] : []
+
+      // The `_strengthenOnPublish` field is always set, regardless of whether the
+      // strengthen-on-publish process should be used. This is because the field is used to
+      // store details such as the non-existing document's type, which Studio uses to render
+      // reference previews.
+      //
+      // Content Lake will only strengthen the reference if **both** `_strengthenOnPublish` and
+      // `_weak` are truthy.
+      //
+      // Yes, this is confusing.
+      const createInPlaceMetadataPatches = [
+        set({type: option.type, weak: schemaType.weak, template: option.template}, [
+          '_strengthenOnPublish',
+        ]),
+      ]
+
       const patches = [
         setIfMissing({}),
         set(schemaType.name, ['_type']),
         set(newDocumentId, ['_ref']),
-        set(true, ['_weak']),
-        set({type: option.type, weak: schemaType.weak, template: option.template}, [
-          '_strengthenOnPublish',
-        ]),
-      ].filter(isNonNullable)
+      ]
+        .concat(strengthenOnPublishPatches, createInPlaceMetadataPatches)
+        .filter(isNonNullable)
 
       onChange(patches)
 
-      onEditReference({id: newDocumentId, type: option.type, template: option.template})
+      onEditReference({
+        id: newDocumentId,
+        type: option.type,
+        template: option.template,
+        version: selectedReleaseId,
+      })
       onPathFocus([])
     },
-    [onChange, onEditReference, onPathFocus, schemaType],
+    [onChange, onEditReference, onPathFocus, schemaType.name, schemaType.weak, selectedReleaseId],
   )
 
   const handleChange = useCallback(
@@ -125,12 +155,6 @@ export function ReferenceInput(props: ReferenceInputProps) {
     onChange(unset())
   }, [onChange])
 
-  const handleCancelEdit = useCallback(() => {
-    if (!value?._ref) {
-      handleClear()
-    }
-  }, [handleClear, value?._ref])
-
   const handleAutocompleteKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -142,7 +166,8 @@ export function ReferenceInput(props: ReferenceInputProps) {
 
   const loadableReferenceInfo = useReferenceInfo(value?._ref, getReferenceInfo)
 
-  const autocompletePopoverReferenceElementRef = useRef<HTMLDivElement | null>(null)
+  const [autocompletePopoverReferenceElement, setAutocompletePopoverReferenceElement] =
+    useState<HTMLDivElement | null>(null)
 
   const {push} = useToast()
   const {t} = useTranslation()
@@ -211,24 +236,22 @@ export function ReferenceInput(props: ReferenceInputProps) {
   )
 
   const renderValue = useCallback(() => {
-    return (
-      loadableReferenceInfo.result?.preview.draft?.title ||
-      loadableReferenceInfo.result?.preview.published?.title ||
-      ''
-    )
+    return (loadableReferenceInfo.result?.preview?.snapshot?.title ||
+      loadableReferenceInfo.result?.preview?.original?.title ||
+      '') as string
   }, [
-    loadableReferenceInfo.result?.preview.draft?.title,
-    loadableReferenceInfo.result?.preview.published?.title,
+    loadableReferenceInfo.result?.preview?.original?.title,
+    loadableReferenceInfo.result?.preview?.snapshot?.title,
   ])
 
   const handleFocus = useCallback(() => onPathFocus(['_ref']), [onPathFocus])
   const handleBlur = useCallback(
     (event: FocusEvent) => {
-      if (!autocompletePopoverReferenceElementRef.current?.contains(event.relatedTarget)) {
+      if (!autocompletePopoverReferenceElement?.contains(event.relatedTarget)) {
         props.elementProps.onBlur(event)
       }
     },
-    [props.elementProps],
+    [autocompletePopoverReferenceElement, props.elementProps],
   )
 
   const isWeakRefToNonexistent =
@@ -253,23 +276,37 @@ export function ReferenceInput(props: ReferenceInputProps) {
   const isEditing = focusPath.length === 1 && focusPath[0] === '_ref'
 
   // --- click outside handling
-  const {menuRef, containerRef} = useReferenceItemRef()
+  const {menuRef, menuButtonRef, containerRef} = useReferenceItemRef()
   const clickOutsideBoundaryRef = useRef<HTMLDivElement>(null)
   const autoCompletePortalRef = useRef<HTMLDivElement>(null)
   const createButtonMenuPortalRef = useRef<HTMLDivElement>(null)
-  useOnClickOutside(
-    [
-      containerRef,
-      clickOutsideBoundaryRef,
-      autoCompletePortalRef,
-      createButtonMenuPortalRef,
-      menuRef,
+  useClickOutsideEvent(
+    // We only clear on clicks outside if the ref does not have a value yet
+    !value?._ref &&
+      (() => {
+        // Handle clicks outside while the input is focused
+        if (isEditing) {
+          handleClear()
+        }
+        // And handle ReferenceItem clicks outside after clicking the context menu:
+        // 1. Click "+ Add item".
+        // 2. The empty reference has focus.
+        // 3. Click on the "••• Show more" button.
+        // 4. Focus leaves the empty reference autocomplete and moves to the menu.
+        // 5. Clicking outside of the menu should be handled as if `isEditing` were `true`
+        else if (document.activeElement === menuButtonRef.current) {
+          // If the menu button has focus when this event fires then it means the user clicked outside the menu and we should close
+          handleClear()
+        }
+      }),
+    () => [
+      menuRef.current,
+      menuButtonRef.current,
+      containerRef.current,
+      clickOutsideBoundaryRef.current,
+      autoCompletePortalRef.current,
+      createButtonMenuPortalRef.current,
     ],
-    () => {
-      if (isEditing) {
-        handleCancelEdit()
-      }
-    },
   )
 
   return (
@@ -297,14 +334,14 @@ export function ReferenceInput(props: ReferenceInputProps) {
             </Text>
           </Alert>
         ) : null}
-        <AutocompleteContainer ref={autocompletePopoverReferenceElementRef}>
+        <AutocompleteContainer ref={setAutocompletePopoverReferenceElement}>
           <ReferenceAutocomplete
             {...elementProps}
             onFocus={handleFocus}
             onBlur={handleBlur}
             data-testid="autocomplete"
             loading={searchState.isLoading}
-            referenceElement={autocompletePopoverReferenceElementRef.current}
+            referenceElement={autocompletePopoverReferenceElement}
             options={hits}
             radius={2}
             placeholder={t('inputs.reference.search-placeholder')}

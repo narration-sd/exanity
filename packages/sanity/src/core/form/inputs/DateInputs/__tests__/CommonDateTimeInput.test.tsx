@@ -1,4 +1,3 @@
-import {expect, jest, test} from '@jest/globals'
 import {defineField} from '@sanity/types'
 import {
   DEFAULT_DATE_FORMAT,
@@ -8,6 +7,7 @@ import {
 } from '@sanity/util/legacyDateFormat'
 import {fireEvent} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import {expect, test, vi} from 'vitest'
 
 import {renderStringInput} from '../../../../../../test/form'
 import {type CalendarLabels} from '../base/calendar/types'
@@ -42,8 +42,7 @@ const CALENDAR_LABELS: CalendarLabels = {
   goToNextYear: 'Next year',
   goToNextMonth: 'Go to next month',
   goToPreviousMonth: 'Go to previous month',
-  selectHour: 'Select hour',
-  selectMinute: 'Select minute',
+  selectTime: 'Select time',
   setToCurrentTime: 'Set to current time',
   monthNames: [
     'January',
@@ -64,7 +63,7 @@ const CALENDAR_LABELS: CalendarLabels = {
 }
 
 async function renderInput() {
-  const onChange = jest.fn()
+  const onChange = vi.fn()
 
   const ret = await renderStringInput({
     fieldDefinition: defineField({

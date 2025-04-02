@@ -2,9 +2,14 @@ import {type CliCommandDefinition, type CliCommandGroupDefinition} from '../type
 import codemodCommand from './codemod/codemodCommand'
 import debugCommand from './debug/debugCommand'
 import docsCommand from './docs/docsCommand'
+import devfunctionsCommand from './functions/devFunctionsCommand'
+import functionsGroup from './functions/functionsGroup'
+import logsfunctionsCommand from './functions/logsFunctionsCommand'
+import testfunctionsCommand from './functions/testFunctionsCommand'
 import helpCommand from './help/helpCommand'
 import initCommand from './init/initCommand'
 import installCommand from './install/installCommand'
+import learnCommand from './learn/learnCommand'
 import loginCommand from './login/loginCommand'
 import logoutCommand from './logout/logoutCommand'
 import manageCommand from './manage/manageCommand'
@@ -16,7 +21,6 @@ import telemetryGroup from './telemetry/telemetryGroup'
 import telemetryStatusCommand from './telemetry/telemetryStatusCommand'
 import generateTypegenCommand from './typegen/generateTypesCommand'
 import typegenGroup from './typegen/typegenGroup'
-import upgradeCommand from './upgrade/upgradeCommand'
 import versionsCommand from './versions/versionsCommand'
 
 export const baseCommands: (CliCommandDefinition | CliCommandGroupDefinition)[] = [
@@ -24,13 +28,13 @@ export const baseCommands: (CliCommandDefinition | CliCommandGroupDefinition)[] 
   loginCommand,
   logoutCommand,
   installCommand,
-  upgradeCommand,
   versionsCommand,
   docsCommand,
   manageCommand,
   debugCommand,
   helpCommand,
   projectsGroup,
+  learnCommand,
   listProjectsCommand,
   codemodCommand,
   telemetryGroup,
@@ -39,4 +43,8 @@ export const baseCommands: (CliCommandDefinition | CliCommandGroupDefinition)[] 
   telemetryStatusCommand,
   generateTypegenCommand,
   typegenGroup,
+  functionsGroup,
+  devfunctionsCommand,
+  logsfunctionsCommand,
+  testfunctionsCommand,
 ]

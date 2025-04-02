@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import {type UserViteConfig} from '@sanity/cli'
 import chalk from 'chalk'
-import {type InlineConfig, preview} from 'vite'
+import {type InlineConfig} from 'vite'
 
 import {debug as serverDebug} from './debug'
 import {extendViteConfigWithUserConfig} from './getViteConfig'
@@ -24,10 +24,11 @@ export interface PreviewServerOptions {
   httpHost?: string
 
   vite?: UserViteConfig
+  isApp?: boolean
 }
 
 export async function startPreviewServer(options: PreviewServerOptions): Promise<PreviewServer> {
-  const {httpPort, httpHost, root, vite: extendViteConfig} = options
+  const {httpPort, httpHost, root, vite: extendViteConfig, isApp} = options
   const startTime = Date.now()
 
   const indexPath = path.join(root, 'index.html')
@@ -41,7 +42,7 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
     }
 
     const error = new Error(
-      `Could not find a production build in the '${root}' directory.\nTry building your studio app with 'sanity build' before starting the preview server.`,
+      `Could not find a production build in the '${root}' directory.\nTry building your ${isApp ? 'application' : 'studio '}app with 'sanity build' before starting the preview server.`,
     )
     error.name = 'BUILD_NOT_FOUND'
     throw error
@@ -75,10 +76,11 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
   }
 
   debug('Creating vite server')
+  const {preview} = await import('vite')
   const server = await preview(previewConfig)
   const warn = server.config.logger.warn
   const info = server.config.logger.info
-  const url = server.resolvedUrls.local[0]
+  const url = server.resolvedUrls!.local[0]
 
   if (typeof basePath === 'undefined') {
     warn('Could not determine base path from index.html, using "/" as default')
@@ -89,14 +91,14 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
   const startupDuration = Date.now() - startTime
 
   info(
-    `Sanity Studio ` +
+    `Sanity ${isApp ? 'application' : 'Studio'} ` +
       `using ${chalk.cyan(`vite@${require('vite/package.json').version}`)} ` +
       `ready in ${chalk.cyan(`${Math.ceil(startupDuration)}ms`)} ` +
       `and running at ${chalk.cyan(url)} (production preview mode)`,
   )
 
   return {
-    urls: server.resolvedUrls,
+    urls: server.resolvedUrls!,
     close: () =>
       new Promise((resolve, reject) =>
         server.httpServer.close((err) => (err ? reject(err) : resolve())),

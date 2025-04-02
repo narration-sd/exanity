@@ -4,7 +4,10 @@ import {
   type DragEvent,
   type ForwardedRef,
   forwardRef,
+  type ForwardRefExoticComponent,
   type KeyboardEvent,
+  type PropsWithoutRef,
+  type RefAttributes,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -19,6 +22,25 @@ export type FileInfo = {
   kind: DataTransferItem['kind'] // 'file' or 'string'
   type: DataTransferItem['type'] // mime type of file or string
 }
+
+type CamelToKebab<S extends string> = S extends `${infer P1}${infer P2}`
+  ? P2 extends Uncapitalize<P2>
+    ? `${Lowercase<P1>}${CamelToKebab<P2>}`
+    : `${Lowercase<P1>}-${CamelToKebab<Uncapitalize<P2>>}`
+  : S
+
+type DataAttribute<S extends string> = `data-${CamelToKebab<S>}`
+
+const fileTargetAttributeName = 'isFileTarget'
+const fileTargetDataAttribute: Record<DataAttribute<typeof fileTargetAttributeName>, 'true'> = {
+  'data-is-file-target': 'true',
+}
+
+/**
+ * @internal
+ */
+export const isFileTargetElement = (el: HTMLElement): boolean =>
+  el?.dataset?.[fileTargetAttributeName] === 'true'
 
 type Props = {
   // Triggered when the target component receives one or more files, either originating from a drop event or a paste event
@@ -49,13 +71,17 @@ const PASTE_INPUT_STYLE = {opacity: 0, position: 'absolute'} as const
  * Higher order component that creates a file target from a given component.
  * Returns a component that acts both as a drop target and a paste target, emitting a list of Files upon drop or paste
  */
-export function fileTarget<ComponentProps>(Component: ComponentType<ComponentProps>) {
+export function fileTarget<ComponentProps>(
+  Component: ComponentType<ComponentProps>,
+): ForwardRefExoticComponent<
+  PropsWithoutRef<Omit<ComponentProps, ManagedProps> & Props> & RefAttributes<HTMLElement>
+> {
+  // @ts-expect-error TODO fix PropsWithoutRef related union typings
   return forwardRef(function FileTarget(
     props: Omit<ComponentProps, ManagedProps> & Props,
     forwardedRef: ForwardedRef<HTMLElement>,
   ) {
     const {onFiles, onFilesOver, onFilesOut, disabled, ...rest} = props
-
     const [showPasteInput, setShowPasteInput] = useState(false)
 
     const pasteInput = useRef<HTMLDivElement | null>(null)
@@ -100,6 +126,19 @@ export function fileTarget<ComponentProps>(Component: ComponentType<ComponentPro
     const handleDrop = useCallback(
       (event: DragEvent) => {
         enteredElements.current = []
+
+        const fileTypes = Array.from(event.dataTransfer.items).map((item) => ({
+          type: item.type,
+          kind: item.kind,
+        }))
+
+        // Skip items that is PTE blocks
+        const isPortableTextBlock = fileTypes.some((item) => isPortableTextItem(item))
+
+        if (isPortableTextBlock) {
+          return
+        }
+
         event.preventDefault()
         event.stopPropagation()
         const dataTransfer = event.nativeEvent.dataTransfer
@@ -118,6 +157,18 @@ export function fileTarget<ComponentProps>(Component: ComponentType<ComponentPro
     const handleDragOver = useCallback(
       (event: DragEvent) => {
         if (onFiles) {
+          const fileTypes = Array.from(event.dataTransfer.items).map((item) => ({
+            type: item.type,
+            kind: item.kind,
+          }))
+
+          // Skip items that is PTE blocks
+          const isPortableTextBlock = fileTypes.some((item) => isPortableTextItem(item))
+
+          if (isPortableTextBlock) {
+            return
+          }
+
           event.preventDefault()
           event.stopPropagation()
         }
@@ -155,6 +206,18 @@ export function fileTarget<ComponentProps>(Component: ComponentType<ComponentPro
 
     const handleDragLeave = useCallback(
       (event: DragEvent) => {
+        const fileTypes = Array.from(event.dataTransfer.items).map((item) => ({
+          type: item.type,
+          kind: item.kind,
+        }))
+
+        // Skip items that is PTE blocks
+        const isPortableTextBlock = fileTypes.some((item) => isPortableTextItem(item))
+
+        if (isPortableTextBlock) {
+          return
+        }
+
         event.stopPropagation()
         const idx = enteredElements.current.indexOf(event.currentTarget)
         if (idx > -1) {
@@ -189,6 +252,7 @@ export function fileTarget<ComponentProps>(Component: ComponentType<ComponentPro
           onDragLeave={disabled ? undefined : handleDragLeave}
           onDrop={disabled ? undefined : handleDrop}
           data-test-id="file-target"
+          {...fileTargetDataAttribute}
         />
         {!disabled && showPasteInput && (
           <div contentEditable onPaste={handlePaste} ref={pasteInput} style={PASTE_INPUT_STYLE} />

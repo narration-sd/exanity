@@ -1,30 +1,35 @@
 import {
   type EditorChange,
+  type EditorEmittedEvent,
+  EditorProvider,
   type EditorSelection,
   type InvalidValue,
   type OnPasteFn,
-  type Patch as EditorPatch,
   type Patch,
   type PortableTextEditableProps,
   PortableTextEditor,
   type RangeDecoration,
   type RenderEditableFunction,
-} from '@sanity/portable-text-editor'
+  useEditor,
+  usePortableTextEditor,
+} from '@portabletext/editor'
+import {EventListenerPlugin, MarkdownPlugin} from '@portabletext/editor/plugins'
 import {useTelemetry} from '@sanity/telemetry/react'
-import {isKeySegment, type PortableTextBlock} from '@sanity/types'
+import {isKeySegment, type Path, type PortableTextBlock} from '@sanity/types'
 import {Box, Flex, Text, useToast} from '@sanity/ui'
+import {randomKey} from '@sanity/util/content'
 import {sortBy} from 'lodash'
 import {
-  type MutableRefObject,
+  forwardRef,
   type ReactNode,
   startTransition,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
 } from 'react'
-import {Subject} from 'rxjs'
 
 import {useTranslation} from '../../../i18n'
 import {EMPTY_ARRAY} from '../../../util'
@@ -38,7 +43,7 @@ import {immutableReconcile} from '../../store/utils/immutableReconcile'
 import {type ResolvedUploader} from '../../studio/uploads/types'
 import {type PortableTextInputProps} from '../../types'
 import {extractPastedFiles} from '../common/fileTarget/utils/extractFiles'
-import {Compositor, type PortableTextEditorElement} from './Compositor'
+import {Compositor} from './Compositor'
 import {PortableTextMarkersProvider} from './contexts/PortableTextMarkers'
 import {PortableTextMemberItemsProvider} from './contexts/PortableTextMembers'
 import {usePortableTextMemberItemsFromProps} from './hooks/usePortableTextMembers'
@@ -55,13 +60,31 @@ interface UploadTask {
   uploaderCandidates: ResolvedUploader[]
 }
 
+function keyGenerator() {
+  return randomKey(12)
+}
+
+/**
+ * `EditorProvider` doesn't have a `ref` prop. This custom PTE plugin takes
+ * care of imperatively forwarding that ref.
+ */
+const EditorRefPlugin = forwardRef<PortableTextEditor | null>((_, ref) => {
+  const portableTextEditor = usePortableTextEditor()
+
+  const portableTextEditorRef = useRef(portableTextEditor)
+
+  useImperativeHandle(ref, () => portableTextEditorRef.current, [])
+
+  return null
+})
+EditorRefPlugin.displayName = 'EditorRefPlugin'
+
 /** @internal */
 export interface PortableTextMemberItem {
   kind: 'annotation' | 'textBlock' | 'objectBlock' | 'inlineObject'
   key: string
   member: ArrayOfObjectsItemMember
   node: ObjectFormNode
-  elementRef?: MutableRefObject<PortableTextEditorElement | null>
   input?: ReactNode
 }
 /** @public */
@@ -122,24 +145,16 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
     ),
   )
 
-  const {subscribe} = usePatches({path})
   const {t} = useTranslation()
   const [ignoreValidationError, setIgnoreValidationError] = useState(false)
   const [invalidValue, setInvalidValue] = useState<InvalidValue | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(initialFullscreen ?? false)
   const [isActive, setIsActive] = useState(initialActive ?? false)
-  const [isOffline, setIsOffline] = useState(false)
   const [hasFocusWithin, setHasFocusWithin] = useState(false)
+  const [ready, setReady] = useState(false)
   const telemetry = useTelemetry()
 
   const toast = useToast()
-
-  // Memoized patch stream
-  const patchSubject: Subject<{
-    patches: EditorPatch[]
-    snapshot: PortableTextBlock[] | undefined
-  }> = useMemo(() => new Subject(), [])
-  const patches$ = useMemo(() => patchSubject.asObservable(), [patchSubject])
 
   const handleToggleFullscreen = useCallback(() => {
     setIsFullscreen((v) => {
@@ -162,13 +177,6 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
     }
   }, [invalidValue, value])
 
-  // Subscribe to patches
-  useEffect(() => {
-    return subscribe(({patches, snapshot}): void => {
-      patchSubject.next({patches, snapshot})
-    })
-  }, [patchSubject, subscribe])
-
   const portableTextMemberItems = usePortableTextMemberItemsFromProps(props)
 
   // Set active if focused within the editor
@@ -178,35 +186,35 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
     }
   }, [hasFocusWithin])
 
-  const setFocusPathFromEditorSelection = useCallback(() => {
-    const selection = nextSelectionRef.current
-    const focusPath = selection?.focus.path
-    if (!focusPath) return
+  const setFocusPathFromEditorSelection = useCallback(
+    (nextSelection: EditorSelection) => {
+      const focusPath = nextSelection?.focus.path
+      if (!focusPath) return
 
-    // Report focus on spans with `.text` appended to the reported focusPath.
-    // This is done to support the Presentation tool which uses this kind of paths to refer to texts.
-    // The PT-input already supports these paths the other way around.
-    // It's a bit ugly right here, but it's a rather simple way to support the Presentation tool without
-    // having to change the PTE's internals.
-    const isSpanPath =
-      focusPath.length === 3 && // A span path is always 3 segments long
-      focusPath[1] === 'children' && // Is a child of a block
-      isKeySegment(focusPath[2]) && // Contains the key of the child
-      !portableTextMemberItems.some(
-        (item) => isKeySegment(focusPath[2]) && item.member.key === focusPath[2]._key,
-      )
-    const nextFocusPath = isSpanPath ? focusPath.concat(['text']) : focusPath
+      // Report focus on spans with `.text` appended to the reported focusPath.
+      // This is done to support the Presentation tool which uses this kind of paths to refer to texts.
+      // The PT-input already supports these paths the other way around.
+      // It's a bit ugly right here, but it's a rather simple way to support the Presentation tool without
+      // having to change the PTE's internals.
+      const isSpanPath =
+        focusPath.length === 3 && // A span path is always 3 segments long
+        focusPath[1] === 'children' && // Is a child of a block
+        isKeySegment(focusPath[2]) && // Contains the key of the child
+        !portableTextMemberItems.some(
+          (item) => isKeySegment(focusPath[2]) && item.member.key === focusPath[2]._key,
+        )
+      const nextFocusPath = isSpanPath ? focusPath.concat(['text']) : focusPath
 
-    // Must called in a transition useTrackFocusPath hook
-    // will try to effectuate a focusPath that is different from what currently is the editor focusPath
-    startTransition(() => {
-      onPathFocus(nextFocusPath, {
-        selection,
+      // Must called in a transition useTrackFocusPath hook
+      // will try to effectuate a focusPath that is different from what currently is the editor focusPath
+      startTransition(() => {
+        onPathFocus(nextFocusPath, {
+          selection: nextSelection,
+        })
       })
-    })
-  }, [onPathFocus, portableTextMemberItems])
-
-  const nextSelectionRef = useRef<EditorSelection | null>(null)
+    },
+    [onPathFocus, portableTextMemberItems],
+  )
 
   // Handle editor changes
   const handleEditorChange = useCallback(
@@ -215,16 +223,8 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
         case 'mutation':
           onChange(toFormPatches(change.patches))
           break
-        case 'connection':
-          if (change.value === 'offline') {
-            setIsOffline(true)
-          } else if (change.value === 'online') {
-            setIsOffline(false)
-          }
-          break
         case 'selection':
-          nextSelectionRef.current = change.selection
-          setFocusPathFromEditorSelection()
+          setFocusPathFromEditorSelection(change.selection)
           break
         case 'focus':
           setIsActive(true)
@@ -234,10 +234,6 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
           onBlur(change.event)
           setHasFocusWithin(false)
           break
-        case 'undo':
-        case 'redo':
-          onChange(toFormPatches(change.patches))
-          break
         case 'invalidValue':
           setInvalidValue(change)
           break
@@ -246,6 +242,9 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
             status: change.level,
             description: change.description,
           })
+          break
+        case 'ready':
+          setReady(true)
           break
         default:
       }
@@ -272,13 +271,13 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
             onChange={handleEditorChange}
             onIgnore={handleIgnoreInvalidValue}
             resolution={invalidValue.resolution}
-            readOnly={isOffline || readOnly}
+            readOnly={readOnly}
           />
         </Box>
       )
     }
     return null
-  }, [handleEditorChange, handleIgnoreInvalidValue, invalidValue, isOffline, readOnly])
+  }, [handleEditorChange, handleIgnoreInvalidValue, invalidValue, readOnly])
 
   const handleActivate = useCallback((): void => {
     if (!isActive) {
@@ -315,7 +314,7 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
         file,
         uploaderCandidates: getUploadCandidates(schemaType.of, resolveUploader, file),
       }))
-      const ready = tasks.filter((task) => task.uploaderCandidates.length > 0)
+      const readyTasks = tasks.filter((task) => task.uploaderCandidates.length > 0)
       const rejected: UploadTask[] = tasks.filter((task) => task.uploaderCandidates.length === 0)
 
       if (rejected.length > 0) {
@@ -340,7 +339,7 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
 
       // todo: consider if we should to ask the user here
       // the list of candidates is sorted by their priority and the first one is selected
-      ready.forEach((task) => {
+      readyTasks.forEach((task) => {
         uploadFile(
           task.file,
           // eslint-disable-next-line max-nested-callbacks
@@ -383,15 +382,42 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
       {(!invalidValue || ignoreValidationError) && (
         <PortableTextMarkersProvider markers={markers}>
           <PortableTextMemberItemsProvider memberItems={portableTextMemberItems}>
-            <PortableTextEditor
-              patches$={patches$}
-              onChange={handleEditorChange}
-              maxBlocks={undefined} // TODO: from schema?
-              ref={editorRef}
-              readOnly={isOffline || readOnly}
-              schemaType={schemaType}
-              value={value}
+            <EditorProvider
+              initialConfig={{
+                initialValue: value,
+                readOnly: readOnly || !ready,
+                keyGenerator,
+                schema: schemaType,
+              }}
             >
+              <EditorChangePlugin onChange={handleEditorChange} />
+              <EditorRefPlugin ref={editorRef} />
+              <PatchesPlugin path={path} />
+              <UpdateReadOnlyPlugin readOnly={readOnly || !ready} />
+              <UpdateValuePlugin value={value} />
+              <MarkdownPlugin
+                config={{
+                  boldDecorator: ({schema}) =>
+                    schema.decorators.find((decorator) => decorator.value === 'strong')?.value,
+                  codeDecorator: ({schema}) =>
+                    schema.decorators.find((decorator) => decorator.value === 'code')?.value,
+                  italicDecorator: ({schema}) =>
+                    schema.decorators.find((decorator) => decorator.value === 'em')?.value,
+                  strikeThroughDecorator: ({schema}) =>
+                    schema.decorators.find((decorator) => decorator.value === 'strike-through')
+                      ?.value,
+                  defaultStyle: ({schema}) =>
+                    schema.styles.find((style) => style.value === 'normal')?.value,
+                  blockquoteStyle: ({schema}) =>
+                    schema.styles.find((style) => style.value === 'blockquote')?.value,
+                  headingStyle: ({schema, level}) =>
+                    schema.styles.find((style) => style.value === `h${level}`)?.value,
+                  orderedListStyle: ({schema}) =>
+                    schema.lists.find((list) => list.value === 'number')?.value,
+                  unorderedListStyle: ({schema}) =>
+                    schema.lists.find((list) => list.value === 'bullet')?.value,
+                }}
+              />
               <Compositor
                 {...props}
                 elementRef={elementRef}
@@ -406,16 +432,149 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
                 onPaste={handlePaste}
                 onToggleFullscreen={handleToggleFullscreen}
                 rangeDecorations={rangeDecorations}
+                readOnly={readOnly || !ready}
                 renderBlockActions={renderBlockActions}
                 renderCustomMarkers={renderCustomMarkers}
                 renderEditable={renderEditable}
               />
-            </PortableTextEditor>
+            </EditorProvider>
           </PortableTextMemberItemsProvider>
         </PortableTextMarkersProvider>
       )}
     </Box>
   )
+}
+
+/**
+ * Custom PTE plugin that translates `EditorEmittedEvent`s to `EditorChange`s
+ */
+function EditorChangePlugin(props: {onChange: (change: EditorChange) => void}) {
+  const handleEditorEvent = useCallback(
+    (event: EditorEmittedEvent) => {
+      switch (event.type) {
+        case 'blurred':
+          props.onChange({
+            type: 'blur',
+            event: event.event,
+          })
+          break
+        case 'error':
+          props.onChange({
+            type: 'error',
+            name: event.name,
+            level: 'warning',
+            description: event.description,
+          })
+          break
+        case 'focused':
+          props.onChange({
+            type: 'focus',
+            event: event.event,
+          })
+          break
+        case 'loading':
+          props.onChange({
+            type: 'loading',
+            isLoading: true,
+          })
+          break
+        case 'done loading':
+          props.onChange({
+            type: 'loading',
+            isLoading: false,
+          })
+          break
+        case 'invalid value':
+          props.onChange({
+            type: 'invalidValue',
+            resolution: event.resolution,
+            value: event.value,
+          })
+          break
+        case 'mutation':
+          props.onChange(event)
+          break
+        case 'patch': {
+          props.onChange(event)
+          break
+        }
+        case 'ready':
+          props.onChange(event)
+          break
+        case 'selection': {
+          props.onChange(event)
+          break
+        }
+        case 'value changed':
+          props.onChange({
+            type: 'value',
+            value: event.value,
+          })
+          break
+        default:
+      }
+    },
+    [props],
+  )
+
+  return <EventListenerPlugin on={handleEditorEvent} />
+}
+
+/**
+ * Custom PTE plugin that sets up a patch subscription and sends patches to the
+ * editor.
+ */
+function PatchesPlugin(props: {path: Path}) {
+  const editor = useEditor()
+  const {subscribe} = usePatches({path: props.path})
+
+  useEffect(() => {
+    const unsubscribe = subscribe(({patches, snapshot}): void => {
+      editor.send({type: 'patches', patches, snapshot})
+    })
+
+    return () => {
+      return unsubscribe()
+    }
+  }, [editor, subscribe])
+
+  return null
+}
+
+/**
+ * `EditorProvider` doesn't have a `value` prop. Instead, this custom PTE
+ * plugin listens for the prop change and sends an `update value` event to the
+ * editor.
+ */
+function UpdateValuePlugin(props: {value: Array<PortableTextBlock> | undefined}) {
+  const editor = useEditor()
+
+  useEffect(() => {
+    editor.send({
+      type: 'update value',
+      value: props.value,
+    })
+  }, [editor, props.value])
+
+  return null
+}
+
+/**
+ * `EditorProvider` doesn't have a `readOnly` prop. Instead, this custom PTE
+ * plugin listens for the prop change and sends a `toggle readOnly` event to
+ * the editor.
+ */
+function UpdateReadOnlyPlugin(props: {readOnly: boolean}) {
+  const editor = useEditor()
+
+  useEffect(() => {
+    editor.send({
+      type: 'update readOnly',
+      readOnly: props.readOnly,
+    })
+  }, [editor, props.readOnly])
+
+  return null
 }
 
 function toFormPatches(patches: any) {

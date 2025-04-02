@@ -1,6 +1,6 @@
 {
   "name": "@sanity/vision",
-  "version": "3.47.0",
+  "version": "3.82.0",
   "description": "Sanity plugin for running/debugging GROQ-queries against Sanity datasets",
   "keywords": [
     "sanity",
@@ -25,6 +25,7 @@
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
   "sideEffects": false,
+  "type": "commonjs",
   "exports": {
     ".": {
       "source": "./src/index.ts",
@@ -35,7 +36,7 @@
     "./package.json": "./package.json"
   },
   "main": "./lib/index.js",
-  "module": "./lib/index.esm.js",
+  "module": "./lib/index.mjs",
   "types": "./lib/index.d.ts",
   "files": [
     "lib",
@@ -59,38 +60,40 @@
     "@codemirror/view": "^6.1.1",
     "@juggle/resize-observer": "^3.3.1",
     "@lezer/highlight": "^1.0.0",
-    "@rexxars/react-json-inspector": "^8.0.1",
-    "@rexxars/react-split-pane": "^0.1.93",
+    "@rexxars/react-json-inspector": "^9.0.1",
+    "@rexxars/react-split-pane": "^1.0.0",
     "@sanity/color": "^3.0.0",
-    "@sanity/icons": "^3.0.0",
-    "@sanity/ui": "^2.4.0",
-    "@uiw/react-codemirror": "^4.11.4",
+    "@sanity/icons": "^3.7.0",
+    "@sanity/ui": "^2.15.12",
+    "@uiw/react-codemirror": "^4.23.8",
     "is-hotkey-esm": "^1.0.0",
     "json-2-csv": "^5.5.1",
     "json5": "^2.2.3",
     "lodash": "^4.17.21",
-    "quick-lru": "^5.1.1"
+    "quick-lru": "^5.1.1",
+    "react-compiler-runtime": "19.0.0-beta-e993439-20250328",
+    "react-fast-compare": "^3.2.2",
+    "use-effect-event": "^1.0.2"
   },
   "devDependencies": {
     "@repo/package.config": "workspace:*",
-    "@sanity/block-tools": "workspace:*",
     "@sanity/cli": "workspace:*",
-    "@sanity/client": "^6.20.0",
+    "@sanity/client": "^6.28.4",
     "@sanity/codegen": "workspace:*",
     "@sanity/diff": "workspace:*",
     "@sanity/migrate": "workspace:*",
     "@sanity/mutator": "workspace:*",
-    "@sanity/portable-text-editor": "workspace:*",
     "@sanity/schema": "workspace:*",
     "@sanity/types": "workspace:*",
     "@sanity/util": "workspace:*",
-    "@types/lodash": "^4.14.149",
+    "@types/lodash": "^4.17.7",
+    "babel-plugin-react-compiler": "19.0.0-beta-e993439-20250328",
     "react": "^18.3.1",
     "sanity": "workspace:*",
-    "styled-components": "^6.1.11"
+    "styled-components": "^6.1.16"
   },
   "peerDependencies": {
-    "react": "^18",
-    "styled-components": "^6.1"
+    "react": "^18 || ^19.0.0",
+    "styled-components": "^6.1.15"
   }
 }

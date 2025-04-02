@@ -1,6 +1,6 @@
 {
   "name": "@sanity/codegen",
-  "version": "3.47.0",
+  "version": "3.82.0",
   "description": "Codegen toolkit for Sanity.io",
   "keywords": [
     "sanity",
@@ -22,6 +22,7 @@
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
   "sideEffects": false,
+  "type": "commonjs",
   "exports": {
     ".": {
       "source": "./src/_exports/index.ts",
@@ -32,7 +33,7 @@
     "./package.json": "./package.json"
   },
   "main": "./lib/index.js",
-  "module": "./lib/index.esm.js",
+  "module": "./lib/index.mjs",
   "types": "./lib/index.d.ts",
   "files": [
     "lib",
@@ -44,9 +45,9 @@
     "build": "pkg-utils build --strict --check --clean",
     "check:types": "tsc --project tsconfig.lib.json",
     "clean": "rimraf lib coverage",
-    "lint": "eslint .",
+    "lint": "eslint --cache .",
     "prepublishOnly": "turbo run build",
-    "test": "jest",
+    "test": "vitest",
     "watch": "pkg-utils watch"
   },
   "dependencies": {
@@ -59,22 +60,23 @@
     "@babel/traverse": "^7.23.5",
     "@babel/types": "^7.23.9",
     "debug": "^4.3.4",
-    "globby": "^10.0.0",
+    "globby": "^11.1.0",
     "groq": "workspace:*",
-    "groq-js": "^1.9.0",
+    "groq-js": "^1.16.1",
     "json5": "^2.2.3",
     "tsconfig-paths": "^4.2.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@jest/globals": "^29.7.0",
     "@repo/package.config": "workspace:*",
+    "@repo/test-config": "workspace:*",
     "@types/babel__core": "^7.20.5",
     "@types/babel__generator": "^7.6.8",
     "@types/babel__register": "^7.17.3",
     "@types/babel__traverse": "^7.20.5",
     "@types/debug": "^4.1.12",
-    "rimraf": "^3.0.2"
+    "rimraf": "^5.0.10",
+    "vitest": "^3.1.1"
   },
   "engines": {
     "node": ">=18"

@@ -1,10 +1,15 @@
+'use no memo'
+// The `use no memo` directive is due to a known issue with react-virtual and react compiler: https://github.com/TanStack/virtual/issues/736
+
 import {Box, rem, Stack} from '@sanity/ui'
 import {type ScrollToOptions, useVirtualizer, type Virtualizer} from '@tanstack/react-virtual'
 import {throttle} from 'lodash'
 import {
   cloneElement,
   forwardRef,
-  type ReactElement,
+  Fragment,
+  isValidElement,
+  memo,
   useCallback,
   useEffect,
   useId,
@@ -86,17 +91,7 @@ const VirtualListChildBox = styled(Box) //
   width: 100%;
 `
 
-/**
- * Renders a Command List with support for the following:
- *
- * - Keyboard navigation (↑ / ↓ / ENTER) to children with a specified container (`childContainerRef`)
- * - Focus redirection when clicking child elements
- * - Pointer blocking when navigating with arrow keys (to ensure that only one active state is visible at any given time)
- * - ARIA attributes to define a `combobox` input that controls a separate `listbox`
- *
- * @internal
- */
-export const CommandList = forwardRef<CommandListHandle, CommandListProps>(function CommandList(
+const CommandListComponent = forwardRef<CommandListHandle, CommandListProps>(function CommandList(
   {
     activeItemDataAttr = LIST_ITEM_DATA_ATTR_ACTIVE,
     ariaLabel,
@@ -118,13 +113,14 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
     onlyShowSelectionWhenActive,
     overscan,
     renderItem,
+    testId,
     wrapAround = true,
     ...responsivePaddingProps
   },
   ref,
 ) {
   const isMountedRef = useRef(false)
-  const commandListId = useRef(useId())
+  const [commandListId] = useState(useId())
   const activeIndexRef = useRef(initialIndex ?? 0)
 
   const [childContainerElement, setChildContainerElement] = useState<HTMLElement | null>(null)
@@ -212,11 +208,11 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
   )
 
   const getChildDescendantId = useCallback(
-    (index: number) => `${commandListId.current}-item-${index}`,
-    [],
+    (index: number) => `${commandListId}-item-${index}`,
+    [commandListId],
   )
 
-  const getCommandListChildrenId = useCallback(() => `${commandListId.current}-children`, [])
+  const getCommandListChildrenId = useCallback(() => `${commandListId}-children`, [commandListId])
 
   /**
    * Iterate through all virtual list children and apply the active data-attribute on the selected index.
@@ -587,6 +583,7 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
       ref={setVirtualListElement}
       sizing="border"
       tabIndex={rootTabIndex}
+      data-testid={testId}
       {...responsivePaddingProps}
     >
       {canReceiveFocus && <FocusOverlayDiv offset={focusRingOffset} />}
@@ -610,44 +607,34 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
               disabled,
               selected,
               virtualIndex,
-            }) as ReactElement
+            }) as React.JSX.Element
 
-            const clonedItem = cloneElement(itemToRender, {
-              tabIndex: -1,
-            })
-
-            const activeAriaAttributes =
-              typeof activeIndex === 'number' && !disabled
-                ? {
-                    'aria-posinset': activeIndex + 1,
-                    ...(ariaMultiselectable ? {'aria-selected': selected.toString()} : {}),
-                    'aria-setsize': activeItemCount,
-                    'id': getChildDescendantId(activeIndex),
-                    'role': 'option',
-                    'onMouseEnter': handleChildMouseEnter(activeIndex),
-                  }
-                : {}
+            // @TODO can we avoid using cloneElement here?
+            const clonedItem =
+              isValidElement(itemToRender) && itemToRender.type != Fragment
+                ? cloneElement(itemToRender, {
+                    // @ts-expect-error @TODO shift the responsibility of setting tabIndex to the consumer, so we can remove the need to clone
+                    tabIndex: -1,
+                  })
+                : itemToRender
 
             return (
-              <Stack
-                as="li"
-                data-index={virtualIndex}
+              <CommandListItem
                 key={virtualRow.key}
                 ref={fixedHeight ? undefined : virtualizer.measureElement}
-                style={{
-                  flex: 1,
-                  ...(fixedHeight ? {height: `${virtualRow.size}px`} : {}),
-                  left: 0,
-                  position: 'absolute',
-                  top: 0,
-                  transform: `translateY(${virtualRow.start}px)`,
-                  width: '100%',
-                }}
-                tabIndex={-1}
-                {...activeAriaAttributes}
+                activeIndex={activeIndex}
+                activeItemCount={activeItemCount}
+                ariaMultiselectable={ariaMultiselectable}
+                disabled={disabled}
+                fixedHeight={fixedHeight ? `${virtualRow.size}px` : undefined}
+                getChildDescendantId={getChildDescendantId}
+                handleChildMouseEnter={handleChildMouseEnter}
+                selected={selected}
+                virtualIndex={virtualIndex}
+                virtualRowStart={virtualRow.start}
               >
                 {clonedItem}
-              </Stack>
+              </CommandListItem>
             )
           })}
         </VirtualListChildBox>
@@ -655,3 +642,96 @@ export const CommandList = forwardRef<CommandListHandle, CommandListProps>(funct
     </VirtualListBox>
   )
 })
+
+/**
+ * Renders a Command List with support for the following:
+ *
+ * - Keyboard navigation (↑ / ↓ / ENTER) to children with a specified container (`childContainerRef`)
+ * - Focus redirection when clicking child elements
+ * - Pointer blocking when navigating with arrow keys (to ensure that only one active state is visible at any given time)
+ * - ARIA attributes to define a `combobox` input that controls a separate `listbox`
+ *
+ * @internal
+ */
+export const CommandList = memo(CommandListComponent)
+CommandList.displayName = 'Memo(ForwardRef(CommandList))'
+
+const CommandListItemComponent = forwardRef(function CommandListItem(
+  props: {
+    children: React.ReactNode
+    activeIndex: number | null
+    activeItemCount: number
+    ariaMultiselectable: boolean
+    disabled: boolean
+    fixedHeight: `${number}px` | undefined
+    getChildDescendantId: (index: number) => string
+    handleChildMouseEnter: (index: number) => () => void
+    selected: boolean
+    virtualIndex: number
+    virtualRowStart: number
+  },
+  forwardedRef: React.ForwardedRef<HTMLDivElement>,
+) {
+  const {
+    children,
+    activeIndex,
+    activeItemCount,
+    ariaMultiselectable,
+    disabled,
+    fixedHeight,
+    getChildDescendantId,
+    handleChildMouseEnter,
+    selected,
+    virtualIndex,
+    virtualRowStart,
+  } = props
+
+  const onMouseEnter = useMemo(
+    () =>
+      typeof activeIndex === 'number' && !disabled ? handleChildMouseEnter(activeIndex) : undefined,
+    [activeIndex, disabled, handleChildMouseEnter],
+  )
+  const activeAriaAttributes = useMemo(
+    () =>
+      typeof activeIndex === 'number' && !disabled
+        ? {
+            'aria-posinset': activeIndex + 1,
+            ...(ariaMultiselectable ? {'aria-selected': selected.toString()} : {}),
+            'aria-setsize': activeItemCount,
+            'id': getChildDescendantId(activeIndex),
+            'role': 'option',
+          }
+        : {},
+    [activeIndex, activeItemCount, ariaMultiselectable, disabled, getChildDescendantId, selected],
+  )
+
+  const style = useMemo(
+    () => ({
+      flex: 1,
+      height: fixedHeight,
+      left: 0,
+      position: 'absolute' as const,
+      top: 0,
+      transform: `translateY(${virtualRowStart}px)`,
+      width: '100%',
+    }),
+    [fixedHeight, virtualRowStart],
+  )
+
+  return (
+    <Stack
+      as="li"
+      data-index={virtualIndex}
+      ref={forwardedRef}
+      style={style}
+      tabIndex={-1}
+      {...activeAriaAttributes}
+      onMouseEnter={onMouseEnter}
+    >
+      {children}
+    </Stack>
+  )
+})
+
+const CommandListItem = memo(CommandListItemComponent)
+CommandListItem.displayName = 'Memo(ForwardRef(CommandListItem))'

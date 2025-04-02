@@ -1,8 +1,8 @@
-import {expect, jest, test} from '@jest/globals'
 import {type SanityClient} from '@sanity/client'
 import {renderHook, waitFor} from '@testing-library/react'
 import {asyncScheduler, defer, of} from 'rxjs'
 import {delay, observeOn, tap} from 'rxjs/operators'
+import {expect, test, vi} from 'vitest'
 
 import {createMockSanityClient} from '../../../../../../../test/mocks/mockSanityClient'
 import {createTestProvider} from '../../../../../../../test/testUtils/TestProvider'
@@ -31,9 +31,9 @@ test('should return passed document type if already resolved', async () => {
 
 test('should resolve document type from API on undefined type (with loading state)', async () => {
   const client = createMockSanityClient()
-  const response = defer(() => of(['book']).pipe(observeOn(asyncScheduler)))
+  const response = defer(() => of('book').pipe(observeOn(asyncScheduler)))
 
-  client.observable.fetch = jest.fn(() => response)
+  client.observable.fetch = vi.fn(() => response)
 
   const {result} = renderHook(() => useDocumentType('asoiaf-got', undefined), {
     wrapper: await createWrapperComponent(client as any),
@@ -50,7 +50,7 @@ test('should resolve document type from API on undefined type (with loading stat
 
 test('should return correct document type on document type transition', async () => {
   const client = createMockSanityClient()
-  client.observable.fetch = jest.fn<typeof client.observable.fetch>()
+  client.observable.fetch = vi.fn<typeof client.observable.fetch>()
 
   let documentType = 'book'
 
@@ -75,11 +75,11 @@ test('should return correct document type on document type transition', async ()
 test('should return correct document type on document ID transition', async () => {
   const client = createMockSanityClient()
 
-  const responseGrrm = defer(() => of(['author']).pipe(observeOn(asyncScheduler)))
-  const responseGot = defer(() => of(['book']).pipe(observeOn(asyncScheduler)))
+  const responseGrrm = defer(() => of('author').pipe(observeOn(asyncScheduler)))
+  const responseGot = defer(() => of('book').pipe(observeOn(asyncScheduler)))
 
   client.observable.fetch = (_query, params) =>
-    params.documentId === 'grrm' ? responseGrrm : responseGot
+    params.publishedId === 'grrm' ? responseGrrm : responseGot
 
   let documentId = 'grrm'
   const {result, rerender} = renderHook(() => useDocumentType(documentId, undefined), {
@@ -102,9 +102,9 @@ test('should return correct document type on document ID transition', async () =
 test('should return correct document type when transitioning from undefined type to specified type', async () => {
   const client = createMockSanityClient()
 
-  const responseGrrm = defer(() => of(['author']).pipe(observeOn(asyncScheduler)))
+  const responseGrrm = defer(() => of('author').pipe(observeOn(asyncScheduler)))
 
-  client.observable.fetch = jest.fn<typeof client.observable.fetch>().mockReturnValue(responseGrrm)
+  client.observable.fetch = vi.fn<typeof client.observable.fetch>().mockReturnValue(responseGrrm)
 
   // eslint-disable-next-line no-undef-init
   let documentType: string | undefined = undefined
@@ -132,9 +132,9 @@ test('should return correct document type when transitioning from undefined type
 test('should return correct document type when transitioning from specified to undefined type', async () => {
   const client = createMockSanityClient()
 
-  const responseGrrm = defer(() => of(['person']).pipe(observeOn(asyncScheduler)))
+  const responseGrrm = defer(() => of('person').pipe(observeOn(asyncScheduler)))
 
-  client.observable.fetch = jest.fn<typeof client.observable.fetch>().mockReturnValue(responseGrrm)
+  client.observable.fetch = vi.fn<typeof client.observable.fetch>().mockReturnValue(responseGrrm)
 
   // eslint-disable-next-line no-undef-init
   let documentType: string | undefined = 'author'
@@ -162,13 +162,13 @@ test('should return correct document type when transitioning from specified to u
 test('should cancel ongoing requests when transitioning document ID', async () => {
   const client = createMockSanityClient()
 
-  const hasResolvedFirst = jest.fn()
+  const hasResolvedFirst = vi.fn()
   const responseDelayedGrrm = defer(() =>
     of(['person']).pipe(observeOn(asyncScheduler), delay(5000), tap(hasResolvedFirst)),
   )
-  const responseGot = defer(() => of(['book']).pipe(observeOn(asyncScheduler)))
+  const responseGot = defer(() => of('book').pipe(observeOn(asyncScheduler)))
 
-  client.observable.fetch = jest
+  client.observable.fetch = vi
     .fn<typeof client.observable.fetch>()
     .mockReturnValueOnce(responseDelayedGrrm)
     .mockReturnValueOnce(responseGot)

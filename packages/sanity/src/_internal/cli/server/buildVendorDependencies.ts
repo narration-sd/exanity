@@ -3,7 +3,6 @@ import path from 'node:path'
 
 import resolveFrom from 'resolve-from'
 import semver from 'semver'
-import {build} from 'vite'
 
 import {createExternalFromImportMap} from './createExternalFromImportMap'
 
@@ -206,8 +205,12 @@ export async function buildVendorDependencies({
     }
   }
 
+  // removes the `RollupWatcher` type
+  type BuildResult = Exclude<Awaited<ReturnType<typeof build>>, {close: unknown}>
+
+  const {build} = await import('vite')
   // Use Vite to build the packages into the output directory
-  await build({
+  let buildResult = (await build({
     // Define a custom cache directory so that sanity's vite cache
     // does not conflict with any potential local vite projects
     cacheDir: 'node_modules/.sanity/vite-vendor',
@@ -220,17 +223,39 @@ export async function buildVendorDependencies({
     define: {'process.env.NODE_ENV': JSON.stringify('production')},
 
     build: {
+      commonjsOptions: {strictRequires: 'auto'},
       minify: true,
       emptyOutDir: false, // Rely on CLI to do this
       outDir: path.join(outputDir, VENDOR_DIR),
       lib: {entry, formats: ['es']},
       rollupOptions: {
         external: createExternalFromImportMap({imports}),
-        output: {exports: 'named', format: 'es'},
+        output: {
+          entryFileNames: '[name]-[hash].mjs',
+          chunkFileNames: '[name]-[hash].mjs',
+          exports: 'named',
+          format: 'es',
+        },
         treeshake: {preset: 'recommended'},
       },
     },
-  })
+  })) as BuildResult
 
-  return imports
+  buildResult = Array.isArray(buildResult) ? buildResult : [buildResult]
+
+  // Create a map of the original import specifiers to their hashed filenames
+  const hashedImports: Record<string, string> = {}
+  const output = buildResult.flatMap((i) => i.output)
+
+  for (const chunk of output) {
+    if (chunk.type === 'asset') continue
+
+    for (const [specifier, originalPath] of Object.entries(imports)) {
+      if (originalPath.endsWith(`${chunk.name}.mjs`)) {
+        hashedImports[specifier] = path.posix.join('/', basePath, VENDOR_DIR, chunk.fileName)
+      }
+    }
+  }
+
+  return hashedImports
 }

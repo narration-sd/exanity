@@ -1,15 +1,14 @@
-import {type SanityClient} from '@sanity/client'
+import {type SanityClient, type StackablePerspective} from '@sanity/client'
 import {difference, flatten, memoize} from 'lodash'
 import {
   combineLatest,
   concat,
   defer,
   EMPTY,
-  from,
   fromEvent,
   merge,
   type Observable,
-  of as observableOf,
+  of,
   timer,
 } from 'rxjs'
 import {
@@ -24,13 +23,15 @@ import {
   tap,
 } from 'rxjs/operators'
 
+import {RELEASES_STUDIO_CLIENT_OPTIONS} from '../releases/util/releasesClient'
+import {versionedClient} from '../studioClient'
+import {getPublishedId, idMatchesPerspective, isVersionId} from '../util/draftUtils'
 import {INCLUDE_FIELDS} from './constants'
 import {
   type ApiConfig,
   type FieldName,
   type Id,
-  type ObservePathsFn,
-  type PreviewPath,
+  type InvalidationChannelEvent,
   type Selection,
 } from './types'
 import {debounceCollect} from './utils/debounceCollect'
@@ -48,107 +49,127 @@ type Cache = {
   [id: string]: CachedFieldObserver[]
 }
 
-export function create_preview_observeFields(context: {
-  observePaths: ObservePathsFn
-  versionedClient: SanityClient
+/**
+ * Note: this should be the minimal interface createObserveFields needs to function
+ * It should be kept compatible with the Sanity Client
+ */
+export interface ClientLike {
+  withConfig(config: ApiConfig): ClientLike
+  observable: {
+    fetch: (
+      query: string,
+      params: Record<string, string>,
+      options: {tag: string},
+    ) => Observable<unknown>
+  }
+}
+
+/**
+ * Creates a function that allows observing individual fields on a document.
+ * It will automatically debounce and batch requests, and maintain an in-memory cache of the latest field values
+ * @param options - Options to use when creating the observer
+ * @internal
+ */
+export function createObserveFields(options: {
+  client: SanityClient
+  invalidationChannel: Observable<InvalidationChannelEvent>
 }) {
-  const {observePaths, versionedClient} = context
+  const {client: currentDatasetClient, invalidationChannel} = options
 
-  let _globalListener: any
-
-  const getGlobalEvents = () => {
-    if (!_globalListener) {
-      const allEvents$ = from(
-        versionedClient.listen(
-          '*[!(_id in path("_.**"))]',
-          {},
-          {
-            events: ['welcome', 'mutation'],
-            includeResult: false,
-            visibility: 'query',
-            tag: 'preview.global',
-          },
-        ),
-      ).pipe(share())
-
-      // This is a stream of welcome events from the server, each telling us that we have established listener connection
-      // We map these to snapshot fetch/sync. It is good to wait for the first welcome event before fetching any snapshots as, we may miss
-      // events that happens in the time period after initial fetch and before the listener is established.
-      const welcome$ = allEvents$.pipe(
-        filter((event: any) => event.type === 'welcome'),
-        shareReplay({refCount: true, bufferSize: 1}),
-      )
-
-      // This will keep the listener active forever and in turn reduce the number of initial fetches
-      // as less 'welcome' events will be emitted.
-      // @todo: see if we can delay unsubscribing or connect with some globally defined shared listener
-      welcome$.subscribe()
-
-      const mutations$ = allEvents$.pipe(filter((event: any) => event.type === 'mutation'))
-
-      _globalListener = {
-        welcome$,
-        mutations$,
-      }
-    }
-
-    return _globalListener
-  }
-
-  function listen(id: Id) {
-    const globalEvents = getGlobalEvents()
-    return merge(
-      globalEvents.welcome$,
-      globalEvents.mutations$.pipe(filter((event: any) => event.documentId === id)),
-    )
-  }
-
-  function fetchAllDocumentPathsWith(client: SanityClient) {
+  function fetchAllDocumentPathsWith(client: SanityClient, perspective?: StackablePerspective[]) {
     return function fetchAllDocumentPath(selections: Selection[]) {
       const combinedSelections = combineSelections(selections)
-      return client.observable
-        .fetch(toQuery(combinedSelections), {}, {tag: 'preview.document-paths'} as any)
+      // If any document is a version document we need to use the release API version
+      const useReleaseVersion =
+        (perspective && perspective.length > 0) ||
+        combinedSelections.some((selection) => selection.ids.some(isVersionId))
+
+      return versionedClient(
+        client,
+        useReleaseVersion ? RELEASES_STUDIO_CLIENT_OPTIONS.apiVersion : undefined,
+      )
+        .observable.fetch(
+          toQuery(combinedSelections),
+          {},
+          {tag: 'preview.document-paths', perspective},
+        )
         .pipe(map((result: any) => reassemble(result, combinedSelections)))
     }
   }
+  const batchFetchersCache = new Map()
+  function getBatchFetchersForPerspective(perspective?: StackablePerspective[]) {
+    const key = perspective?.join('-') || 'raw'
+    if (batchFetchersCache.has(key)) {
+      return batchFetchersCache.get(key)
+    }
+    const batchFetchers = {
+      fast: debounceCollect(fetchAllDocumentPathsWith(currentDatasetClient, perspective), 100),
+      slow: debounceCollect(fetchAllDocumentPathsWith(currentDatasetClient, perspective), 1000),
+    }
+    batchFetchersCache.set(key, batchFetchers)
+    return batchFetchers
+  }
 
-  const fetchDocumentPathsFast = debounceCollect(fetchAllDocumentPathsWith(versionedClient), 100)
-  const fetchDocumentPathsSlow = debounceCollect(fetchAllDocumentPathsWith(versionedClient), 1000)
+  function currentDatasetListenFields(
+    documentId: Id,
+    fields: FieldName[],
+    perspective?: StackablePerspective[],
+  ) {
+    const {fast: fetchDocumentPathsFast, slow: fetchDocumentPathsSlow} =
+      getBatchFetchersForPerspective(perspective)
 
-  function currentDatasetListenFields(id: Id, fields: PreviewPath[]) {
-    return listen(id).pipe(
-      switchMap((event: any) => {
-        if (event.type === 'welcome' || event.visibility === 'query') {
-          return fetchDocumentPathsFast(id, fields as any).pipe(
+    const hasPerspective = perspective && perspective.length > 0
+    /**
+     * Q: Why are we using published id if perspective is provided?
+     * A: Normally, queries for fetching preview values will be based on the _id of the document,
+     * for example `*[_id == "drafts.foo"]`. However, if a perspective passed, the query
+     * `*[_id == "drafts.foo"]` will not match anything since the `_id` will always be the published id
+     * Therefore, if perspective is provided, we need to refetch using the published id instead.
+     */
+    const fetchId = hasPerspective ? getPublishedId(documentId) : documentId
+
+    return invalidationChannel.pipe(
+      filter((event) => {
+        // we always want to fetch when the listener just (re) connected
+        if (event.type === 'connected') {
+          return true
+        }
+        if (hasPerspective) {
+          // if a perspective stack was provided, we need to refetch if we receive a mutation
+          // for a document whose _id matches either:
+          // - the published _id (since it's always implied)
+          // - any version id matching the provided perspectives
+          return idMatchesPerspective(perspective, documentId)
+        }
+        // if not using perspective, refetch previews for the document that was actually changed
+        return event.documentId === documentId
+      }),
+      switchMap((event) => {
+        if (event.type === 'connected' || event.visibility === 'query') {
+          return fetchDocumentPathsFast(fetchId, fields).pipe(
             mergeMap((result) => {
               return concat(
-                observableOf(result),
-                result === undefined // hack: if we get undefined as result here it can be because the document has
+                of(result),
+                result === null // hack: if we get undefined as result here it can be because the document has
                   ? // just been created and is not yet indexed. We therefore need to wait a bit
                     // and then re-fetch.
-                    fetchDocumentPathsSlow(id, fields as any)
+                    fetchDocumentPathsSlow(fetchId, fields)
                   : [],
               )
             }),
           )
         }
-        return fetchDocumentPathsSlow(id, fields as any)
+        return fetchDocumentPathsSlow(fetchId, fields)
       }),
     )
   }
-
-  // keep for debugging purposes for now
-  // function fetchDocumentPaths(id, selection) {
-  //   return client.observable.fetch(`*[_id==$id]{_id,_type,${selection.join(',')}}`, {id})
-  //     .map(result => result[0])
-  // }
 
   const CACHE: Cache = {} // todo: use a LRU cache instead (e.g. hashlru or quick-lru)
 
   const getBatchFetcherForDataset = memoize(
     function getBatchFetcherForDataset(apiConfig: ApiConfig) {
-      const client = versionedClient.withConfig(apiConfig)
-      const fetchAll = fetchAllDocumentPathsWith(client)
+      const client = currentDatasetClient.withConfig(apiConfig)
+      const fetchAll = fetchAllDocumentPathsWith(client, ['published'])
       return debounceCollect(fetchAll, 10)
     },
     (apiConfig) => apiConfig.dataset + apiConfig.projectId,
@@ -165,26 +186,28 @@ export function create_preview_observeFields(context: {
     share(),
   )
 
-  function crossDatasetListenFields(id: Id, fields: PreviewPath[], apiConfig: ApiConfig) {
+  function crossDatasetListenFields(id: Id, fields: FieldName[], apiConfig: ApiConfig) {
     return visiblePoll$.pipe(startWith(0)).pipe(
       switchMap(() => {
         const batchFetcher = getBatchFetcherForDataset(apiConfig)
-        return batchFetcher(id, fields as any)
+        return batchFetcher(id, fields)
       }),
     )
   }
 
   function createCachedFieldObserver<T>(
-    id: any,
-    fields: any,
-    apiConfig: ApiConfig,
+    id: string,
+    fields: FieldName[],
+    apiConfig?: ApiConfig,
+    perspective?: StackablePerspective[],
   ): CachedFieldObserver {
-    let latest: T | null = null
+    // Note: `undefined` means the memo has not been set, while `null` means the memo is explicitly set to null (e.g. we did fetch, but got null back)
+    let latest: T | undefined | null = undefined
     const changes$ = merge(
-      defer(() => (latest === null ? EMPTY : observableOf(latest))),
+      defer(() => (latest === undefined ? EMPTY : of(latest))),
       (apiConfig
         ? (crossDatasetListenFields(id, fields, apiConfig) as any)
-        : currentDatasetListenFields(id, fields)) as Observable<T>,
+        : currentDatasetListenFields(id, fields, perspective)) as Observable<T>,
     ).pipe(
       tap((v: T | null) => (latest = v)),
       shareReplay({refCount: true, bufferSize: 1}),
@@ -193,10 +216,15 @@ export function create_preview_observeFields(context: {
     return {id, fields, changes$}
   }
 
-  function cachedObserveFields(id: Id, fields: FieldName[], apiConfig?: ApiConfig) {
+  function cachedObserveFields(
+    id: Id,
+    fields: FieldName[],
+    apiConfig?: ApiConfig,
+    perspective?: StackablePerspective[],
+  ) {
     const cacheKey = apiConfig
       ? `${apiConfig.projectId}:${apiConfig.dataset}:${id}`
-      : `$current$-${id}`
+      : `$current$-${id}-${perspective?.join('-') || 'raw'}`
 
     if (!(cacheKey in CACHE)) {
       CACHE[cacheKey] = []
@@ -209,7 +237,7 @@ export function create_preview_observeFields(context: {
     )
 
     if (missingFields.length > 0) {
-      existingObservers.push(createCachedFieldObserver(id, fields, apiConfig as any))
+      existingObservers.push(createCachedFieldObserver(id, fields, apiConfig, perspective))
     }
 
     const cachedFieldObservers = existingObservers
@@ -226,8 +254,7 @@ export function create_preview_observeFields(context: {
     )
   }
 
-  // API
-  return {observeFields: cachedObserveFields}
+  return cachedObserveFields
 
   function pickFrom(objects: Record<string, any>[], fields: string[]) {
     return [...INCLUDE_FIELDS, ...fields].reduce((result, fieldName) => {

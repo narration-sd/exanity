@@ -1,6 +1,13 @@
 import {ChevronDownIcon} from '@sanity/icons'
-import {type Placement, useClickOutside, useGlobalKeyDown, useToast} from '@sanity/ui'
-import {useCallback, useState} from 'react'
+import {
+  Flex,
+  type Placement,
+  PortalProvider,
+  useClickOutsideEvent,
+  useGlobalKeyDown,
+  useToast,
+} from '@sanity/ui'
+import {useCallback, useMemo, useState} from 'react'
 import {type Chunk, useTimelineSelector, useTranslation} from 'sanity'
 import {styled} from 'styled-components'
 
@@ -21,11 +28,14 @@ const Root = styled(Popover)`
   overflow: clip;
 `
 
+export const TIMELINE_MENU_PORTAL = 'timeline-menu'
+
 export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
-  const {setTimelineRange, setTimelineMode, timelineError, ready, timelineStore} = useDocumentPane()
+  const {setTimelineRange, timelineError, ready, timelineStore} = useDocumentPane()
   const [open, setOpen] = useState(false)
   const [button, setButton] = useState<HTMLButtonElement | null>(null)
-  const [popover, setPopover] = useState<HTMLElement | null>(null)
+  const [popoverRef, setPopoverRef] = useState<HTMLElement | null>(null)
+
   const toast = useToast()
 
   const chunks = useTimelineSelector(timelineStore, (state) => state.chunks)
@@ -37,20 +47,12 @@ export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
   const {t} = useTranslation('studio')
 
   const handleOpen = useCallback(() => {
-    setTimelineMode(mode)
     setOpen(true)
-  }, [mode, setTimelineMode])
+  }, [])
 
   const handleClose = useCallback(() => {
-    setTimelineMode('closed')
     setOpen(false)
-  }, [setTimelineMode])
-
-  const handleClickOutside = useCallback(() => {
-    if (open) {
-      handleClose()
-    }
-  }, [handleClose, open])
+  }, [])
 
   const handleGlobalKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -62,14 +64,13 @@ export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
     [button, handleClose, open],
   )
 
-  useClickOutside(handleClickOutside, [button, popover])
   useGlobalKeyDown(handleGlobalKeyDown)
+  useClickOutsideEvent(open && handleClose, () => [button, popoverRef])
 
   const selectRev = useCallback(
     (revChunk: Chunk) => {
       try {
-        const [sinceId, revId] = timelineStore.findRangeForRev(revChunk)
-        setTimelineMode('closed')
+        const [sinceId, revId] = timelineStore?.findRangeForRev(revChunk) || [null, null]
         setTimelineRange(sinceId, revId)
       } catch (err) {
         toast.push({
@@ -80,14 +81,13 @@ export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
         })
       }
     },
-    [setTimelineMode, setTimelineRange, t, timelineStore, toast],
+    [setTimelineRange, t, timelineStore, toast],
   )
 
   const selectSince = useCallback(
     (sinceChunk: Chunk) => {
       try {
-        const [sinceId, revId] = timelineStore.findRangeForSince(sinceChunk)
-        setTimelineMode('closed')
+        const [sinceId, revId] = timelineStore?.findRangeForSince(sinceChunk) || [null, null]
         setTimelineRange(sinceId, revId)
       } catch (err) {
         toast.push({
@@ -98,42 +98,53 @@ export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
         })
       }
     },
-    [setTimelineMode, setTimelineRange, t, timelineStore, toast],
+    [setTimelineRange, t, timelineStore, toast],
   )
 
   const handleLoadMore = useCallback(() => {
     if (!loading) {
-      timelineStore.loadMore()
+      timelineStore?.loadMore()
     }
   }, [loading, timelineStore])
 
-  const content = timelineError ? (
-    <TimelineError />
-  ) : (
-    <>
-      {mode === 'rev' && (
+  const content = useMemo(() => {
+    if (timelineError) return <TimelineError />
+
+    if (mode === 'rev') {
+      return (
         <Timeline
           chunks={chunks}
-          firstChunk={realRevChunk}
           hasMoreChunks={hasMoreChunks}
           lastChunk={realRevChunk}
           onLoadMore={handleLoadMore}
           onSelect={selectRev}
         />
-      )}
-      {mode === 'since' && (
-        <Timeline
-          chunks={chunks}
-          disabledBeforeFirstChunk
-          firstChunk={realRevChunk}
-          hasMoreChunks={hasMoreChunks}
-          lastChunk={sinceTime}
-          onLoadMore={handleLoadMore}
-          onSelect={selectSince}
-        />
-      )}
-    </>
-  )
+      )
+    }
+
+    const filteredChunks = realRevChunk
+      ? chunks.filter((c) => c.index < realRevChunk.index)
+      : chunks
+    return (
+      <Timeline
+        chunks={filteredChunks}
+        hasMoreChunks={hasMoreChunks}
+        lastChunk={sinceTime}
+        onLoadMore={handleLoadMore}
+        onSelect={selectSince}
+      />
+    )
+  }, [
+    chunks,
+    handleLoadMore,
+    hasMoreChunks,
+    mode,
+    realRevChunk,
+    selectRev,
+    selectSince,
+    sinceTime,
+    timelineError,
+  ])
 
   const formatParams = {
     timestamp: {dateStyle: 'medium', timeStyle: 'short'},
@@ -157,27 +168,37 @@ export function TimelineMenu({chunk, mode, placement}: TimelineMenuProps) {
   const buttonLabel = mode === 'rev' ? revLabel : sinceLabel
 
   return (
-    <Root
-      data-testid="timeline-menu"
-      constrainSize
-      content={open && content}
-      data-ui="versionMenu"
-      open={open}
-      placement={placement}
-      portal
-      ref={setPopover}
-    >
-      <Button
-        data-testid={open ? 'timeline-menu-close-button' : 'timeline-menu-open-button'}
-        disabled={!ready}
-        mode="bleed"
-        iconRight={ChevronDownIcon}
-        onClick={open ? handleClose : handleOpen}
-        ref={setButton}
-        selected={open}
-        style={{maxWidth: '100%'}}
-        text={ready ? buttonLabel : t('timeline.loading-history')}
-      />
-    </Root>
+    <PortalProvider __unstable_elements={{[TIMELINE_MENU_PORTAL]: popoverRef}}>
+      <Root
+        data-testid="timeline-menu"
+        constrainSize
+        content={open && content}
+        data-ui="versionMenu"
+        open={open}
+        placement={placement}
+        matchReferenceWidth
+        portal
+        ref={setPopoverRef}
+      >
+        <Flex width={'fill'}>
+          <Button
+            data-testid={open ? 'timeline-menu-close-button' : 'timeline-menu-open-button'}
+            disabled={!ready}
+            mode="ghost"
+            onClick={open ? handleClose : handleOpen}
+            ref={setButton}
+            selected={open}
+            width="fill"
+            tooltipProps={null}
+            justify={'space-between'}
+            style={{
+              maxWidth: '100%',
+            }}
+            iconRight={ChevronDownIcon}
+            text={ready ? buttonLabel : t('timeline.loading-history')}
+          />
+        </Flex>
+      </Root>
+    </PortalProvider>
   )
 }

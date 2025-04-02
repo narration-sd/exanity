@@ -1,3 +1,6 @@
+'use no memo'
+// The `use no memo` directive is due to a known issue with react-virtual and react compiler: https://github.com/TanStack/virtual/issues/736
+
 import {type DragStartEvent} from '@dnd-kit/core'
 import {isKeySegment} from '@sanity/types'
 import {Card, Stack, Text, useTheme} from '@sanity/ui'
@@ -30,11 +33,12 @@ export function ListArrayInput<Item extends ObjectItem>(props: ArrayOfObjectsInp
     elementProps,
     members,
     onChange,
-    onInsert,
     onItemMove,
     onUpload,
     focusPath,
     readOnly,
+    onItemAppend,
+    onItemPrepend,
     renderAnnotation,
     renderBlock,
     renderField,
@@ -51,20 +55,6 @@ export function ListArrayInput<Item extends ObjectItem>(props: ArrayOfObjectsInp
   // Stores the index of the item being dragged
   const [activeDragItemIndex, setActiveDragItemIndex] = useState<number | null>(null)
   const {space} = useTheme().sanity
-
-  const handlePrepend = useCallback(
-    (item: Item) => {
-      onInsert({items: [item], position: 'before', referenceItem: 0})
-    },
-    [onInsert],
-  )
-
-  const handleAppend = useCallback(
-    (item: Item) => {
-      onInsert({items: [item], position: 'after', referenceItem: -1})
-    },
-    [onInsert],
-  )
 
   const memberKeys = useMemoCompare(
     useMemo(() => members.map((member) => member.key), [members]),
@@ -122,7 +112,7 @@ export function ListArrayInput<Item extends ObjectItem>(props: ArrayOfObjectsInp
 
       const scroll = instance.scrollElement
 
-      const handleScroll = () => {
+      const handleScroll = (evt?: Event) => {
         const containerElementTop = containerElement.current?.getBoundingClientRect().top ?? 0
         const parentElementTop = parentRef.current?.getBoundingClientRect().top ?? 0
 
@@ -131,7 +121,7 @@ export function ListArrayInput<Item extends ObjectItem>(props: ArrayOfObjectsInp
         // We pass a component that we have more control over to avoid issues when wrapped in custom component
         const itemOffset = Math.floor(parentElementTop - containerElementTop)
 
-        callback(scroll.scrollTop - itemOffset)
+        callback(scroll.scrollTop - itemOffset, Boolean(evt))
       }
 
       handleScroll()
@@ -234,7 +224,7 @@ export function ListArrayInput<Item extends ObjectItem>(props: ArrayOfObjectsInp
                   top: 0,
                   left: 0,
                   width: '100%',
-                  transform: `translateY(${items[0].start}px)`,
+                  transform: items.length > 0 ? `translateY(${items[0].start}px)` : undefined,
                 }}
               >
                 {items.map((virtualRow) => {
@@ -277,8 +267,8 @@ export function ListArrayInput<Item extends ObjectItem>(props: ArrayOfObjectsInp
       </UploadTargetCard>
       <ArrayFunctions
         onChange={onChange}
-        onItemAppend={handleAppend}
-        onItemPrepend={handlePrepend}
+        onItemAppend={onItemAppend}
+        onItemPrepend={onItemPrepend}
         onValueCreate={createProtoArrayValue}
         readOnly={readOnly}
         schemaType={schemaType}

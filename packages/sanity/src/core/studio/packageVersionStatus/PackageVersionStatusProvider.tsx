@@ -1,15 +1,16 @@
-import {Box, Button, Stack, useToast} from '@sanity/ui'
+import {Box, useToast} from '@sanity/ui'
 import {type ReactNode, useCallback, useEffect, useRef} from 'react'
-import {SANITY_VERSION} from 'sanity'
 import semver from 'semver'
 
+import {Button} from '../../../ui-components'
 import {hasSanityPackageInImportMap} from '../../environment/hasSanityPackageInImportMap'
 import {useTranslation} from '../../i18n'
+import {SANITY_VERSION} from '../../version'
 import {checkForLatestVersions} from './checkForLatestVersions'
 
 // How often to to check last timestamp. at 30 min, should fetch new version
 const REFRESH_INTERVAL = 1000 * 30 // every 30 seconds
-const SHOW_TOAST_FREQUENCY = 1000 * 60 * 30 //half hour
+const SHOW_TOAST_FREQUENCY = 1000 * 60 * 30 // half hour
 
 const currentPackageVersions: Record<string, string> = {
   sanity: SANITY_VERSION,
@@ -31,17 +32,15 @@ export function PackageVersionStatusProvider({children}: {children: ReactNode}) 
       id: 'new-package-available',
       title: t('package-version.new-package-available.title'),
       description: (
-        <Stack space={2} paddingBottom={2}>
-          <Box>{t('package-version.new-package-available.description')}</Box>
-          <Box>
-            <Button
-              aria-label={t('package-version.new-package-available.reload-button')}
-              onClick={onClick}
-              text={t('package-version.new-package-available.reload-button')}
-              tone={'primary'}
-            />
-          </Box>
-        </Stack>
+        <Box paddingTop={2}>
+          <Button
+            size="large"
+            aria-label={t('package-version.new-package-available.reload-button')}
+            onClick={onClick}
+            text={t('package-version.new-package-available.reload-button')}
+            tone={'primary'}
+          />
+        </Box>
       ),
       closable: true,
       status: 'info',

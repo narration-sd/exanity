@@ -1,8 +1,7 @@
 /* eslint-disable complexity, max-nested-callbacks, no-nested-ternary */
 import {ResetIcon as ClearIcon, SyncIcon as ReplaceIcon} from '@sanity/icons'
 import {type CrossDatasetReferenceSchemaType, type CrossDatasetReferenceValue} from '@sanity/types'
-import {Box, Card, Flex, Inline, Menu, Stack, useToast} from '@sanity/ui'
-import {FOCUS_TERMINATOR} from '@sanity/util/paths'
+import {Box, Card, Flex, Inline, Menu, Stack, useClickOutsideEvent, useToast} from '@sanity/ui'
 import {
   type FocusEvent,
   type KeyboardEvent,
@@ -25,7 +24,6 @@ import {useFeatureEnabled} from '../../../hooks'
 import {useTranslation} from '../../../i18n'
 import {getPublishedId, isNonNullable} from '../../../util'
 import {useDidUpdate} from '../../hooks/useDidUpdate'
-import {useOnClickOutside} from '../../hooks/useOnClickOutside'
 import {set, unset} from '../../patch'
 import {type ObjectInputProps} from '../../types'
 import {ReferenceMetadataLoadErrorAlertStrip} from '../ReferenceInput/ReferenceMetadataLoadFailure'
@@ -144,7 +142,8 @@ export function CrossDatasetReferenceInput(props: CrossDatasetReferenceInputProp
   const loadableReferenceInfo = useReferenceInfo(refDoc as FIXME, getReferenceInfoMemo)
   const featureInfo = useFeatureEnabled(CROSS_DATASET_FEATUREKEY)
 
-  const autocompletePopoverReferenceElementRef = useRef<HTMLDivElement | null>(null)
+  const [autocompletePopoverReferenceElement, setAutocompletePopoverReferenceElement] =
+    useState<HTMLDivElement | null>(null)
 
   const hasFocusAtRef = focusPath.length === 1 && focusPath[0] === '_ref'
 
@@ -177,11 +176,13 @@ export function CrossDatasetReferenceInput(props: CrossDatasetReferenceInputProp
   const handleFocus = useCallback(
     (event: FocusEvent<HTMLDivElement>) => {
       if (event.currentTarget === elementProps.ref.current) {
-        onPathFocus?.([FOCUS_TERMINATOR])
+        onPathFocus?.([])
       }
     },
     [elementProps.ref, onPathFocus],
   )
+
+  const handleBlur = useCallback((event: FocusEvent) => elementProps.onBlur(event), [elementProps])
 
   const handleAutocompleteFocus = useCallback(
     (event: FocusEvent<HTMLInputElement>) => {
@@ -267,15 +268,10 @@ export function CrossDatasetReferenceInput(props: CrossDatasetReferenceInputProp
   // --- click outside handling
   const clickOutsideBoundaryRef = useRef<HTMLDivElement | null>(null)
   const autocompletePortalRef = useRef<HTMLDivElement | null>(null)
-  const createButtonMenuPortalRef = useRef<HTMLDivElement | null>(null)
-  useOnClickOutside(
-    [clickOutsideBoundaryRef, autocompletePortalRef, createButtonMenuPortalRef],
-    () => {
-      if (hasFocusAtRef) {
-        onPathFocus([])
-      }
-    },
-  )
+  useClickOutsideEvent(hasFocusAtRef && (() => onPathFocus([])), () => [
+    clickOutsideBoundaryRef.current,
+    autocompletePortalRef.current,
+  ])
 
   return (
     <>
@@ -287,12 +283,12 @@ export function CrossDatasetReferenceInput(props: CrossDatasetReferenceInputProp
           {isEditing ? (
             <Stack space={2} ref={clickOutsideBoundaryRef}>
               <ChangeIndicator path={path} isChanged={changed} hasFocus={!!focused}>
-                <div ref={autocompletePopoverReferenceElementRef}>
+                <div ref={setAutocompletePopoverReferenceElement}>
                   <ReferenceAutocomplete
                     {...elementProps}
                     data-testid="autocomplete"
                     loading={searchState.isLoading}
-                    referenceElement={autocompletePopoverReferenceElementRef.current}
+                    referenceElement={autocompletePopoverReferenceElement}
                     portalRef={autocompletePortalRef}
                     id={inputId || ''}
                     options={searchState.hits.map((hit) => ({
@@ -346,6 +342,7 @@ export function CrossDatasetReferenceInput(props: CrossDatasetReferenceInputProp
                       __unstable_focusRing
                       tabIndex={0}
                       onFocus={handleFocus}
+                      onBlur={handleBlur}
                       ref={elementProps.ref}
                     >
                       <PreviewReferenceValue
@@ -366,6 +363,7 @@ export function CrossDatasetReferenceInput(props: CrossDatasetReferenceInputProp
                       __unstable_focusRing
                       tabIndex={0}
                       onFocus={handleFocus}
+                      onBlur={handleBlur}
                       ref={elementProps.ref}
                     >
                       <PreviewReferenceValue

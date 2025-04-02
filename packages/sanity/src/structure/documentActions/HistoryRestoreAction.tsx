@@ -1,4 +1,4 @@
-import {RestoreIcon} from '@sanity/icons'
+import {RevertIcon} from '@sanity/icons'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {
   type DocumentActionComponent,
@@ -12,8 +12,14 @@ import {useRouter} from 'sanity/router'
 import {structureLocaleNamespace} from '../i18n'
 
 /** @internal */
-export const HistoryRestoreAction: DocumentActionComponent = ({id, type, revision, onComplete}) => {
-  const {restore} = useDocumentOperation(id, type)
+export const HistoryRestoreAction: DocumentActionComponent = ({
+  id,
+  type,
+  revision,
+  onComplete,
+  release,
+}) => {
+  const {restore} = useDocumentOperation(id, type, release)
   const event = useDocumentOperationEvent(id, type)
   const {navigateIntent} = useRouter()
   const prevEvent = useRef(event)
@@ -59,23 +65,26 @@ export const HistoryRestoreAction: DocumentActionComponent = ({id, type, revisio
   const isRevisionInitial = revision === '@initial'
   const isRevisionLatest = revision === undefined // undefined means latest revision
 
-  if (isRevisionLatest) {
-    return null
-  }
+  return useMemo(() => {
+    if (isRevisionLatest) {
+      return null
+    }
 
-  return {
-    label: t('action.restore.label'),
-    color: 'primary',
-    onHandle: handle,
-    title: t(
-      isRevisionInitial
-        ? 'action.restore.disabled.cannot-restore-initial'
-        : 'action.restore.tooltip',
-    ),
-    icon: RestoreIcon,
-    dialog,
-    disabled: isRevisionInitial,
-  }
+    return {
+      label: t('action.restore.label'),
+      tone: 'caution',
+      onHandle: handle,
+      title: t(
+        isRevisionInitial
+          ? 'action.restore.disabled.cannot-restore-initial'
+          : 'action.restore.tooltip',
+      ),
+      icon: RevertIcon,
+      dialog,
+      disabled: isRevisionInitial,
+    }
+  }, [dialog, handle, isRevisionInitial, isRevisionLatest, t])
 }
 
 HistoryRestoreAction.action = 'restore'
+HistoryRestoreAction.displayName = 'HistoryRestoreAction'

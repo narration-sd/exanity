@@ -1,4 +1,4 @@
-import {describe, it} from '@jest/globals'
+import {describe, it} from 'vitest'
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /**
@@ -28,7 +28,7 @@ describe('image types', () => {
       validation: (Rule) => [
         Rule.required()
           .required()
-          .custom((value) => (value?.hotspot?.height ?? 0 > 2 ? 'Error' : true))
+          .custom((value) => ((value?.hotspot?.height ?? 0 > 2) ? 'Error' : true))
           .warning(),
         // @ts-expect-error greaterThan does not exist on imageRule
         Rule.greaterThan(5).error(),

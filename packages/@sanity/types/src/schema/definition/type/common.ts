@@ -1,6 +1,6 @@
-import {type ComponentType, type ReactElement, type ReactNode} from 'react'
+import {type ComponentType, type ReactNode} from 'react'
 
-import {type ConditionalProperty, type DeprecatedProperty} from '../../types'
+import {type ConditionalProperty, type DeprecatedProperty, type I18nTextRecord} from '../../types'
 import {type ObjectOptions} from './object'
 
 /** @public */
@@ -21,13 +21,41 @@ export type FieldGroupDefinition = {
   hidden?: ConditionalProperty
   icon?: ComponentType
   default?: boolean
+  i18n?: I18nTextRecord<'title'>
+}
+
+/**
+ * Options for configuring how Sanity Create interfaces with the type or field.
+ *
+ * @public
+ */
+export interface SanityCreateOptions {
+  /** Set to true to exclude a type or field from appearing in Sanity Create */
+  exclude?: boolean
+
+  /**
+   * A short description of what the type or field is used for.
+   * Purpose can be used to improve how and when content mapping uses the field.
+   * */
+  purpose?: string
+}
+
+/**
+ * `BaseOptions` applies to all type options.
+ *
+ *  It can be extended by interface declaration merging in plugins to provide generic options to all types and fields.
+ *
+ *  @public
+ *  */
+export interface BaseSchemaTypeOptions {
+  sanityCreate?: SanityCreateOptions
 }
 
 /** @public */
 export interface BaseSchemaDefinition {
   name: string
   title?: string
-  description?: string | ReactElement
+  description?: string | React.JSX.Element
   hidden?: ConditionalProperty
   readOnly?: ConditionalProperty
   icon?: ComponentType | ReactNode

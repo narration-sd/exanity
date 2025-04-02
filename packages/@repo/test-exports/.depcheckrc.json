@@ -1,13 +1,11 @@
 {
   "ignores": [
     "@repo/test-exports",
-    "@sanity/block-tools",
     "@sanity/cli",
     "@sanity/codegen",
     "@sanity/diff",
     "@sanity/migrate",
     "@sanity/mutator",
-    "@sanity/portable-text-editor",
     "@sanity/schema",
     "@sanity/types",
     "@sanity/util",

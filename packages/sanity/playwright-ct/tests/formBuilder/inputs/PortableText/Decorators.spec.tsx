@@ -39,7 +39,11 @@ const DEFAULT_DECORATORS = [
 
 test.describe('Portable Text Input', () => {
   test.describe('Decorators', () => {
-    test('Render default decorators with keyboard shortcuts', async ({mount, page}) => {
+    test('Render default decorators with keyboard shortcuts', async ({
+      mount,
+      page,
+      browserName,
+    }) => {
       const {
         getModifierKey,
         getFocusedPortableTextEditor,
@@ -52,7 +56,7 @@ test.describe('Portable Text Input', () => {
       await mount(<DecoratorsStory />)
       const $portableTextInput = await getFocusedPortableTextInput('field-defaultDecorators')
       const $pte = await getFocusedPortableTextEditor('field-defaultDecorators')
-      const modifierKey = getModifierKey()
+      const modifierKey = getModifierKey({browserName})
 
       for (const decorator of DEFAULT_DECORATORS) {
         if (decorator.hotkey) {

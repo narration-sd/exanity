@@ -1,16 +1,17 @@
+import {type Path} from '@sanity/types'
 import {isEqual, pathFor} from '@sanity/util/paths'
-import {createRef, type MutableRefObject, type ReactNode, useContext, useMemo, useRef} from 'react'
-import {type FormPatch, type Path, set} from 'sanity'
+import {type MutableRefObject, type ReactNode, useContext, useMemo, useRef} from 'react'
 import {PortableTextMemberItemsContext} from 'sanity/_singletons'
 
 import {pathToString} from '../../../../field'
 import {type FIXME} from '../../../../FIXME'
 import {FormInput} from '../../../components'
 import {isMemberArrayOfObjects} from '../../../members/object/fields/asserters'
+import {set} from '../../../patch/patch'
+import {type FormPatch} from '../../../patch/types'
 import {type ArrayOfObjectsItemMember, type ObjectFormNode} from '../../../store'
 import {type ObjectInputProps, type PortableTextInputProps} from '../../../types'
 import {isArrayOfObjectsFieldMember, isBlockType} from '../_helpers'
-import {type PortableTextEditorElement} from '../Compositor'
 import {type PortableTextMemberItem} from '../PortableTextInput'
 
 export function usePortableTextMemberItem(key: string): PortableTextMemberItem | undefined {
@@ -201,7 +202,6 @@ export function usePortableTextMemberItemsFromProps(
         key,
         member: item.member,
         node: item.node,
-        elementRef: createRef<PortableTextEditorElement | null>(),
         input,
       }
     })

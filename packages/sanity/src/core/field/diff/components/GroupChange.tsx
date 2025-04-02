@@ -1,12 +1,5 @@
-import {Box, Flex, Stack, Text, useClickOutside} from '@sanity/ui'
-import {
-  type HTMLAttributes,
-  type ReactElement,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from 'react'
+import {Box, Flex, Stack, Text, useClickOutsideEvent} from '@sanity/ui'
+import {type HTMLAttributes, useCallback, useContext, useMemo, useRef, useState} from 'react'
 import {DiffContext} from 'sanity/_singletons'
 
 import {Button, Popover} from '../../../../ui-components'
@@ -32,7 +25,7 @@ export function GroupChange(
     readOnly?: boolean
     hidden?: boolean
   } & HTMLAttributes<HTMLDivElement>,
-): ReactElement | null {
+): React.JSX.Element | null {
   const {change: group, readOnly, hidden, ...restProps} = props
   const {titlePath, changes, path: groupPath} = group
   const {path: diffPath} = useContext(DiffContext)
@@ -48,7 +41,7 @@ export function GroupChange(
 
   const docOperations = useDocumentOperation(documentId, schemaType.name) as FieldOperationsAPI
   const [confirmRevertOpen, setConfirmRevertOpen] = useState(false)
-  const [revertPopoverElement, setRevertPopoverElement] = useState<HTMLDivElement | null>(null)
+  const popoverRef = useRef<HTMLDivElement | null>(null)
 
   const [permissions, isPermissionsLoading] = useDocumentPairPermissions({
     id: documentId,
@@ -69,7 +62,10 @@ export function GroupChange(
     setConfirmRevertOpen(false)
   }, [])
 
-  useClickOutside(() => setConfirmRevertOpen(false), [revertPopoverElement])
+  useClickOutsideEvent(
+    () => setConfirmRevertOpen(false),
+    () => [popoverRef.current],
+  )
 
   const content = useMemo(
     () =>
@@ -77,10 +73,11 @@ export function GroupChange(
         <Stack
           space={1}
           as={GroupChangeContainer}
+          data-ui="group-change-content"
           data-revert-group-hover={isRevertButtonHovered ? '' : undefined}
           data-portable-text={isPortableText ? '' : undefined}
         >
-          <Stack as={ChangeListWrapper} space={5}>
+          <Stack as={ChangeListWrapper} space={5} data-ui="group-change-list">
             {changes.map((change) => (
               <ChangeResolver
                 key={change.key}
@@ -117,7 +114,7 @@ export function GroupChange(
               portal
               placement="left"
               open={confirmRevertOpen}
-              ref={setRevertPopoverElement}
+              ref={popoverRef}
             >
               <Box>
                 <RevertChangesButton

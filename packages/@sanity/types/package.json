@@ -1,6 +1,6 @@
 {
   "name": "@sanity/types",
-  "version": "3.47.0",
+  "version": "3.82.0",
   "description": "Type definitions for common Sanity data structures",
   "keywords": [
     "sanity",
@@ -23,6 +23,7 @@
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
   "sideEffects": false,
+  "type": "commonjs",
   "exports": {
     ".": {
       "source": "./src/index.ts",
@@ -33,7 +34,7 @@
     "./package.json": "./package.json"
   },
   "main": "./lib/index.js",
-  "module": "./lib/index.esm.js",
+  "module": "./lib/index.mjs",
   "types": "./lib/index.d.ts",
   "files": [
     "lib",
@@ -44,18 +45,24 @@
     "check:types": "tsc --project tsconfig.lib.json",
     "clean": "rimraf lib",
     "prepublishOnly": "turbo run build",
-    "test": "jest",
-    "test:watch": "jest --watchAll",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
     "watch": "pkg-utils watch"
   },
   "dependencies": {
-    "@sanity/client": "^6.20.0",
-    "@types/react": "^18.0.25"
+    "@sanity/client": "^6.28.4"
   },
   "devDependencies": {
-    "@jest/globals": "^29.7.0",
     "@repo/package.config": "workspace:*",
-    "@sanity/insert-menu": "1.0.6",
-    "rimraf": "^3.0.2"
+    "@repo/test-config": "workspace:*",
+    "@sanity/insert-menu": "1.1.8",
+    "@types/react": "^19.0.12",
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^18.3.1",
+    "rimraf": "^5.0.10",
+    "vitest": "^3.1.1"
+  },
+  "peerDependencies": {
+    "@types/react": "18 || 19"
   }
 }

@@ -3,7 +3,7 @@ import {
   keyGenerator,
   PortableTextEditor,
   type RenderBlockFunction,
-} from '@sanity/portable-text-editor'
+} from '@portabletext/editor'
 import {type CurrentUser, type PortableTextBlock} from '@sanity/types'
 import {type AvatarSize, focusFirstDescendant, focusLastDescendant, Stack} from '@sanity/ui'
 import {
@@ -34,6 +34,9 @@ const SCROLL_INTO_VIEW_OPTIONS: ScrollIntoViewOptions = {
   inline: 'center',
 }
 
+/**
+ * @internal
+ */
 export interface CommentInputProps {
   currentUser: CurrentUser
   expandOnFocus?: boolean
@@ -61,6 +64,9 @@ interface CommentDiscardDialogController {
   close: () => void
 }
 
+/**
+ * @internal
+ */
 export interface CommentInputHandle {
   blur: () => void
   discardDialogController: CommentDiscardDialogController

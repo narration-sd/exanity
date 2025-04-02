@@ -2,6 +2,46 @@
 // @ts-check
 'use strict'
 
+const noRestrictedImportPaths = [
+  {
+    name: '@sanity/ui',
+    importNames: [
+      'Button',
+      'ButtonProps',
+      'Dialog',
+      'DialogProps',
+      'ErrorBoundary',
+      'MenuButton',
+      'MenuButtonProps',
+      'MenuGroup',
+      'MenuGroupProps',
+      'MenuItem',
+      'MenuItemProps',
+      'Popover',
+      'PopoverProps',
+      'Tab',
+      'TabProps',
+      'Tooltip',
+      'TooltipProps',
+      'TooltipDelayGroupProvider',
+      'TooltipDelayGroupProviderProps',
+    ],
+    message:
+      'Please use the (more opinionated) exported components in sanity/src/ui-components instead.',
+  },
+  {
+    name: 'styled-components',
+    importNames: ['default'],
+    message: 'Please use `import {styled} from "styled-components"` instead.',
+  },
+  {
+    name: 'react',
+    importNames: ['default', 'createContext', 'createElement'],
+    message:
+      'Please use named imports, e.g. `import {useEffect, useMemo, type ComponentType} from "react"` instead.\nPlease place "context" in _singletons\nPlease use JSX instead of createElement, for example `createElement(Icon)` should be `<Icon />`',
+  },
+]
+
 const extensions = ['.cjs', '.mjs', '.js', '.jsx', '.ts', '.tsx']
 
 /** @type {import('eslint').Linter.Config} */
@@ -21,6 +61,7 @@ const config = {
     'plugin:react/jsx-runtime',
     'prettier',
     '@sanity/eslint-config-i18n',
+    'turbo',
   ],
   parser: '@typescript-eslint/parser',
   plugins: [
@@ -91,6 +132,8 @@ const config = {
             'sortOrder',
             'status',
             'group',
+            'textWeight',
+            'showChangesBy',
           ],
         },
       },
@@ -174,67 +217,34 @@ const config = {
     // Prefer local components vs certain @sanity/ui imports (in sanity package)
     {
       files: ['packages/sanity/**'],
+      excludedFiles: [
+        '**/__workshop__/**',
+        'packages/sanity/src/_singletons/**',
+        'packages/sanity/src/_createContext/**',
+      ],
       rules: {
         'no-restricted-imports': [
           'error',
           {
-            paths: [
-              {
-                name: '@sanity/ui',
-                importNames: [
-                  'Button',
-                  'ButtonProps',
-                  'Dialog',
-                  'DialogProps',
-                  'MenuButton',
-                  'MenuButtonProps',
-                  'MenuGroup',
-                  'MenuGroupProps',
-                  'MenuItem',
-                  'MenuItemProps',
-                  'Popover',
-                  'PopoverProps',
-                  'Tab',
-                  'TabProps',
-                  'Tooltip',
-                  'TooltipProps',
-                  'TooltipDelayGroupProvider',
-                  'TooltipDelayGroupProviderProps',
-                ],
-                message:
-                  'Please use the (more opinionated) exported components in sanity/src/ui-components instead.',
-              },
-              {
-                name: 'styled-components',
-                importNames: ['default'],
-                message: 'Please use `import {styled} from "styled-components"` instead.',
-              },
-              {
-                name: 'react',
-                importNames: ['default'],
-                message:
-                  'Please use named imports, e.g. `import {useEffect, useMemo, type ComponentType} from "react"` instead.',
-              },
-            ],
+            paths: noRestrictedImportPaths,
           },
         ],
       },
     },
-
-    // Prefer createContext in _singletons
     {
-      files: ['packages/sanity/src/**'],
-      excludedFiles: ['**/__workshop__/**', 'packages/sanity/src/_singletons/**'],
+      files: ['packages/sanity/src/core/**'],
+      excludedFiles: ['**/__workshop__/**'],
       rules: {
         'no-restricted-imports': [
           'error',
           {
             paths: [
               {
-                name: 'react',
-                importNames: ['createContext'],
-                message: 'Please place context in _singletons',
+                name: 'sanity',
+                message:
+                  'Please import from a relative path instead (since you are inside `packages/sanity/src/core`).',
               },
+              ...noRestrictedImportPaths,
             ],
           },
         ],
@@ -259,6 +269,17 @@ const config = {
       ],
       rules: {
         'react-compiler/react-compiler': 'off',
+      },
+    },
+    // Don't lint Turbo undeclared process env variables in code that is used in the CLI at runtime
+    {
+      files: [
+        'packages/@sanity/cli/**',
+        'packages/sanity/src/_internal/cli/**',
+        'packages/sanity/playwright-ct/**',
+      ],
+      rules: {
+        'turbo/no-undeclared-env-vars': 'off',
       },
     },
   ],

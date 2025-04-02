@@ -1,9 +1,9 @@
 import {
+  BinaryDocumentIcon,
   CodeIcon,
   CogIcon,
   EarthGlobeIcon,
   ImagesIcon,
-  JoystickIcon,
   PlugIcon,
   RocketIcon,
   SyncIcon,
@@ -232,7 +232,7 @@ export const structure: StructureResolver = (S, {schema, documentStore, i18n}) =
                     options: {
                       filter: '_type == "author" || _type == "book"',
                     },
-                  }),
+                  }).apiVersion('2023-07-28'),
                 ),
 
               // A singleton not using `documentListItem`, eg no built-in preview
@@ -401,14 +401,6 @@ export const structure: StructureResolver = (S, {schema, documentStore, i18n}) =
         types: typesInOptionGroup(S, schema, 'v3'),
       }),
 
-      _buildTypeGroup(S, schema, {
-        id: '3d',
-        title: '3D Demos',
-        icon: JoystickIcon,
-        types: typesInOptionGroup(S, schema, '3d'),
-        defaultLayout: 'detail',
-      }),
-
       S.divider(),
 
       _buildTypeGroup(S, schema, {
@@ -419,6 +411,17 @@ export const structure: StructureResolver = (S, {schema, documentStore, i18n}) =
       }),
 
       S.divider(),
+
+      S.listItem()
+        .title('Default ordering test')
+        .id('default-ordering')
+        .child(() =>
+          S.documentTypeList('species')
+            .defaultOrdering([{field: 'species', direction: 'asc'}])
+            .title('Species')
+            .id('default-ordering-list')
+            .filter('_type == $type'),
+        ),
 
       ...S.documentTypeListItems()
         .filter((listItem) => {
@@ -434,7 +437,6 @@ export const structure: StructureResolver = (S, {schema, documentStore, i18n}) =
             !EXTERNAL_PLUGIN_INPUT_TYPES.includes(id) &&
             !DEBUG_FIELD_GROUP_TYPES.includes(id) &&
             !typesInOptionGroup(S, schema, 'v3').includes(id) &&
-            !typesInOptionGroup(S, schema, '3d').includes(id) &&
             !TS_DOC_TYPES.includes(id)
           )
         })
@@ -455,6 +457,9 @@ export const structure: StructureResolver = (S, {schema, documentStore, i18n}) =
             ]),
           )
         }),
+      S.divider(),
+      S.documentTypeListItem('sanity.imageAsset').icon(ImagesIcon),
+      S.documentTypeListItem('sanity.fileAsset').icon(BinaryDocumentIcon),
     ])
 }
 

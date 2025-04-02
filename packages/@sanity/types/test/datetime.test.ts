@@ -1,4 +1,4 @@
-import {describe, it} from '@jest/globals'
+import {describe, it} from 'vitest'
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /**
@@ -24,7 +24,7 @@ describe('datetime types', () => {
             .min('2021-01-01')
             .max('2021-01-01')
             .required()
-            .custom((value) => (value?.indexOf('2021-01-01') ?? -1 >= 0 ? 'Error' : true))
+            .custom((value) => ((value?.indexOf('2021-01-01') ?? -1 >= 0) ? 'Error' : true))
             .warning(),
           // @ts-expect-error greaterThan does not exist on DatetimeRule
           Rule.greaterThan(5).error(),

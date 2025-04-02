@@ -40,6 +40,7 @@ export const FormInput = memo(function FormInput(
        * Whether to include the field around the input. Defaults to false
        */
       includeField?: boolean
+      includeItem?: boolean
     },
 ) {
   const absolutePath = useMemo(() => {
@@ -101,6 +102,34 @@ const FormInputInner = memo(function FormInputInner(
 
   const {t} = useTranslation()
 
+  const renderField: RenderFieldCallback = useCallback(
+    (fieldProps) => {
+      // we want to render the field around the input if either of these are true:
+      // 1. we have reached the destination path and the `includeField`-prop is passed as true
+      // 2. we are currently at a node somewhere below/inside the destination path
+      const atDestination = isEqual(absolutePath, fieldProps.path)
+      const shouldRenderField = atDestination
+        ? props.includeField
+        : startsWith(absolutePath, fieldProps.path)
+      return shouldRenderField ? destinationRenderField(fieldProps) : pass(fieldProps)
+    },
+    [absolutePath, destinationRenderField, props.includeField],
+  )
+
+  const renderItem: RenderArrayOfObjectsItemCallback = useCallback(
+    (itemProps) => {
+      // we want to render the item around the input if either of these are true:
+      // 1. we have reached the destination path and the `includeItem`-prop is passed as true
+      // 2. we are currently at a node somewhere below/inside the destination path
+      const atDestination = isEqual(absolutePath, itemProps.path)
+      const shouldRenderItem = atDestination
+        ? props.includeItem
+        : startsWith(absolutePath, itemProps.path)
+      return shouldRenderItem ? destinationRenderItem(itemProps) : pass(itemProps)
+    },
+    [absolutePath, destinationRenderItem, props.includeItem],
+  )
+
   const renderInput: RenderInputCallback = useCallback(
     (inputProps) => {
       const isDestinationReached =
@@ -120,6 +149,8 @@ const FormInputInner = memo(function FormInputInner(
       return (
         <FormInputInner
           {...inputProps}
+          includeField={props.includeField}
+          includeItem={props.includeItem}
           absolutePath={absolutePath}
           destinationRenderAnnotation={destinationRenderAnnotation}
           destinationRenderBlock={destinationRenderBlock}
@@ -140,33 +171,9 @@ const FormInputInner = memo(function FormInputInner(
       destinationRenderInput,
       destinationRenderItem,
       destinationRenderPreview,
+      props.includeField,
+      props.includeItem,
     ],
-  )
-
-  const renderField: RenderFieldCallback = useCallback(
-    (fieldProps) => {
-      // we want to render the field around the input if either of these are true:
-      // 1. we have reached the destination path and the `includeField`-prop is passed as true
-      // 2. we are currently at a node somewhere below/inside the destination path
-      const shouldRenderField =
-        startsWith(absolutePath, fieldProps.path) &&
-        (props.includeField || !isEqual(absolutePath, fieldProps.path))
-      return shouldRenderField ? destinationRenderField(fieldProps) : pass(fieldProps)
-    },
-    [absolutePath, destinationRenderField, props.includeField],
-  )
-
-  const renderItem: RenderArrayOfObjectsItemCallback = useCallback(
-    (itemProps) => {
-      // we want to render the item around the input if either of these are true:
-      // 1. we have reached the destination path and the `includeItem`-prop is passed as true
-      // 2. we are currently at a node somewhere below/inside the destination path
-      const shouldRenderField =
-        startsWith(absolutePath, itemProps.path) &&
-        (props.includeItem || !isEqual(absolutePath, itemProps.path))
-      return shouldRenderField ? destinationRenderItem(itemProps) : pass(itemProps)
-    },
-    [absolutePath, destinationRenderItem, props.includeItem],
   )
 
   const renderBlock: RenderBlockCallback = useCallback(
@@ -249,11 +256,19 @@ const FormInputInner = memo(function FormInputInner(
 
   if (isObjectInputProps(props)) {
     const childPath = trimLeft(props.path, absolutePath)
+
     const fieldMember = props.members.find(
       (member): member is FieldMember => member.kind == 'field' && childPath[0] === member.name,
     )
 
-    if (!fieldMember) {
+    const fieldSetMember = props.members
+      .filter((member) => member.kind === 'fieldSet')
+      .flatMap((member) => (member.kind === 'fieldSet' && member.fieldSet?.members) || [])
+      .find((m): m is FieldMember => m.kind === 'field' && m.name === childPath[0])
+
+    const member = fieldMember || fieldSetMember
+
+    if (!member) {
       const fieldName =
         typeof childPath[0] === 'string' ? childPath[0] : JSON.stringify(childPath[0])
 
@@ -262,7 +277,7 @@ const FormInputInner = memo(function FormInputInner(
 
     return (
       <MemberField
-        member={fieldMember}
+        member={member}
         renderAnnotation={renderAnnotation}
         renderBlock={renderBlock}
         renderInput={renderInput}

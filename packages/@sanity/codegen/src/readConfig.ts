@@ -8,13 +8,14 @@ export const configDefintion = z.object({
     .string()
     .or(z.array(z.string()))
     .default([
-      './src/**/*.{ts,tsx,js,jsx,mjs,cjs}',
+      './src/**/*.{ts,tsx,js,jsx,mjs,cjs,astro}',
       './app/**/*.{ts,tsx,js,jsx,mjs,cjs}',
       './sanity/**/*.{ts,tsx,js,jsx,mjs,cjs}',
     ]),
   schema: z.string().default('./schema.json'),
   generates: z.string().default('./sanity.types.ts'),
   formatGeneratedCode: z.boolean().default(true),
+  overloadClientMethods: z.boolean().default(true),
 })
 
 export type CodegenConfig = z.infer<typeof configDefintion>

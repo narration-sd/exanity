@@ -1,10 +1,11 @@
 import {PublishIcon} from '@sanity/icons'
 import {useTelemetry} from '@sanity/telemetry/react'
 import {isValidationErrorMarker} from '@sanity/types'
-import {useCallback, useEffect, useState} from 'react'
+import {useCallback, useEffect, useMemo, useState} from 'react'
 import {
   type DocumentActionComponent,
   InsufficientPermissionsMessage,
+  isPublishedId,
   type TFunction,
   useCurrentUser,
   useDocumentOperation,
@@ -47,12 +48,12 @@ function AlreadyPublished({publishedAt}: {publishedAt: string}) {
 /** @internal */
 // eslint-disable-next-line complexity
 export const PublishAction: DocumentActionComponent = (props) => {
-  const {id, type, liveEdit, draft, published} = props
+  const {id, type, liveEdit, draft, published, release} = props
   const [publishState, setPublishState] = useState<'publishing' | 'published' | null>(null)
   const {publish} = useDocumentOperation(id, type)
   const validationStatus = useValidationStatus(id, type)
   const syncState = useSyncState(id, type)
-  const {changesOpen, onHistoryOpen, documentId, documentType} = useDocumentPane()
+  const {changesOpen, documentId, documentType, value} = useDocumentPane()
   const editState = useEditState(documentId, documentType)
   const {t} = useTranslation(structureLocaleNamespace)
 
@@ -111,19 +112,14 @@ export const PublishAction: DocumentActionComponent = (props) => {
 
   useEffect(() => {
     const didPublish = publishState === 'publishing' && !hasDraft
-    if (didPublish) {
-      if (changesOpen) {
-        // Re-open the panel
-        onHistoryOpen()
-      }
-    }
+
     const nextState = didPublish ? 'published' : null
     const delay = didPublish ? 200 : 4000
     const timer = setTimeout(() => {
       setPublishState(nextState)
     }, delay)
     return () => clearTimeout(timer)
-  }, [changesOpen, publishState, hasDraft, onHistoryOpen])
+  }, [changesOpen, publishState, hasDraft])
 
   const telemetry = useTelemetry()
 
@@ -152,59 +148,93 @@ export const PublishAction: DocumentActionComponent = (props) => {
     doPublish,
   ])
 
-  if (liveEdit) {
-    return {
-      tone: 'default',
-      icon: PublishIcon,
-      label: t('action.publish.live-edit.label'),
-      title: t('action.publish.live-edit.tooltip'),
-      disabled: true,
+  return useMemo(() => {
+    if (release) {
+      // Version documents are not publishable by this action, they should be published as part of a release
+      return null
     }
-  }
-
-  if (!isPermissionsLoading && !permissions?.granted) {
-    return {
-      tone: 'default',
-      icon: PublishIcon,
-      label: 'Publish',
-      title: (
-        <InsufficientPermissionsMessage context="publish-document" currentUser={currentUser} />
-      ),
-      disabled: true,
+    if (liveEdit) {
+      // Live edit documents are not publishable by this action, they are published automatically
+      return null
     }
-  }
 
-  const disabled = Boolean(
-    publishScheduled ||
-      editState?.transactionSyncLock?.enabled ||
-      publishState === 'publishing' ||
-      publishState === 'published' ||
-      hasValidationErrors ||
-      publish.disabled,
-  )
+    /**
+     * When draft is null, if not a published or version document
+     * then it means the draft is yet to be saved - in this case don't disabled
+     * the publish button due to ALREADY_PUBLISHED reason
+     */
+    if (isPublishedId(value._id) && draft !== null) {
+      return {
+        tone: 'default',
+        icon: PublishIcon,
+        label: t('action.publish.label'),
+        title: getDisabledReason('ALREADY_PUBLISHED', published?._updatedAt, t),
+        disabled: true,
+      }
+    }
 
-  return {
-    disabled: disabled || isPermissionsLoading,
-    tone: 'default',
-    label:
+    if (!isPermissionsLoading && !permissions?.granted) {
+      return {
+        tone: 'default',
+        icon: PublishIcon,
+        label: t('action.publish.label'),
+        title: (
+          <InsufficientPermissionsMessage context="publish-document" currentUser={currentUser} />
+        ),
+        disabled: true,
+      }
+    }
+
+    const disabled = Boolean(
+      publishScheduled ||
+        editState?.transactionSyncLock?.enabled ||
+        publishState === 'publishing' ||
+        publishState === 'published' ||
+        hasValidationErrors ||
+        publish.disabled,
+    )
+
+    return {
+      disabled: disabled || isPermissionsLoading,
+      tone: 'default',
+      label:
+        // eslint-disable-next-line no-nested-ternary
+        publishState === 'published'
+          ? t('action.publish.published.label')
+          : publishScheduled || publishState === 'publishing'
+            ? t('action.publish.running.label')
+            : t('action.publish.draft.label'),
+      // @todo: Implement loading state, to show a `<Button loading />` state
+      // loading: publishScheduled || publishState === 'publishing',
+      icon: PublishIcon,
       // eslint-disable-next-line no-nested-ternary
-      publishState === 'published'
-        ? t('action.publish.published.label')
-        : publishScheduled || publishState === 'publishing'
-          ? t('action.publish.running.label')
-          : t('action.publish.draft.label'),
-    // @todo: Implement loading state, to show a `<Button loading />` state
-    // loading: publishScheduled || publishState === 'publishing',
-    icon: PublishIcon,
-    // eslint-disable-next-line no-nested-ternary
-    title: publishScheduled
-      ? t('action.publish.waiting')
-      : publishState === 'published' || publishState === 'publishing'
-        ? null
-        : title,
-    shortcut: disabled || publishScheduled ? null : 'Ctrl+Alt+P',
-    onHandle: handle,
-  }
+      title: publishScheduled
+        ? t('action.publish.waiting')
+        : publishState === 'published' || publishState === 'publishing'
+          ? null
+          : title,
+      shortcut: disabled || publishScheduled ? null : 'Ctrl+Alt+P',
+      onHandle: handle,
+    }
+  }, [
+    release,
+    liveEdit,
+    value._id,
+    draft,
+    isPermissionsLoading,
+    permissions?.granted,
+    publishScheduled,
+    editState?.transactionSyncLock?.enabled,
+    publishState,
+    hasValidationErrors,
+    publish.disabled,
+    t,
+    title,
+    handle,
+    published?._updatedAt,
+    currentUser,
+  ])
 }
 
 PublishAction.action = 'publish'
+PublishAction.displayName = 'PublishAction'
