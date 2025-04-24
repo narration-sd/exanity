@@ -1,8 +1,8 @@
 import {expect} from '@playwright/test'
-import {test} from '@sanity/test'
 
 import {withDefaultClient} from '../../helpers'
-import {expectPublishedStatus} from '../../helpers/documentStatusAssertions'
+import {expectEditedStatus, expectPublishedStatus} from '../../helpers/documentStatusAssertions'
+import {test} from '../../studio-test'
 
 withDefaultClient((context) => {
   test(`value can be changed after the document has been published`, async ({
@@ -27,7 +27,7 @@ withDefaultClient((context) => {
       ].map((document) => context.client.createIfNotExists(document)),
     )
 
-    await createDraftDocument('/test/content/book')
+    await createDraftDocument('/content/book')
 
     // Reference fields don't seem to be given a test id, so this selection can't be more specific
     // at the moment e.g. `page.getByTestId('field-author')`.
@@ -35,7 +35,7 @@ withDefaultClient((context) => {
     const paneFooter = page.getByTestId('pane-footer')
     const publishButton = page.getByTestId('action-publish')
     const authorListbox = page.locator('#author-listbox')
-    const popover = page.locator("[data-ui='Popover']")
+    const popover = page.getByTestId('autocomplete-popover')
 
     // Open the Author reference input.
     await referenceInput.getByLabel('Open').click()
@@ -46,6 +46,9 @@ withDefaultClient((context) => {
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Enter')
 
+    // wait for the edit to finish
+    await expectEditedStatus(paneFooter)
+
     // Wait for the document to be published.
     publishButton.click()
     await expectPublishedStatus(paneFooter)
@@ -53,7 +56,8 @@ withDefaultClient((context) => {
     // Open the Author reference input.
     await page.locator('#author-menuButton').click()
     await page.getByRole('menuitem').getByText('Replace').click()
-    await referenceInput.getByLabel('Open').click()
+    // instead of opening with the dropdown button, open with the space key
+    await referenceInput.getByTestId('autocomplete').press('Space')
     await expect(popover).toBeVisible()
     await expect(authorListbox).toBeVisible()
 
@@ -61,6 +65,9 @@ withDefaultClient((context) => {
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Enter')
     await expect(paneFooter).toContainText('Saved', {timeout: 30_000})
+
+    // wait for the edit to finish
+    await expectEditedStatus(paneFooter)
 
     // Wait for the document to be published.
     publishButton.click()
@@ -76,7 +83,7 @@ withDefaultClient((context) => {
     test.slow()
     const originalTitle = 'Initial Doc'
 
-    await createDraftDocument('/test/content/input-standard;referenceTest')
+    await createDraftDocument('/content/input-standard;referenceTest')
     page.getByTestId('string-input').fill(originalTitle)
 
     await expect(
@@ -114,7 +121,7 @@ withDefaultClient((context) => {
     const originalTitle = 'Initial Doc'
 
     await page.goto(
-      `/test/intent/create/template=referenceTest;type=referenceTest;version=r56VOgCmW/?perspective=r56VOgCmW`,
+      `/intent/create/template=referenceTest;type=referenceTest;version=r56VOgCmW/?perspective=r56VOgCmW`,
     )
 
     page.getByTestId('string-input').fill(originalTitle)
@@ -157,7 +164,7 @@ withDefaultClient((context) => {
     const originalTitle = 'Initial Doc'
     const documentStatus = page.getByTestId('pane-footer-document-status')
 
-    await createDraftDocument('/test/content/input-debug;simpleReferences')
+    await createDraftDocument('/content/input-debug;simpleReferences')
     page.getByTestId('string-input').fill(originalTitle)
 
     /** create reference */
@@ -205,7 +212,7 @@ withDefaultClient((context) => {
     const originalTitle = 'Initial Doc'
     const documentStatus = page.getByTestId('pane-footer-document-status')
 
-    await createDraftDocument('/test/content/input-debug;simpleReferences')
+    await createDraftDocument('/content/input-debug;simpleReferences')
     await expect(page.getByTestId('string-input')).toBeVisible()
     await page.getByTestId('string-input').fill(originalTitle)
 
