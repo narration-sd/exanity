@@ -1,6 +1,6 @@
 {
   "name": "sanity-starter-studio",
-  "version": "0.0.0",
+  "version": "3.95.0",
   "private": true,
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
@@ -8,15 +8,16 @@
     "build": "../.bin/sanity build",
     "clean": "rimraf .sanity dist",
     "dev": "../.bin/sanity dev --port 3337",
-    "lint": "eslint --cache .",
+    "lint": "eslint .",
     "start": "../.bin/sanity start --port 3337"
   },
   "dependencies": {
-    "babel-plugin-react-compiler": "19.0.0-beta-e993439-20250405",
-    "react": "^18.3.1",
-    "react-compiler-runtime": "19.0.0-beta-e993439-20250405",
-    "react-dom": "^18.3.1",
+    "@repo/eslint-config": "workspace:*",
+    "babel-plugin-react-compiler": "19.1.0-rc.2",
+    "react": "catalog:react18",
+    "react-compiler-runtime": "19.1.0-rc.2",
+    "react-dom": "catalog:react18",
     "sanity": "workspace:*",
-    "styled-components": "^6.1.15"
+    "styled-components": "catalog:"
   }
 }

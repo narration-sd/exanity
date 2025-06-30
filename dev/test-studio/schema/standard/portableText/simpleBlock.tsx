@@ -3,24 +3,6 @@ import {defineArrayMember, defineType} from 'sanity'
 
 import {CalloutPreview} from './components/CalloutPreview'
 
-const linkType = defineArrayMember({
-  type: 'object',
-  name: 'link',
-  fields: [
-    {
-      type: 'string',
-      name: 'href',
-      validation: (Rule) => Rule.uri({scheme: ['http', 'https']}).required(),
-    },
-  ],
-  options: {
-    modal: {
-      type: 'popover',
-      width: 2,
-    },
-  },
-})
-
 const myStringType = defineArrayMember({
   type: 'object',
   name: 'test',
@@ -39,6 +21,12 @@ export default defineType({
       name: 'title',
       title: 'Title',
       type: 'string',
+    },
+    {
+      name: 'slug',
+      title: 'Slug',
+      type: 'slug',
+      options: {source: 'title'},
     },
     {
       name: 'isMain',

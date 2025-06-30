@@ -4,7 +4,7 @@ import {describe, expect, it, vi} from 'vitest'
 
 import {getByDataUi} from '../../../../../../test/setup/customQueries'
 import {createTestProvider} from '../../../../../../test/testUtils/TestProvider'
-import {useTimeZoneMockReturn} from '../../../../scheduledPublishing/hooks/__tests__/__mocks__/useTimeZone.mock'
+import {useTimeZoneMockReturn} from '../../../../hooks/__mocks__/useTimeZone.mock'
 import {
   activeASAPRelease,
   activeUndecidedRelease,
@@ -15,7 +15,7 @@ import {type TableRelease} from '../../overview/ReleasesOverview'
 import {ReleaseTime} from '../ReleaseTime'
 
 vi.mock(
-  '../../../scheduledPublishing/hooks/useTimeZone',
+  '../../../hooks/useTimeZone',
   vi.fn(() => useTimeZoneMockReturn),
 )
 

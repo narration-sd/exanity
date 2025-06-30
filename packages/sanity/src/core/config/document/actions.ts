@@ -4,7 +4,7 @@ import {
 } from '@sanity/ui'
 import {type ComponentType, type ReactNode} from 'react'
 
-import {type EditStateFor} from '../../store/_legacy'
+import {type EditStateFor, type MapDocument} from '../../store/_legacy'
 
 /**
  * @hidden
@@ -19,6 +19,53 @@ export interface ActionComponent<ActionProps> {
 export interface DocumentActionProps extends EditStateFor {
   revision?: string
   onComplete: () => void
+  /**
+   * Whether the initial value has been resolved.
+   */
+  initialValueResolved: boolean
+}
+
+type SanityDefinedAction =
+  | 'delete'
+  | 'discardChanges'
+  | 'discardVersion'
+  | 'duplicate'
+  | 'restore'
+  | 'publish'
+  | 'unpublish'
+  | 'unpublishVersion'
+  | 'linkToCanvas'
+  | 'editInCanvas'
+  | 'unlinkFromCanvas'
+  | 'schedule'
+
+const SANITY_DEFINED_ACTIONS: Record<SanityDefinedAction, SanityDefinedAction> = {
+  delete: 'delete',
+  discardChanges: 'discardChanges',
+  discardVersion: 'discardVersion',
+  duplicate: 'duplicate',
+  restore: 'restore',
+  publish: 'publish',
+  unpublish: 'unpublish',
+  unpublishVersion: 'unpublishVersion',
+  linkToCanvas: 'linkToCanvas',
+  editInCanvas: 'editInCanvas',
+  unlinkFromCanvas: 'unlinkFromCanvas',
+  schedule: 'schedule',
+}
+
+/**
+ * @beta
+ * Indicates whether the action is a Sanity defined action or a custom action.
+ *
+ * @param action - The action to check.
+ * @returns `true` if the action is a Sanity defined action, `false` otherwise.
+ */
+export const isSanityDefinedAction = (
+  action: DocumentActionDescription & {action?: DocumentActionComponent['action']},
+): boolean => {
+  if (!action.action) return false
+  return SANITY_DEFINED_ACTIONS[action.action] !== undefined
 }
 
 /**
@@ -43,12 +90,28 @@ export interface DocumentActionComponent extends ActionComponent<DocumentActionP
    * })
    * ```
    */
-  action?: 'delete' | 'discardChanges' | 'duplicate' | 'restore' | 'publish' | 'unpublish'
+  action?: SanityDefinedAction
   /**
    * For debugging purposes
    */
   displayName?: string
 }
+
+/**
+ * @hidden
+ * @beta
+ */
+export interface DuplicateActionProps extends DocumentActionProps {
+  mapDocument?: MapDocument
+}
+
+/**
+ * @hidden
+ * @beta
+ */
+export interface DuplicateDocumentActionComponent
+  extends ActionComponent<DuplicateActionProps>,
+    Pick<DocumentActionComponent, 'action' | 'displayName'> {}
 
 /**
  * @hidden

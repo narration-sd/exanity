@@ -2,10 +2,9 @@ import {type ComponentType} from 'react'
 
 import {type SanityDocument} from '../documents'
 import {type Reference} from '../reference'
-import {type SchemaType} from '../schema'
+import {type FileSchemaType, type ImageSchemaType, type SchemaType} from '../schema'
 
 /** @public */
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface EmptyProps {}
 
 /** @public */
@@ -154,6 +153,9 @@ export interface AssetSourceComponentProps {
   selectedAssets: Asset[]
   onClose: () => void
   onSelect: (assetFromSource: AssetFromSource[]) => void
+  schemaType?: ImageSchemaType | FileSchemaType
+  /** @beta */
+  uploader?: AssetSourceUploader
 }
 
 /** @public */
@@ -166,6 +168,9 @@ export type AssetMetadataType =
   | 'blurhash'
   | 'none'
 
+/** @beta */
+export type AssetSourceUploaderClass = new (...args: any[]) => AssetSourceUploader
+
 /** @public */
 export interface AssetSource {
   name: string
@@ -176,7 +181,7 @@ export interface AssetSource {
   component: ComponentType<AssetSourceComponentProps>
   icon?: ComponentType<EmptyProps>
   /** @beta */
-  uploader?: AssetSourceUploader
+  Uploader?: AssetSourceUploaderClass
 }
 
 /** @beta */

@@ -17,13 +17,11 @@ import {type Path} from '@sanity/types'
 import {BoundaryElementProvider, useBoundaryElement, useGlobalKeyDown, useLayer} from '@sanity/ui'
 // eslint-disable-next-line camelcase
 import {getTheme_v2} from '@sanity/ui/theme'
-import {omit} from 'lodash'
 import {type ReactNode, useCallback, useMemo} from 'react'
 import {css, styled} from 'styled-components'
 
 import {TooltipDelayGroupProvider} from '../../../../ui-components'
 import {useTranslation} from '../../../i18n'
-import {type PortableTextInputProps} from '../../types/inputProps'
 import {useFormBuilder} from '../../useFormBuilder'
 import {EditableCard, EditableWrapper, Root, Scroller, ToolbarCard} from './Editor.styles'
 import {useScrollSelectionIntoView} from './hooks/useScrollSelectionIntoView'
@@ -53,6 +51,7 @@ interface EditorProps {
   initialSelection?: EditorSelection
   isActive: boolean
   isFullscreen: boolean
+  isOneLine: boolean
   onCopy?: OnCopyFn
   onItemOpen: (path: Path) => void
   onPaste?: OnPasteFn
@@ -63,7 +62,6 @@ interface EditorProps {
   renderAnnotation: RenderAnnotationFunction
   renderBlock: RenderBlockFunction
   renderChild: RenderChildFunction
-  renderEditable?: PortableTextInputProps['renderEditable']
   scrollElement: HTMLElement | null
   setPortalElement?: (portalElement: HTMLDivElement | null) => void
   setScrollElement: (scrollElement: HTMLElement | null) => void
@@ -92,6 +90,7 @@ export function Editor(props: EditorProps): ReactNode {
     initialSelection,
     isActive,
     isFullscreen,
+    isOneLine,
     onCopy,
     onItemOpen,
     onPaste,
@@ -102,7 +101,6 @@ export function Editor(props: EditorProps): ReactNode {
     renderAnnotation,
     renderBlock,
     renderChild,
-    renderEditable,
     scrollElement,
     setPortalElement,
     setScrollElement,
@@ -161,13 +159,8 @@ export function Editor(props: EditorProps): ReactNode {
       spellCheck,
       'style': noOutlineStyle,
     } satisfies PortableTextEditableProps
-    const defaultRender = (defaultRenderProps: PortableTextEditableProps) => (
-      <PortableTextEditable {...editableProps} {...omit(defaultRenderProps, ['renderDefault'])} />
-    )
-    if (renderEditable) {
-      return renderEditable({...editableProps, renderDefault: defaultRender})
-    }
-    return defaultRender(editableProps)
+
+    return <PortableTextEditable {...editableProps} />
   }, [
     ariaDescribedBy,
     elementRef,
@@ -179,7 +172,6 @@ export function Editor(props: EditorProps): ReactNode {
     renderAnnotation,
     renderBlock,
     renderChild,
-    renderEditable,
     renderPlaceholder,
     scrollSelectionIntoView,
     spellCheck,
@@ -196,7 +188,7 @@ export function Editor(props: EditorProps): ReactNode {
   const collapsibleToolbar = id === FORM_BUILDER_DEFAULT_ID
 
   return (
-    <Root data-fullscreen={isFullscreen} data-testid="pt-editor">
+    <Root data-fullscreen={isFullscreen} data-testid="pt-editor" $isOneLine={isOneLine}>
       {isActive && !hideToolbar && (
         <TooltipDelayGroupProvider>
           <ToolbarCard data-testid="pt-editor__toolbar-card" shadow={1}>
@@ -217,6 +209,7 @@ export function Editor(props: EditorProps): ReactNode {
           <div>
             <EditableWrapper
               $isFullscreen={isFullscreen}
+              $isOneLine={isOneLine}
               tone={readOnly ? 'transparent' : 'default'}
             >
               <BoundaryElementProvider element={isFullscreen ? scrollElement : boundaryElement}>

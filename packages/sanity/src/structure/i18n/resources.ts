@@ -18,7 +18,9 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'action.delete.label': 'Delete',
   /** Label for the "Delete" document action while the document is being deleted */
   'action.delete.running.label': 'Deleting…',
-
+  /** Tooltip when action is disabled because the document is linked to Canvas */
+  'action.disabled-by-canvas.tooltip':
+    'Some document actions are disabled for documents linked to Canvas',
   /** Message prompting the user to confirm discarding changes */
   'action.discard-changes.confirm-dialog.confirm-discard-changes':
     'Are you sure you want to discard all changes since last published?',
@@ -93,6 +95,15 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   /** Description for the archived release banner, rendered when viewing the history of a version document from the publihed view */
   'banners.archived-release.description':
     'This document version belongs to the archived <VersionBadge>{{title}}</VersionBadge> release',
+  /** The explanation displayed when a user attempts to create a new published document, but the schema type doesn't support live-editing */
+  'banners.choose-new-document-destination.cannot-create-published-document':
+    'Cannot create a published document.',
+  /** The prompt displayed when a user must select a different perspective in order to create a document */
+  'banners.choose-new-document-destination.choose-destination':
+    'Choose a destination for this document:',
+  /** The explanation displayed when a user attempts to create a new document in a release, but the selected release is inactive */
+  'banners.choose-new-document-destination.release-inactive':
+    'The <VersionBadge>{{title}}</VersionBadge> release is not active.',
   /** The text for the restore button on the deleted document banner */
   'banners.deleted-document-banner.restore-button.text': 'Restore most recent revision',
   /** The text content for the deleted document banner */
@@ -167,6 +178,9 @@ const structureLocaleStrings = defineLocalesResources('structure', {
     'Please hold tight while the document is added to the release. It should not take longer than a few seconds.',
   /** Title of toast that will appear in case of latency between the user adding a document to a release and the UI reflecting it */
   'banners.release.waiting.title': 'Adding document to release…',
+  /** The text for the revision not found banner */
+  'banners.revision-not-found.description':
+    "We couldn't find the document revision selected, please select another entry from the history list.",
   /** The text content for the unpublished document banner when is part of a release */
   'banners.unpublished-release-banner.text':
     'This document will be unpublished as part of the <VersionBadge>{{title}}</VersionBadge> release',
@@ -190,6 +204,27 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   /** The title for the close group button on the split pane on the document panel header */
   'buttons.split-pane-close-group-button.title': 'Close pane group',
 
+  /** The text for the canvas linked banner action button */
+  'canvas.banner.edit-in-canvas-action': 'Edit in Canvas',
+  /** The text for the canvas linked banner when the document is a draft */
+  'canvas.banner.linked-text.draft': 'This draft document is linked to Canvas',
+  /** The text for the canvas linked banner when the document is a live document */
+  'canvas.banner.linked-text.published': 'This live document is linked to Canvas',
+  /** The text for the canvas linked banner when the document is a version document */
+  'canvas.banner.linked-text.version': 'This version document is linked to Canvas',
+  /** The text for the canvas linked banner popover button */
+  'canvas.banner.popover-button-text': 'Learn more',
+  /** The description for the canvas linked banner popover */
+  'canvas.banner.popover-description':
+    'Canvas lets you author in a free-form editor that automatically maps back to the Studio as structured content - as you type.',
+  /** The heading for the canvas linked banner popover */
+  'canvas.banner.popover-heading': 'Idea first authoring',
+  /** The description for the changes banner */
+  'changes.banner.description':
+    'Showing the history for the <strong>{{perspective}}</strong> version of this document.',
+  /** The tooltip for the changes banner */
+  'changes.banner.tooltip':
+    'This view shows the changes that occurred in a specific version of this document. Select a different version to see its changes',
   /** The label used in the changes inspector for the from selector */
   'changes.from.label': 'From',
   /* The label for the history tab in the changes inspector*/
@@ -209,6 +244,9 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   /** The error message shown when the previous document for comparison could not be extracted from the URL */
   'compare-version.error.invalidPreviousDocumentParam':
     'The previous document parameter is invalid.',
+  /** The text for the tooltip when the "Compare versions" action for a document is disabled */
+  'compare-versions.menu-item.disabled-reason':
+    'There are no other versions of this document to compare.',
   /** The text for the "Compare versions" action for a document */
   'compare-versions.menu-item.title': 'Compare versions',
   /** The string used to label draft documents */
@@ -345,6 +383,18 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   /** The title of the sync lock toast on the form view */
   'document-view.form-view.sync-lock-toast.title': 'Syncing document…',
 
+  /** The description for the document favorite action */
+  'document.favorites.add-to-favorites': 'Add to favorites',
+  /** The description for the document unfavorite action */
+  'document.favorites.remove-from-favorites': 'Remove from favorites',
+
+  /** The description for the events inspector when we can't load the document so we default to compare with published */
+  'events.compare-with-published.description':
+    "We're unable to load the changes for this document, probably due to history retention policy of your plan, this shows you how the <strong>{{version}}</strong> version compares to the <strong>published</strong> version.",
+
+  /** The title for the events inspector when we can't load the document so we default to compare with published */
+  'events.compare-with-published.title': 'Comparing with published',
+
   /**The title for the menu items that will be shown when expanding a publish release event to inspect the document */
   'events.inspect.release': 'Inspect <VersionBadge>{{releaseTitle}}</VersionBadge> document',
   /**The title for the menu items that will be shown when expanding a publish draft event to inspect the draft document*/
@@ -407,10 +457,22 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'panes.document-header-title.new.text': 'New {{schemaType}}',
   /** The text used in the document header title if no other title can be determined */
   'panes.document-header-title.untitled.text': 'Untitled',
+  /** The help text saying that we have given up on automatic retry */
+  'panes.document-list-pane.error.max-retries-attempted':
+    'Not automatically retrying after {{count}} unsuccessful attempts.',
+  /** The help text saying that we'll retry fetching the document list */
+  'panes.document-list-pane.error.retrying': 'Retrying…',
   /** The error text on the document list pane */
-  'panes.document-list-pane.error.text': 'Error: <Code>{{error}}</Code>',
+  'panes.document-list-pane.error.text': 'Encountered an error while fetching documents.',
+  /** The error text on the document list pane */
+  'panes.document-list-pane.error.text.dev': 'Error: <Code>{{error}}</Code>',
+  /** The error text on the document list pane if the browser appears to be offlline */
+  'panes.document-list-pane.error.text.offline': 'The Internet connection appears to be offline.',
   /** The error title on the document list pane */
   'panes.document-list-pane.error.title': 'Could not fetch list items',
+  /** The help text saying that we'll retry fetching the document list */
+  'panes.document-list-pane.error.will-retry-automatically_one': 'Retrying…',
+  'panes.document-list-pane.error.will-retry-automatically_other': 'Retrying… (#{{count}}).',
   /** The text of the document list pane if more than a maximum number of documents are returned */
   'panes.document-list-pane.max-items.text': 'Displaying a maximum of {{limit}} documents',
   /** The text of the document list pane if no documents are found for a specified type */
@@ -419,6 +481,8 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'panes.document-list-pane.no-documents.text': 'No results found',
   /** The text of the document list pane if no documents are found matching specified criteria */
   'panes.document-list-pane.no-matching-documents.text': 'No matching documents',
+  /** The search input for the search input on the document list pane */
+  'panes.document-list-pane.reconnecting': 'Trying to connect…',
   /** The aria-label for the search input on the document list pane */
   'panes.document-list-pane.search-input.aria-label': 'Search list',
   /** The search input for the search input on the document list pane */
@@ -553,6 +617,9 @@ const structureLocaleStrings = defineLocalesResources('structure', {
   'timeline-item.menu.action-collapse': 'Collapse',
   /** The text for the expand action in the timeline item menu */
   'timeline-item.menu.action-expand': 'Expand',
+
+  /** The text for the published event menu tooltip when the release is not found */
+  'timeline-item.not-found-release.tooltip': 'Release with id "{{releaseId}}" not found',
 })
 
 /**

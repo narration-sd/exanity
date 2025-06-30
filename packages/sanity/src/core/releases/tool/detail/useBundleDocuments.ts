@@ -1,3 +1,4 @@
+import {type ReleaseDocument} from '@sanity/client'
 import {
   isValidationErrorMarker,
   type PreviewValue,
@@ -25,12 +26,13 @@ import {mergeMapArray} from 'rxjs-mergemap-array'
 
 import {useSchema} from '../../../hooks'
 import {type LocaleSource} from '../../../i18n/types'
+import {type PerspectiveStack} from '../../../perspective/types'
+import {usePerspective} from '../../../perspective/usePerspective'
 import {type DocumentPreviewStore, prepareForPreview} from '../../../preview'
 import {useDocumentPreviewStore} from '../../../store/_legacy/datastores'
 import {useSource} from '../../../studio'
-import {getPublishedId} from '../../../util/draftUtils'
+import {getDraftId, getVersionId} from '../../../util/draftUtils'
 import {validateDocumentWithReferences, type ValidationStatus} from '../../../validation'
-import {type ReleaseDocument} from '../../store/types'
 import {useReleasesStore} from '../../store/useReleasesStore'
 import {getReleaseDocumentIdFromReleaseId} from '../../util/getReleaseDocumentIdFromReleaseId'
 import {RELEASES_STUDIO_CLIENT_OPTIONS} from '../../util/releasesClient'
@@ -62,22 +64,25 @@ const getActiveReleaseDocumentsObservable = ({
   i18n,
   getClient,
   releaseId,
+  perspectiveStack,
 }: {
   schema: Schema
   documentPreviewStore: DocumentPreviewStore
   i18n: LocaleSource
   getClient: ReturnType<typeof useSource>['getClient']
   releaseId: string
+  perspectiveStack: PerspectiveStack
 }): ReleaseDocumentsObservableResult => {
-  const client = getClient(RELEASES_STUDIO_CLIENT_OPTIONS)
-  const observableClient = client.observable
-
-  const groqFilter = `_id in path("versions.${releaseId}.**")`
+  const groqFilter = `sanity::partOfRelease($releaseId)`
 
   return documentPreviewStore
-    .unstable_observeDocumentIdSet(groqFilter, undefined, {
-      apiVersion: RELEASES_STUDIO_CLIENT_OPTIONS.apiVersion,
-    })
+    .unstable_observeDocumentIdSet(
+      groqFilter,
+      {releaseId},
+      {
+        apiVersion: RELEASES_STUDIO_CLIENT_OPTIONS.apiVersion,
+      },
+    )
     .pipe(
       map((state) => (state.documentIds || []) as string[]),
       mergeMapArray((id: string) => {
@@ -96,22 +101,14 @@ const getActiveReleaseDocumentsObservable = ({
           })
           .pipe(
             filter(Boolean),
-            switchMap((doc) =>
-              observableClient
-                .fetch(
-                  `*[_id in path("${getPublishedId(doc._id)}")]{_id}`,
-                  {},
-                  {tag: 'release-documents.check-existing'},
-                )
-                .pipe(
-                  switchMap((publishedDocumentExists) =>
-                    of({
-                      ...doc,
-                      publishedDocumentExists: !!publishedDocumentExists.length,
-                    }),
-                  ),
-                ),
-            ),
+            switchMap((doc) => {
+              return documentPreviewStore.unstable_observeDocumentPairAvailability(id).pipe(
+                map((availability) => ({
+                  ...doc,
+                  publishedDocumentExists: availability.published.available,
+                })),
+              )
+            }),
           )
         const validation$ = validateDocumentWithReferences(ctx, document$).pipe(
           map((validationStatus) => ({
@@ -140,6 +137,38 @@ const getActiveReleaseDocumentsObservable = ({
             return documentPreviewStore
               .observeForPreview(document, schemaType, {perspective: [releaseId]})
               .pipe(
+                switchMap((value) => {
+                  if (value.snapshot) {
+                    return of(value)
+                  }
+
+                  //If we don't receive a snapshot here, it means the document will be unpublished in the release.
+                  // In which case, to preview it we need its latest known version instead (e.g. one perspective stack level up)
+                  // To do this we need to remove the first item from the start of the array
+                  const updatedPerspectiveStack =
+                    perspectiveStack.length > 1 ? perspectiveStack.slice(1) : perspectiveStack
+
+                  const previousPerspective = updatedPerspectiveStack[0]
+
+                  // chosen drafts over published version since the drafts are how the document is most often known about
+                  // across the studio (for example, document lists previews)
+                  // if the previous perspective is drafts then it means that there is only one document
+                  // otherwise, we need to get the version id of the previous perspective
+                  const docId =
+                    previousPerspective === 'drafts'
+                      ? getDraftId(document._id)
+                      : getVersionId(document._id, previousPerspective)
+
+                  return documentPreviewStore.observeForPreview(
+                    {
+                      _id: docId,
+                    },
+                    schemaType,
+                    {
+                      perspective: updatedPerspectiveStack,
+                    },
+                  )
+                }),
                 map(({snapshot}) => ({
                   isLoading: false,
                   values: snapshot,
@@ -258,6 +287,7 @@ const getReleaseDocumentsObservable = ({
   releaseId,
   i18n,
   releasesState$,
+  perspectiveStack,
 }: {
   schema: Schema
   documentPreviewStore: DocumentPreviewStore
@@ -265,6 +295,7 @@ const getReleaseDocumentsObservable = ({
   releaseId: string
   i18n: LocaleSource
   releasesState$: ReturnType<typeof useReleasesStore>['state$']
+  perspectiveStack: PerspectiveStack
 }): ReleaseDocumentsObservableResult =>
   releasesState$.pipe(
     map((releasesState) =>
@@ -288,6 +319,7 @@ const getReleaseDocumentsObservable = ({
         i18n,
         getClient,
         releaseId,
+        perspectiveStack,
       })
     }),
     startWith({loading: true, results: [], error: null}),
@@ -302,6 +334,7 @@ export function useBundleDocuments(releaseId: string): {
   const {getClient, i18n} = useSource()
   const schema = useSchema()
   const {state$: releasesState$} = useReleasesStore()
+  const {perspectiveStack} = usePerspective()
 
   const releaseDocumentsObservable = useMemo(
     () =>
@@ -312,8 +345,9 @@ export function useBundleDocuments(releaseId: string): {
         releaseId,
         i18n,
         releasesState$,
+        perspectiveStack,
       }),
-    [schema, documentPreviewStore, getClient, releaseId, i18n, releasesState$],
+    [schema, documentPreviewStore, getClient, releaseId, i18n, releasesState$, perspectiveStack],
   )
 
   return useObservable(releaseDocumentsObservable, {loading: true, results: [], error: null})

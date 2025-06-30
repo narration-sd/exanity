@@ -8,7 +8,7 @@ function normalizeToProp(typeDef: any) {
   if (Array.isArray(typeDef.to)) {
     return typeDef.to
   }
-  return typeDef.to ? [typeDef.to] : typeDef.to
+  return typeDef.to ? [typeDef.to] : []
 }
 
 export function isValidResourceType(resourceType: string): string | true {
@@ -115,10 +115,14 @@ export default (typeDef: any, visitorContext: any) => {
     )
   }
 
-  if (typeDef.studioUrl && typeof typeDef.studioUrl !== 'function') {
+  if (
+    typeDef.studioUrl &&
+    typeof typeDef.studioUrl !== 'function' &&
+    typeof typeDef.studioUrl !== 'string'
+  ) {
     problems.push(
       error(
-        'The "studioUrl" property on a global document reference must be a function taking "{id, type}" as argument and returning a studio url.',
+        'The "studioUrl" property on a global document reference must either be a function taking "{id, type}" as argument and returning a studio url, or a string being the base url pointing to a studio.',
         HELP_IDS.GLOBAL_DOCUMENT_REFERENCE_INVALID,
       ),
     )

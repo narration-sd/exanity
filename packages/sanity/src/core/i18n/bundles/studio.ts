@@ -168,9 +168,17 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'asset-sources.dataset.file.title': 'Workspace files',
   'asset-sources.dataset.image.title': 'Workspace images',
 
+  /** Error messages for the Media Library Asset Source  */
+  'asset-sources.media-library.error.library-could-not-be-resolved':
+    'Something went wrong trying to resolve the Media Library for this project.',
+
   /** Menu Items for Media Library Asset Source */
   'asset-sources.media-library.file.title': 'Media Library',
   'asset-sources.media-library.image.title': 'Media Library',
+
+  /** Info messages for the Media Library Asset Source  */
+  'asset-sources.media-library.info.provisioning':
+    'Please wait while we prepare your Media Library',
 
   /** Label when a release has been deleted by a different user */
   'banners.deleted-bundle-banner.text':
@@ -319,6 +327,9 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'changes.loading-author': 'Loading…',
   /** Loading changes in Review Changes Pane */
   'changes.loading-changes': 'Loading changes…',
+  /** Error message shown when the document revision could not be found */
+  'changes.missing-since-document-error':
+    "We couldn't find the document revision with id: <code>{{revisionId}}</code> you're trying to compare. <Break/> This is probably due to history retention policy of your plan. <Break/> Please select a different <strong>From</strong> entry.",
   /** No Changes description in the Review Changes pane */
   'changes.no-changes-description':
     'Edit the document or select an older version in the timeline to see a list of changes appear in this panel.',
@@ -367,6 +378,11 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'changes.portable-text.unknown-inline-object-schema-type': 'Unknown schema type',
   /** Label for when the action of the change was a removal, eg a field was cleared, an array item was removed, an asset was deselected or similar */
   'changes.removed-label': 'Removed',
+  /** Same Revision Selected description in the Review Changes pane */
+  'changes.same-revision-selected-description':
+    'You have selected the same <strong>from</strong> and <strong>to</strong> revision, please select different revisions to compare the changes between them.',
+  /** Same Revision Selected title in the Review Changes pane */
+  'changes.same-revision-selected-title': 'Same revision selected',
   /** Title for the Review Changes pane */
   'changes.title': 'History',
   /**The title that will be shown in the badge inside the events when the item is a draft */
@@ -384,6 +400,9 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
 
   /** Default text in shared loader text / spinner lockup */
   'common.loading': 'Loading',
+
+  /** The title of the reconnecting toast */
+  'common.reconnecting.toast.title': 'Trying to connect…',
 
   /** --- Configuration issues --- */
 
@@ -424,6 +443,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   /** Label to show in the document footer indicating the revision from date of the document */
   'document-status.revision-from': 'Revision from <em>{{date}}</em>',
 
+  /** Label to show in the document footer indicating that the revision was not found */
+  'document-status.revision-not-found': 'Revision not found',
   /** Label to indicate that a document type was not found */
   'document.type.not-found': 'Document type "{{type}}" not found',
 
@@ -490,8 +511,6 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'form.field.deprecated-label': 'deprecated',
   /** Fallback title shown above field if it has no defined title */
   'form.field.untitled-field-label': 'Untitled',
-  /** The title of the reconnecting toast */
-  'form.reconnecting.toast.title': 'Connection lost. Reconnecting…',
   /** Accessibility label for the icon that indicates the field has a validation error */
   'form.validation.has-error-aria-label': 'Has error',
   /** Accessibility label for the icon that indicates the field has validation information */
@@ -1167,6 +1186,16 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   /** Unexpected error: `{{error}}` */
   'member-field-error.unexpected-error': 'Unexpected error: {{error}}',
 
+  /** Text shown in warning when browser is using HTTP1 to communicate with the Sanity API */
+  'network-check.slow-protocol-warning.description':
+    'Your browser is using an outdated HTTP protocol to communicate with Sanity. This may result in substantially degraded performance.',
+  /** Text for link that takes the user to the Sanity documentation to learn more about the HTTP1 issue */
+  'network-check.slow-protocol-warning.learn-more-button.text': 'Learn more',
+  /** Text for link that takes the user to the Sanity documentation to learn more about the HTTP1 issue */
+  'network-check.slow-protocol-warning.snooze-button.text': "Don't show again for this session",
+  /** Title text for the warning dialog when browser is using HTTP1 to communicate with the Sanity API */
+  'network-check.slow-protocol-warning.title': "You've got your breaks on",
+
   /** Button label for "Create new document" button */
   'new-document.button': 'Create',
   /**
@@ -1174,10 +1203,6 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
    * when there are templates/types available for creation
    */
   'new-document.create-new-document-label': 'New document…',
-  /** Tooltip message for add document button when the selected perspective is published  */
-  'new-document.disabled-published.tooltip': 'You cannot create new published documents',
-  /** Tooltip message for add document button when the selected perspective is for inactive release */
-  'new-document.disabled-release.tooltip': 'You cannot add documents to this release',
   /** Placeholder for the "filter" input within the new document menu */
   'new-document.filter-placeholder': 'Search document types',
   /** Loading indicator text within the new document menu */
@@ -1239,7 +1264,11 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   /** Description for toast when version discarding failed */
   'release.action.discard-version.failure': 'Failed to discard version',
   /** Action message for when a new release is created off an existing version, draft or published document */
-  'release.action.new-release': 'New Release',
+  'release.action.new-release': 'New release',
+  /** Explanation provided when releases can't be created because the workspace release limit has been reached */
+  'release.action.new-release.limit-reached': 'This workspace is limited to {{count}} release',
+  'release.action.new-release.limit-reached_other':
+    'This workspace is limited to {{count}} releases',
   /** Tooltip message for not having permissions for creating new releases */
   'release.action.permission.error': 'You do not have permission to perform this action',
   /** Error message for when a version is set to be unpublished */
@@ -1791,6 +1820,34 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'sheet-list.select-fields': 'Select up to 5 field types',
   /** Accessibility label for the navbar status button */
   'status-button.aria-label': 'Configuration status',
+
+  /* Time zone handling */
+  'time-zone.action.search-for-timezone-placeholder': 'Search for a city or time zone',
+  /* Label for the local time zone button */
+  'time-zone.action.select-local-time-zone': 'Select local time zone',
+  /* Dialog info for the time zone dialog */
+  'time-zone.dialog-info.content-releases':
+    'The selected time zone will change how dates are represented in content releases.',
+  /* Dialog info for the time zone dialog */
+  'time-zone.dialog-info.input':
+    'The selected time zone will change how dates are represented only for this input in this document.',
+  /* Dialog info for the time zone dialog */
+  'time-zone.dialog-info.scheduled-publishing':
+    'The selected time zone will change how dates are represented in schedules.',
+  /* Label for the local time zone button */
+  'time-zone.local-time': 'local time',
+  /* Label for the time zone button */
+  'time-zone.time-zone': 'Time zone',
+  /* Tooltip content for the time zone dialog */
+  'time-zone.time-zone-tooltip-content-releases':
+    'Displaying releases in {{alternativeName}} GMT{{offset}}',
+  /* Tooltip content for the time zone dialog */
+  'time-zone.time-zone-tooltip-input':
+    'Displaying <em>{{title}}</em> in {{alternativeName}} GMT{{offset}}',
+  /* Tooltip content for the time zone dialog */
+  'time-zone.time-zone-tooltip-scheduled-publishing':
+    'Displaying schedules in {{alternativeName}} GMT{{offset}}',
+
   /** Title for the changes tooltip in the history inspector*/
   'timeline.changes.title': 'Changes by',
   /** Description for error when the timeline for the given document can't be loaded */
@@ -1840,6 +1897,10 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'timeline.operation.deleted': 'Deleted',
   /** Label shown in review changes timeline when a document has been deleted, with a timestamp */
   'timeline.operation.deleted_timestamp': 'Deleted: {{timestamp, datetime}}',
+  /** Label shown in review changes timeline when a draft document has been created*/
+  'timeline.operation.draft-created': 'Draft created',
+  /** Label shown in review changes timeline when a draft document has been created, with a timestamp */
+  'timeline.operation.draft-created_timestamp': 'Draft created: {{timestamp, datetime}}',
   /** Label shown in review changes timeline when a draft has been discarded */
   'timeline.operation.draft-discarded': 'Discarded draft',
   /** Label shown in review changes timeline when a draft has been discarded, with a timestamp */
@@ -1852,6 +1913,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'timeline.operation.edited-live': 'Live edited',
   /** Label shown in review changes timeline when a document has been edited live, with a timestamp */
   'timeline.operation.edited-live_timestamp': 'Live edited: {{timestamp, datetime}}',
+  /** Label shown in review changes timeline event when transactions have been deleted by retention policy */
+  'timeline.operation.history-cleared': 'Deleted by retention policy',
   /** Label shown in review changes timeline when a document was published */
   'timeline.operation.published': 'Published',
   /** Label shown in review changes timeline when a document was published, with a timestamp */
@@ -1860,6 +1923,15 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'timeline.operation.unpublished': 'Unpublished',
   /** Label shown in review changes timeline when a document was unpublished, with a timestamp */
   'timeline.operation.unpublished_timestamp': 'Unpublished: {{timestamp, datetime}}',
+
+  /** Label shown in review changes timeline when a document version has been created */
+  'timeline.operation.version-created': 'Version created',
+  /** Label shown in review changes timeline when a document version has been created, with a timestamp */
+  'timeline.operation.version-created_timestamp': 'Version created: {{timestamp, datetime}}',
+  /** Label shown in review changes timeline when a document version has been discarded */
+  'timeline.operation.version-discarded': 'Version discarded',
+  /** Label shown in review changes timeline when a document version has been discarded, with a timestamp */
+  'timeline.operation.version-discarded_timestamp': 'Version discarded: {{timestamp, datetime}}',
   /**
    * Label for determining since which version the changes for timeline menu dropdown are showing.
    * Receives the time label as a parameter (`timestamp`).
@@ -1867,8 +1939,10 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'timeline.since': '{{timestamp, datetime}}',
   /** Label for missing change version for timeline menu dropdown are showing */
   'timeline.since-version-missing': 'Since: unknown version',
+
   /** Aria label for the action buttons in the PTE toolbar */
   'toolbar.portable-text.action-button-aria-label': '{{action}}',
+
   /** Accessibility label for the breadcrumb menu */
   'tree-editing-dialog.breadcrumbs.menu': 'Breadcrumb menu',
   /** Title placeholder for search input in array of objects */

@@ -3,7 +3,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {getByDataUi, queryByDataUi} from '../../../../../../test/setup/customQueries'
 import {createTestProvider} from '../../../../../../test/testUtils/TestProvider'
-import {useTimeZoneMockReturn} from '../../../../scheduledPublishing/hooks/__tests__/__mocks__/useTimeZone.mock'
+import {useTimeZoneMockReturn} from '../../../../hooks/__mocks__/useTimeZone.mock'
 import {
   activeASAPRelease,
   activeScheduledRelease,
@@ -22,7 +22,7 @@ vi.mock('../../../store/useReleaseOperations', () => ({
   useReleaseOperations: vi.fn(() => useReleaseOperationsMockReturn),
 }))
 
-vi.mock('../../../../scheduledPublishing/hooks/useTimeZone', async (importOriginal) => ({
+vi.mock('../../../hooks/useTimeZone', async (importOriginal) => ({
   ...(await importOriginal()),
   useTimeZone: vi.fn(() => useTimeZoneMockReturn),
 }))

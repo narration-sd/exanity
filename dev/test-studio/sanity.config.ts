@@ -40,13 +40,17 @@ import {
 } from './components/studioComponents'
 import {GoogleLogo, TailwindLogo, VercelLogo} from './components/workspaceLogos'
 import {resolveDocumentActions as documentActions} from './documentActions'
+import {TestVersionAction} from './documentActions/actions/TestVersionAction'
 import {assistFieldActionGroup} from './fieldActions/assistFieldActionGroup'
 import {resolveInitialValueTemplates} from './initialValueTemplates'
 import {customInspector} from './inspectors/custom'
 import {testStudioLocaleBundles} from './locales'
 import {errorReportingTestPlugin} from './plugins/error-reporting-test'
+import {autoCloseBrackets} from './plugins/input/auto-close-brackets-plugin'
+import {wave} from './plugins/input/wave-plugin'
 import {languageFilter} from './plugins/language-filter'
 import {routerDebugTool} from './plugins/router-debug'
+// eslint-disable-next-line import/extensions
 import {theme as tailwindTheme} from './sanity.theme.mjs'
 import {createSchemaTypes} from './schema'
 import {StegaDebugger} from './schema/debug/components/DebugStega'
@@ -189,6 +193,8 @@ const sharedSettings = ({projectId}: {projectId: string}) => {
       tsdoc(),
       media(),
       markdownSchema(),
+      wave(),
+      autoCloseBrackets(),
     ],
   })()
 }
@@ -201,9 +207,7 @@ const defaultWorkspace = defineConfig({
   plugins: [sharedSettings({projectId: 'ppsg7ml5'})],
 
   onUncaughtError: (error, errorInfo) => {
-    // eslint-disable-next-line no-console
     console.log(error)
-    // eslint-disable-next-line no-console
     console.log(errorInfo)
   },
   basePath: '/test',
@@ -219,6 +223,18 @@ const defaultWorkspace = defineConfig({
   },
   tasks: {
     enabled: true,
+  },
+  document: {
+    actions: (prev, ctx) => {
+      if (ctx.schemaType === 'book' && ctx.releaseId) {
+        return [TestVersionAction, ...prev]
+      }
+      if (ctx.schemaType === 'author' && ctx.releaseId) {
+        return [...prev, TestVersionAction]
+      }
+
+      return prev
+    },
   },
 })
 
@@ -310,6 +326,18 @@ export default defineConfig([
     },
   },
   {
+    name: 'media-library-playground',
+    title: 'Media Library Playground (staging)',
+    projectId: '5iedwjzw',
+    dataset: 'production',
+    plugins: [sharedSettings({projectId: '5iedwjzw'})],
+    basePath: '/media-library-playground-staging',
+    apiHost: 'https://api.sanity.work',
+    auth: {
+      loginMethod: 'token',
+    },
+  },
+  {
     name: 'playground-staging',
     title: 'playground (Staging)',
     projectId: 'exx11uqh',
@@ -334,9 +362,7 @@ export default defineConfig([
     ],
     basePath: '/custom-components',
     onUncaughtError: (error, errorInfo) => {
-      // eslint-disable-next-line no-console
       console.log(error)
-      // eslint-disable-next-line no-console
       console.log(errorInfo)
     },
     form: {

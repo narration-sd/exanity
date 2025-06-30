@@ -1,4 +1,5 @@
-import {LockIcon} from '@sanity/icons'
+import {type ReleaseDocument, type ReleaseState} from '@sanity/client'
+import {ComposeSparklesIcon, LockIcon} from '@sanity/icons'
 import {
   type BadgeTone,
   Button, // eslint-disable-line no-restricted-imports
@@ -16,14 +17,16 @@ import {
   useRef,
   useState,
 } from 'react'
+import {useObservable} from 'react-rx'
 import {styled} from 'styled-components'
 
 import {Popover, Tooltip} from '../../../../ui-components'
+import {useCanvasCompanionDocsStore} from '../../../canvas/store/useCanvasCompanionDocsStore'
 import {useTranslation} from '../../../i18n/hooks/useTranslation'
-import {getVersionId} from '../../../util/draftUtils'
+import {getDraftId, getPublishedId, getVersionId} from '../../../util/draftUtils'
 import {useReleasesUpsell} from '../../contexts/upsell/useReleasesUpsell'
+import {useReleasesToolAvailable} from '../../hooks/useReleasesToolAvailable'
 import {useVersionOperations} from '../../hooks/useVersionOperations'
-import {type ReleaseDocument, type ReleaseState} from '../../store/types'
 import {getReleaseIdFromReleaseDocumentId} from '../../util/getReleaseIdFromReleaseDocumentId'
 import {DiscardVersionDialog} from '../dialog/DiscardVersionDialog'
 import {ReleaseAvatarIcon} from '../ReleaseAvatar'
@@ -41,6 +44,21 @@ const ChipButton = styled(Button)`
   cursor: pointer;
   --card-border-color: var(--border-color);
 `
+const useVersionIsLinked = (documentId: string, fromRelease: string) => {
+  const versionId = useMemo(() => {
+    if (fromRelease === 'published') return getPublishedId(documentId)
+    if (fromRelease === 'draft') return getDraftId(documentId)
+    return getVersionId(documentId, fromRelease)
+  }, [documentId, fromRelease])
+
+  const companionDocsStore = useCanvasCompanionDocsStore()
+  const companionDocs$ = useMemo(
+    () => companionDocsStore.getCompanionDocs(documentId),
+    [documentId, companionDocsStore],
+  )
+  const companionDocs = useObservable(companionDocs$)
+  return companionDocs?.data.some((companion) => companion?.studioDocumentId === versionId)
+}
 
 /**
  * @internal
@@ -85,6 +103,8 @@ export const VersionChip = memo(function VersionChip(props: {
       disabled: contextMenuDisabled = false,
     },
   } = props
+  const releasesToolAvailable = useReleasesToolAvailable()
+  const isLinked = useVersionIsLinked(documentId, fromRelease)
 
   const [contextMenuPoint, setContextMenuPoint] = useState<{x: number; y: number} | undefined>(
     undefined,
@@ -182,7 +202,7 @@ export const VersionChip = memo(function VersionChip(props: {
     } as HTMLElement
   }, [contextMenuPoint])
 
-  const contextMenuHandler = disabled ? undefined : handleContextMenu
+  const contextMenuHandler = disabled || !releasesToolAvailable ? undefined : handleContextMenu
 
   return (
     <>
@@ -204,7 +224,7 @@ export const VersionChip = memo(function VersionChip(props: {
             space={2}
             radius="full"
             icon={<ReleaseAvatarIcon tone={tone} />}
-            iconRight={locked && <LockIcon />}
+            iconRight={isLinked ? <ComposeSparklesIcon /> : locked && <LockIcon />}
             text={text}
           />
         </ChipButtonContainer>

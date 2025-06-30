@@ -1,3 +1,4 @@
+import {type EditableReleaseDocument, type ReleaseType} from '@sanity/client'
 import {ChevronDownIcon, InfoOutlineIcon} from '@sanity/icons'
 import {
   type BadgeTone,
@@ -22,9 +23,10 @@ import {
 } from 'react'
 
 import {MenuButton, Tooltip} from '../../../../ui-components'
+import {useTimeZone} from '../../../hooks/useTimeZone'
 import {useTranslation} from '../../../i18n'
-import useTimeZone from '../../../scheduledPublishing/hooks/useTimeZone'
-import {type EditableReleaseDocument, isReleaseType, type ReleaseType} from '../../store/types'
+import {CONTENT_RELEASES_TIME_ZONE_SCOPE} from '../../../studio/constants'
+import {isReleaseType} from '../../store/types'
 import {RELEASE_TYPES_TONES} from '../../util/const'
 import {ReleaseAvatar} from '../ReleaseAvatar'
 import {ScheduleDatePicker} from '../ScheduleDatePicker'
@@ -38,8 +40,7 @@ export function ReleaseForm(props: {
   const {onChange, value} = props
   const {releaseType} = value.metadata || {}
   const {t} = useTranslation()
-
-  const {timeZone, utcToCurrentZoneDate} = useTimeZone()
+  const {timeZone, utcToCurrentZoneDate} = useTimeZone(CONTENT_RELEASES_TIME_ZONE_SCOPE)
   const [currentTimezone, setCurrentTimezone] = useState<string | null>(timeZone.name)
 
   const [buttonReleaseType, setButtonReleaseType] = useState<ReleaseType>(releaseType ?? 'asap')
@@ -183,6 +184,7 @@ export function ReleaseForm(props: {
                 <ScheduleDatePicker
                   initialValue={intendedPublishAt || new Date()}
                   onChange={handleBundlePublishAtCalendarChange}
+                  timeZoneScope={CONTENT_RELEASES_TIME_ZONE_SCOPE}
                 />
               </TabPanel>
             )}

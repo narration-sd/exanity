@@ -1,10 +1,11 @@
-import path from 'node:path'
+import path, {dirname} from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {parseArgs} from 'node:util'
 
+import {readEnv} from '@repo/utils'
 import {createClient} from '@sanity/client'
 import {tap} from 'rxjs'
 
-import {readEnv} from '../utils/envVars'
 import {run} from './run'
 import {book} from './templates/book'
 import {species} from './templates/species'
@@ -68,7 +69,7 @@ const HELP_TEXT = `Usage: tsx --env-file=.env.local ./${path.relative(process.cw
       --concurrency, -c <int>: Number of concurrent requests
       --help, -h: Show this help message
 
-  Add more templates by adding them to the "./${path.relative(process.cwd(), path.join(__dirname, './templates'))}" directory.
+  Add more templates by adding them to the "./${path.relative(process.cwd(), path.join(dirname(fileURLToPath(import.meta.url)), './templates'))}" directory.
     `
 
 if (args.help) {

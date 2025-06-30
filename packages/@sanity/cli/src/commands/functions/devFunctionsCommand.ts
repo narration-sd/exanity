@@ -5,6 +5,7 @@ import {type CliCommandDefinition} from '../../types'
 const helpText = `
 Options
   --port <port> Port to start emulator on
+  --open Open dev server in a new browser tab
 
 Examples
   # Start dev server on default port
@@ -12,29 +13,60 @@ Examples
 
   # Start dev server on specific port
   sanity functions dev --port 3333
+
+  # Start dev server and open a new browser tab
+  sanity functions dev --open
 `
 
-const defaultFlags = {
+export interface FunctionsDevFlags {
+  open?: boolean
+  port?: number
+}
+
+const defaultFlags: FunctionsDevFlags = {
+  open: false,
   port: 8080,
 }
 
-const devFunctionsCommand: CliCommandDefinition = {
+const devFunctionsCommand: CliCommandDefinition<FunctionsDevFlags> = {
   name: 'dev',
   group: 'functions',
   helpText,
-  signature: '',
+  signature: '[--port <port> --open]',
   description: 'Start the Sanity Function emulator',
-  hideFromHelp: true,
   async action(args, context) {
-    const {output} = context
-    const {print} = output
+    const {apiClient, output} = context
     const flags = {...defaultFlags, ...args.extOptions}
+    const {open: shouldOpen} = flags
 
-    const {dev: devAction} = await import('@sanity/runtime-cli/actions/functions')
-    devAction.dev(flags.port)
+    const client = apiClient({requireUser: true, requireProject: false})
+    const {token} = client.config()
 
-    print(`Server is running on port ${flags.port}\n`)
-    open(`http://localhost:${flags.port}`)
+    if (!token) throw new Error('No API token found. Please run `sanity login`.')
+
+    const {initBlueprintConfig} = await import('@sanity/runtime-cli/cores')
+    const {functionDevCore} = await import('@sanity/runtime-cli/cores/functions')
+
+    const cmdConfig = await initBlueprintConfig({
+      bin: 'sanity',
+      log: (message) => output.print(message),
+      token,
+    })
+
+    if (!cmdConfig.ok) throw new Error(cmdConfig.error)
+
+    const {success, error} = await functionDevCore({
+      ...cmdConfig.value,
+      flags: {
+        port: flags.port,
+      },
+    })
+
+    if (!success) throw new Error(error)
+
+    if (shouldOpen) {
+      open(`http://localhost:${flags.port}`)
+    }
   },
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@sanity/diff",
-  "version": "3.86.1",
+  "version": "3.95.0",
   "description": "Generates diffs between documents and primitive types",
   "keywords": [
     "sanity",
@@ -36,21 +36,21 @@
   "module": "./lib/index.mjs",
   "types": "./lib/index.d.ts",
   "files": [
-    "lib",
-    "src"
+    "lib"
   ],
   "scripts": {
     "build": "pkg-utils build --strict --check --clean",
-    "check:types": "tsc --project tsconfig.lib.json",
+    "check:types": "(cd ../../.. && tsc --project packages/@sanity/diff/tsconfig.lib.json --erasableSyntaxOnly)",
     "clean": "rimraf lib coverage",
-    "lint": "eslint --cache .",
+    "lint": "eslint .",
     "prepublishOnly": "turbo run build",
     "watch": "pkg-utils watch"
   },
   "dependencies": {
-    "@sanity/diff-match-patch": "^3.1.1"
+    "@sanity/diff-match-patch": "^3.2.0"
   },
   "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
     "@repo/package.config": "workspace:*",
     "rimraf": "^5.0.10"
   },

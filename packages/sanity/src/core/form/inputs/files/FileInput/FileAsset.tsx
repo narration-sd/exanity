@@ -53,7 +53,7 @@ export function FileAsset(props: FileAssetProps) {
   const [filesToUploadFromPaste, setFilesToUploadFromPaste] = useState<File[]>([])
   const elementRef = elementProps.ref?.current
 
-  const hasMultipleUploadSources = assetSources.filter((s) => Boolean(s.uploader)).length > 1
+  const hasMultipleUploadSources = assetSources.filter((s) => Boolean(s.Uploader)).length > 1
 
   const handleFileTargetFocus = useCallback(
     (event: React.FocusEvent) => {
@@ -79,7 +79,7 @@ export function FileAsset(props: FileAssetProps) {
       const rejectedFilesCount = fileInfo.length - acceptedFiles.length
 
       if (fileInfo.length > 0) {
-        if (rejectedFilesCount > 0 || !directUploads) {
+        if (rejectedFilesCount > 0 || directUploads === false) {
           canUpload = false
         }
       }
@@ -121,7 +121,7 @@ export function FileAsset(props: FileAssetProps) {
     const rejectedFilesCount = hoveringFiles.length - acceptedFiles.length
 
     if (hoveringFiles.length > 0) {
-      if (rejectedFilesCount > 0 || !directUploads) {
+      if (rejectedFilesCount > 0 || directUploads === false) {
         return 'critical'
       }
     }
@@ -162,7 +162,7 @@ export function FileAsset(props: FileAssetProps) {
       const acceptedFiles = files.filter((file) => resolveUploader?.(schemaType, file))
       const rejectedFilesCount = files.length - acceptedFiles.length
 
-      if (rejectedFilesCount > 0 || !directUploads) {
+      if (rejectedFilesCount > 0 || directUploads === false) {
         return
       }
 
@@ -179,7 +179,7 @@ export function FileAsset(props: FileAssetProps) {
         setShowDestinationSourcePicker(true)
         setFilesToUploadFromPaste(files)
       } else {
-        const firstAssetSourceWithUpload = assetSources.filter((s) => s.uploader)[0]
+        const firstAssetSourceWithUpload = assetSources.filter((s) => s.Uploader)[0]
         if (firstAssetSourceWithUpload) {
           onSelectFiles(firstAssetSourceWithUpload, files)
         }

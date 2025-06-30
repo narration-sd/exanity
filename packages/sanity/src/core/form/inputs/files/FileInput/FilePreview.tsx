@@ -34,7 +34,7 @@ export function FilePreview(props: FileAssetProps) {
 
   const accept = get(schemaType, 'options.accept', '')
 
-  const assetSourcesWithUpload = assetSources.filter((s) => Boolean(s.uploader))
+  const assetSourcesWithUpload = assetSources.filter((s) => Boolean(s.Uploader))
 
   const handleSelectFileMenuItemClicked = useCallback(
     (event: React.MouseEvent) => {
@@ -121,7 +121,7 @@ export function FilePreview(props: FileAssetProps) {
             data-asset-source-name={assetSourcesWithUpload[0].name}
             text={t('inputs.files.common.actions-menu.upload.label')}
             data-testid={`file-input-upload-button-${assetSourcesWithUpload[0].name}`}
-            disabled={readOnly || !directUploads}
+            disabled={readOnly || directUploads === false}
           />
         )
       default:

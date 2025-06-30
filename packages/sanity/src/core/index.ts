@@ -11,11 +11,17 @@ export * from './FIXME'
 export * from './form'
 export * from './hooks'
 export * from './i18n'
+export {
+  isPerspectiveWriteable,
+  type PerspectiveNotWriteableReason,
+} from './perspective/isPerspectiveWriteable'
+export {ReleasesNav} from './perspective/navbar/ReleasesNav'
 export {PerspectiveProvider} from './perspective/PerspectiveProvider'
 export {
   type PerspectiveContextValue,
   type PerspectiveStack,
   type ReleaseId,
+  type ReleasesNavMenuItemPropsGetter,
   type SelectedPerspective,
 } from './perspective/types'
 export {useExcludedPerspective} from './perspective/useExcludedPerspective'
@@ -36,7 +42,6 @@ export {
   isReleaseScheduledOrScheduling,
   LATEST,
   ReleaseAvatar,
-  type ReleaseDocument,
   RELEASES_INTENT,
   RELEASES_STUDIO_CLIENT_OPTIONS,
   useActiveReleases,
@@ -52,8 +57,13 @@ export {
   type VersionInfoDocumentStub,
   VersionInlineBadge,
 } from './releases'
-export * from './scheduledPublishing'
-export * from './schema'
+export {
+  EditScheduleForm,
+  ScheduleAction,
+  ScheduledBadge,
+  SchedulesContext,
+} from './scheduled-publishing'
+export {createSchema, getSchemaTypeTitle} from './schema'
 export type {SearchFactoryOptions, SearchOptions, SearchSort, SearchTerms} from './search'
 export {createSearch, getSearchableTypes, isPerspectiveRaw} from './search'
 export * from './store'
@@ -70,3 +80,9 @@ export {
   type ValidateDocumentOptions,
 } from './validation'
 export * from './version'
+export {type ReleaseDocument} from '@sanity/client'
+
+// If moved at the top it creates a circular dependency issue where `useClient` is not found when running tests
+// eslint-disable-next-line simple-import-sort/exports
+export {useCanvasCompanionDoc} from './canvas/actions/useCanvasCompanionDoc'
+export {useNavigateToCanvasDoc} from './canvas/useNavigateToCanvasDoc'

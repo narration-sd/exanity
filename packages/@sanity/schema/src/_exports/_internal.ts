@@ -1,9 +1,11 @@
+export {DescriptorConverter} from '../descriptors/convert'
 export {isActionEnabled} from '../legacy/actionUtils'
 export {
   DEFAULT_MAX_FIELD_DEPTH,
   resolveSearchConfig,
   resolveSearchConfigForBaseFieldPaths,
 } from '../legacy/searchConfig/resolve'
+export {builtinTypes} from '../sanity/builtinTypes'
 export {extractSchema} from '../sanity/extractSchema'
 export {groupProblems} from '../sanity/groupProblems'
 export {

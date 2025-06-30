@@ -1,6 +1,7 @@
-import {type ClientPerspective} from '@sanity/client'
-
-import {type ReleaseDocument} from '../releases/store/types'
+import {type ClientPerspective, type ReleaseDocument} from '@sanity/client'
+// eslint-disable-next-line no-restricted-imports -- fine-grained control needed
+import {type MenuItem} from '@sanity/ui'
+import {type ComponentProps} from 'react'
 
 /**
  * @beta
@@ -42,3 +43,10 @@ export interface PerspectiveContextValue {
 }
 
 type ExtractArray<Union> = Union extends unknown[] ? Union : never
+
+/**
+ * @internal
+ */
+export type ReleasesNavMenuItemPropsGetter = (content: {
+  perspective: SelectedPerspective
+}) => Partial<ComponentProps<typeof MenuItem>>

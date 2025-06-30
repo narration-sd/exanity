@@ -6,6 +6,7 @@ import {memo, type ReactNode, useCallback, useMemo, useState} from 'react'
 import {useSource} from '../../../../../core/studio'
 import {useClient} from '../../../../hooks'
 import {useTranslation} from '../../../../i18n'
+import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../../../../studioClient'
 import {
   createDatasetFileAssetSource,
   createDatasetImageAssetSource,
@@ -48,11 +49,11 @@ function UploadPlaceholderComponent(props: UploadPlaceholderProps) {
   // Adjust the layout in narrow containers
   const collapsed = rect?.border && rect.border.width < 440
   const {t} = useTranslation()
-  const client = useClient()
+  const client = useClient(DEFAULT_STUDIO_CLIENT_OPTIONS)
   const source = useSource()
 
   const assetSourcesWithUpload = useMemo(() => {
-    const result: AssetSource[] = assetSources.filter((s) => Boolean(s.uploader))
+    const result: AssetSource[] = assetSources.filter((s) => Boolean(s.Uploader))
     // If no asset sources are available, we create a default one to upload to the dataset
     if (result.length === 0) {
       const options = {
@@ -85,7 +86,7 @@ function UploadPlaceholderComponent(props: UploadPlaceholderProps) {
           <FileInputButton
             accept={accept}
             data-testid={`file-input-upload-button-${assetSourcesWithUpload[0].name}`}
-            disabled={readOnly || !directUploads}
+            disabled={readOnly || directUploads === false}
             icon={UploadIcon}
             mode="bleed"
             // eslint-disable-next-line react/jsx-no-bind

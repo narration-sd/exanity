@@ -1,4 +1,5 @@
 import {render} from '@testing-library/react'
+// eslint-disable-next-line no-restricted-imports
 import * as SANITY from 'sanity'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 
@@ -32,8 +33,7 @@ function createWrapperComponent(client: SANITY.SanityClient) {
 }
 
 describe('StructureTitle', () => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore  it's a minimal mock implementation of useStructureTool
+  // @ts-expect-error  it's a minimal mock implementation of useStructureTool
   vi.spyOn(USE_STRUCTURE_TOOL, 'useStructureTool').mockImplementation(() => ({
     structureContext: {title: 'My Structure Tool'} as StructureContext,
   }))

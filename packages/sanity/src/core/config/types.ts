@@ -10,6 +10,7 @@ import {
   type SchemaTypeDefinition,
   type SearchStrategy,
 } from '@sanity/types'
+// eslint-disable-next-line @sanity/i18n/no-i18next-import -- figure out how to have the linter be fine with importing types-only
 import {type i18n} from 'i18next'
 import {type ComponentType, type ErrorInfo, type ReactNode} from 'react'
 import {type Observable} from 'rxjs'
@@ -17,7 +18,6 @@ import {type Router, type RouterState} from 'sanity/router'
 
 import {type FormBuilderCustomMarkersComponent, type FormBuilderMarkersComponent} from '../form'
 import {type LocalePluginOptions, type LocaleSource} from '../i18n/types'
-import {type ScheduledPublishingPluginOptions} from '../scheduledPublishing/types'
 import {type AuthStore} from '../store'
 import {type SearchFilterDefinition} from '../studio/components/navbar/search/definitions/filters'
 import {type SearchOperatorDefinition} from '../studio/components/navbar/search/definitions/operators'
@@ -352,6 +352,33 @@ export type DocumentInspectorsResolver = ComposableOption<
   DocumentInspectorContext
 >
 
+/**
+ * @public
+ * Config for the apps that are available in the studio.
+ */
+export type AppsOptions = {
+  canvas?: {
+    enabled: boolean
+    /**
+     * To allow the "Link to canvas" action on localhost, or in studios not listed under Studios in sanity.io/manage
+     * provide a fallback origin as a string.
+     *
+     * The string must be the exactly equal `name` as shown for the Studio in manage, and the studio must have create-manifest.json available.
+     *
+     * If the provided fallback Studio does not expose create-manifest.json "Link to canvas" will fail when using the fallback.
+     *
+     * Example: `wonderful.sanity.studio`
+     *
+     * Keep in mind that when fallback origin is used, Canvas will use the schema types and dataset in the *deployed* Studio,
+     * not from localhost.
+     *
+     * To see data synced from Canvas in your localhost Studio, you must ensure that the deployed fallback studio uses the same
+     * workspace and schemas as your local configuration.
+     *
+     */
+    fallbackStudioOrigin?: string
+  }
+}
 /** @beta */
 export interface PluginOptions {
   name: string
@@ -492,12 +519,16 @@ export interface WorkspaceOptions extends SourceOptions {
    * @internal
    */
   releases?: DefaultPluginsWorkspaceOptions['releases']
+  apps?: AppsOptions
 
   /**
    * @hidden
    * @internal
    */
   __internal_serverDocumentActions?: {
+    /**
+     * @deprecated The Mutations API integration will be removed in a future release.
+     */
     enabled?: boolean
   }
 
@@ -567,9 +598,9 @@ export interface DocumentActionsContext extends ConfigContext {
   schemaType: string
 
   /** releaseId of the open document, it's undefined if it's published or the draft */
-  releaseId?: string
+  releaseId: string | undefined
   /** the type of the currently active document. */
-  versionType?: DocumentActionsVersionType
+  versionType: DocumentActionsVersionType
 }
 
 /**
@@ -681,7 +712,7 @@ export interface Source {
      * @hidden
      * @beta
      */
-    badges: (props: PartialContext<DocumentActionsContext>) => DocumentBadgeComponent[]
+    badges: (props: PartialContext<DocumentBadgesContext>) => DocumentBadgeComponent[]
 
     /**
      * Components for the document.
@@ -897,6 +928,34 @@ export interface WorkspaceSummary extends DefaultPluginsWorkspaceOptions {
 }
 
 /**
+ * Config for the Scheduled Publishing plugin.
+ * @public
+ */
+export interface ScheduledPublishingPluginOptions {
+  /**
+   * Whether scheduled publishing is enabled for this workspace.
+   */
+  enabled: boolean
+  /**
+   * Date format to use for input fields. This must be a valid `date-fns` {@link https://date-fns.org/docs/format | formatted string}.
+   * @defaultValue 'dd/MM/yyyy HH:mm' make sure to specify minutes and hours if you are specifying a custom format
+   */
+  inputDateTimeFormat?: string
+
+  /**
+   * @hidden
+   * Whether scheduled publishing is enabled by the workspace.
+   * Sanity is enabling it by default in the config, {@link "../scheduledPublishing/constants.ts"}
+   */
+  __internal__workspaceEnabled?: boolean
+  /**
+   * Whether to show the use releases warning banner in the tool.
+   * @defaultValue true
+   */
+  showReleasesBanner?: boolean
+}
+
+/**
  * Definition for Workspace
  *
  * @public
@@ -921,6 +980,7 @@ export interface Workspace extends Omit<Source, 'type'> {
    */
   unstable_sources: Source[]
   scheduledPublishing: ScheduledPublishingPluginOptions
+  apps?: AppsOptions
 }
 
 /**
@@ -966,7 +1026,13 @@ export type {
 export type DefaultPluginsWorkspaceOptions = {
   tasks: {enabled: boolean}
   scheduledPublishing: ScheduledPublishingPluginOptions
-  releases: {enabled: boolean}
+  releases: {
+    enabled?: boolean
+    /**
+     * Limit the number of releases that can be created by this workspace.
+     */
+    limit?: number
+  }
 }
 
 /**

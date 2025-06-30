@@ -6,14 +6,12 @@ import {
   type InvalidValue,
   type OnPasteFn,
   type Patch,
-  type PortableTextEditableProps,
   PortableTextEditor,
   type RangeDecoration,
-  type RenderEditableFunction,
   useEditor,
   usePortableTextEditor,
 } from '@portabletext/editor'
-import {EventListenerPlugin, MarkdownPlugin} from '@portabletext/editor/plugins'
+import {EventListenerPlugin} from '@portabletext/editor/plugins'
 import {useTelemetry} from '@sanity/telemetry/react'
 import {isKeySegment, type Path, type PortableTextBlock} from '@sanity/types'
 import {Box, Flex, Text, useToast} from '@sanity/ui'
@@ -48,6 +46,7 @@ import {PortableTextMarkersProvider} from './contexts/PortableTextMarkers'
 import {PortableTextMemberItemsProvider} from './contexts/PortableTextMembers'
 import {usePortableTextMemberItemsFromProps} from './hooks/usePortableTextMembers'
 import {InvalidValue as RespondToInvalidContent} from './InvalidValue'
+import {PortableTextEditorPlugins} from './object/Plugins'
 import {
   type PresenceCursorDecorationsHookProps,
   usePresenceCursorDecorations,
@@ -87,10 +86,6 @@ export interface PortableTextMemberItem {
   node: ObjectFormNode
   input?: ReactNode
 }
-/** @public */
-export interface RenderPortableTextInputEditableProps extends PortableTextEditableProps {
-  renderDefault: RenderEditableFunction
-}
 
 /**
  * Input component for editing block content
@@ -125,7 +120,6 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
     rangeDecorations: rangeDecorationsProp,
     renderBlockActions,
     renderCustomMarkers,
-    renderEditable,
     schemaType,
     value,
     resolveUploader,
@@ -395,29 +389,7 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
               <PatchesPlugin path={path} />
               <UpdateReadOnlyPlugin readOnly={readOnly || !ready} />
               <UpdateValuePlugin value={value} />
-              <MarkdownPlugin
-                config={{
-                  boldDecorator: ({schema}) =>
-                    schema.decorators.find((decorator) => decorator.name === 'strong')?.name,
-                  codeDecorator: ({schema}) =>
-                    schema.decorators.find((decorator) => decorator.name === 'code')?.name,
-                  italicDecorator: ({schema}) =>
-                    schema.decorators.find((decorator) => decorator.name === 'em')?.name,
-                  strikeThroughDecorator: ({schema}) =>
-                    schema.decorators.find((decorator) => decorator.name === 'strike-through')
-                      ?.name,
-                  defaultStyle: ({schema}) =>
-                    schema.styles.find((style) => style.name === 'normal')?.name,
-                  blockquoteStyle: ({schema}) =>
-                    schema.styles.find((style) => style.name === 'blockquote')?.name,
-                  headingStyle: ({schema, level}) =>
-                    schema.styles.find((style) => style.name === `h${level}`)?.name,
-                  orderedListStyle: ({schema}) =>
-                    schema.lists.find((list) => list.name === 'number')?.name,
-                  unorderedListStyle: ({schema}) =>
-                    schema.lists.find((list) => list.name === 'bullet')?.name,
-                }}
-              />
+              <PortableTextEditorPlugins schemaType={schemaType} />
               <Compositor
                 {...props}
                 elementRef={elementRef}
@@ -435,7 +407,6 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
                 readOnly={readOnly || !ready}
                 renderBlockActions={renderBlockActions}
                 renderCustomMarkers={renderCustomMarkers}
-                renderEditable={renderEditable}
               />
             </EditorProvider>
           </PortableTextMemberItemsProvider>

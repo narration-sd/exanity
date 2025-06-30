@@ -49,9 +49,11 @@ import {initialValuesTest, superlatives} from './debug/initialValuesTest'
 import {inspectorsTestType} from './debug/inspectors'
 import invalidPreviews from './debug/invalidPreviews'
 import {languageFilterDebugType} from './debug/languageFilter'
+import lazyComponents from './debug/lazyComponents'
 import liveEdit from './debug/liveEdit'
 import localeString from './debug/localeString'
 import manyFieldsTest from './debug/manyFieldsTest'
+import {manyViewsType} from './debug/manyViews'
 import notitle from './debug/notitle'
 import {objectsDebug} from './debug/objectsDebug'
 import {patchOnMountDebug} from './debug/patchOnMount'
@@ -106,6 +108,7 @@ import {ptAllTheBellsAndWhistlesType} from './standard/portableText/allTheBellsA
 import blocks from './standard/portableText/blocks'
 import {ptCustomBlockEditors} from './standard/portableText/customBlockEditors'
 import {ptCustomMarkersTestType} from './standard/portableText/customMarkers'
+import {customPlugins} from './standard/portableText/customPlugins'
 import manyEditors from './standard/portableText/manyEditors'
 import richTextObject from './standard/portableText/richTextObject'
 import simpleBlock from './standard/portableText/simpleBlock'
@@ -173,6 +176,7 @@ export function createSchemaTypes(projectId: string) {
     ptCustomMarkersTestType,
     richTextObject,
     ...Object.values(scrollBugTypes),
+    customPlugins,
     simpleBlock,
     manyEditors,
     simpleBlockNote,
@@ -221,9 +225,11 @@ export function createSchemaTypes(projectId: string) {
     inspectorsTestType,
     invalidPreviews,
     languageFilterDebugType,
+    lazyComponents,
     liveEdit,
     localeString,
     manyFieldsTest,
+    manyViewsType,
     myImage,
     myObject,
     namedDeprecatedObject,

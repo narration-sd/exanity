@@ -1,12 +1,13 @@
 import {TrashIcon} from '@sanity/icons'
 import {useCallback, useState} from 'react'
-import {useTranslation} from 'react-i18next'
 
 import {InsufficientPermissionsMessage} from '../../../components/InsufficientPermissionsMessage'
 import {
+  type DocumentActionComponent,
   type DocumentActionDescription,
   type DocumentActionProps,
 } from '../../../config/document/actions'
+import {useTranslation} from '../../../i18n'
 import {usePerspective} from '../../../perspective/usePerspective'
 import {useDocumentPairPermissions} from '../../../store/_legacy/grants/documentPairPermissions'
 import {useCurrentUser} from '../../../store/user/hooks'
@@ -15,7 +16,7 @@ import {DiscardVersionDialog} from '../../components/dialog/DiscardVersionDialog
 /**
  * @internal
  */
-export const DiscardVersionAction = (
+export const DiscardVersionAction: DocumentActionComponent = (
   props: DocumentActionProps,
 ): DocumentActionDescription | null => {
   const {id, type, release, version} = props
@@ -68,3 +69,6 @@ export const DiscardVersionAction = (
     title: t('release.action.discard-version'),
   }
 }
+
+DiscardVersionAction.action = 'discardVersion'
+DiscardVersionAction.displayName = 'DiscardVersionAction'

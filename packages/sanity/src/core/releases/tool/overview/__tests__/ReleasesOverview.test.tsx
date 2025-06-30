@@ -1,3 +1,4 @@
+import {type ReleaseDocument} from '@sanity/client'
 import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react'
 import {format, set} from 'date-fns'
 import {useState} from 'react'
@@ -7,16 +8,11 @@ import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {getByDataUi, queryByDataUi} from '../../../../../../test/setup/customQueries'
 import {setupVirtualListEnv} from '../../../../../../test/testUtils/setupVirtualListEnv'
 import {createTestProvider} from '../../../../../../test/testUtils/TestProvider'
+import {mockUseTimeZone, useTimeZoneMockReturn} from '../../../../hooks/__mocks__/useTimeZone.mock'
 import {
   mockUsePerspective,
   usePerspectiveMockReturn,
 } from '../../../../perspective/__mocks__/usePerspective.mock'
-import {
-  getLocalTimeZoneMockReturn,
-  mockGetLocaleTimeZone,
-  mockUseTimeZone,
-  useTimeZoneMockReturn,
-} from '../../../../scheduledPublishing/hooks/__tests__/__mocks__/useTimeZone.mock'
 import {
   activeASAPRelease,
   activeScheduledRelease,
@@ -48,7 +44,6 @@ import {
   mockUseReleasesMetadata,
   useReleasesMetadataMockReturn,
 } from '../../../store/__tests__/__mocks/useReleasesMetadata.mock'
-import {type ReleaseDocument} from '../../../store/types'
 import {type ReleasesMetadata} from '../../../store/useReleasesMetadata'
 import {useBundleDocumentsMockReturnWithResults} from '../../detail/__tests__/__mocks__/useBundleDocuments.mock'
 import {ReleasesOverview} from '../ReleasesOverview'
@@ -111,10 +106,8 @@ vi.mock('../../../../perspective/useSetPerspective', () => ({
   useSetPerspective: vi.fn(() => mockedSetPerspective),
 }))
 
-vi.mock('../../../../scheduledPublishing/hooks/useTimeZone', async (importOriginal) => ({
-  ...(await importOriginal()),
-  getLocalTimeZone: vi.fn(() => getLocalTimeZoneMockReturn),
-  default: vi.fn(() => useTimeZoneMockReturn),
+vi.mock('../../../../hooks/useTimeZone', () => ({
+  useTimeZone: vi.fn(() => useTimeZoneMockReturn),
 }))
 
 const getWrapper = () =>
@@ -420,14 +413,17 @@ describe('ReleasesOverview', () => {
       })
 
       it('shows dates with timezone abbreviation when it is not the locale', async () => {
-        mockGetLocaleTimeZone.mockReturnValue({
-          abbreviation: 'NST', // Not Sanity Time
-          namePretty: 'Not Sanity Time',
-          offset: '+00:00',
-          name: 'NST',
-          alternativeName: 'Not Sanity Time',
-          mainCities: 'Not Sanity City',
-          value: 'Not Sanity Time',
+        mockUseTimeZone.mockReturnValue({
+          ...useTimeZoneMockReturn,
+          getLocalTimeZone: vi.fn(() => ({
+            abbreviation: 'NST', // Not Sanity Time
+            namePretty: 'Not Sanity Time',
+            offset: '+00:00',
+            name: 'NST',
+            alternativeName: 'Not Sanity Time',
+            city: 'Not Sanity City',
+            value: 'Not Sanity Time',
+          })),
         })
 
         await rerender()

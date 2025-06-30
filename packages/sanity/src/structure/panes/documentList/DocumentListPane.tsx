@@ -8,6 +8,7 @@ import {
   useActiveReleases,
   useI18nText,
   usePerspective,
+  useReconnectingToast,
   useSchema,
   useTranslation,
   useUnique,
@@ -108,6 +109,11 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
     isLoading: documentListIsLoading,
     items,
     fromCache,
+    isRetrying,
+    autoRetry,
+    canRetry,
+    retryCount,
+    connected,
     onLoadFullList,
     onRetry,
   } = useDocumentList({
@@ -162,15 +168,15 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
   }, [paneKey, handleClearSearch])
 
   const loadingVariant: LoadingVariant = useMemo(() => {
-    if (isLoading && enableSearchSpinner === paneKey) {
+    if (connected && isLoading && enableSearchSpinner === paneKey) {
       return 'spinner'
     }
-    if (fromCache) {
+    if (connected && fromCache) {
       return 'subtle'
     }
 
     return 'initial'
-  }, [enableSearchSpinner, fromCache, isLoading, paneKey])
+  }, [connected, enableSearchSpinner, fromCache, isLoading, paneKey])
 
   const textInputIcon = useMemo(() => {
     if (loadingVariant === 'spinner') {
@@ -182,6 +188,8 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
     return SearchIcon
   }, [loadingVariant, searchInputValue])
 
+  useReconnectingToast(!connected)
+
   return (
     <>
       <Box paddingX={3} paddingBottom={3}>
@@ -190,11 +198,12 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
           autoComplete="off"
           border={false}
           clearButton={Boolean(searchQuery)}
-          disabled={Boolean(error)}
           fontSize={[2, 2, 1]}
           icon={textInputIcon}
           iconRight={
-            loadingVariant === 'subtle' && !searchInputValue ? DelayedSubtleSpinnerIcon : null
+            !connected || (loadingVariant === 'subtle' && !searchInputValue)
+              ? DelayedSubtleSpinnerIcon
+              : null
           }
           onChange={handleQueryChange}
           onClear={handleClearSearch}
@@ -216,9 +225,15 @@ export const DocumentListPane = memo(function DocumentListPane(props: DocumentLi
         isActive={isActive}
         isLazyLoading={isLoadingFullList}
         isLoading={isLoading}
+        autoRetry={autoRetry}
+        canRetry={canRetry}
+        retryCount={retryCount}
+        isRetrying={isRetrying}
+        isConnected={connected}
         items={items}
         key={paneKey}
         layout={layout}
+        muted={loadingVariant === 'subtle'}
         loadingVariant={loadingVariant}
         onEndReached={onLoadFullList}
         onRetry={onRetry}

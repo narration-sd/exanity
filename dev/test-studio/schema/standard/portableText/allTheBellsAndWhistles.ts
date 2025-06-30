@@ -92,6 +92,12 @@ export const ptAllTheBellsAndWhistlesType = defineType({
                   },
                 ],
               }),
+              defineField({
+                type: 'reference',
+                name: 'reference',
+                title: 'Inline reference annotation',
+                to: [{type: 'book'}],
+              }),
             ],
           },
           of: [
@@ -117,6 +123,12 @@ export const ptAllTheBellsAndWhistlesType = defineType({
                 }),
               ],
             }),
+            defineField({
+              type: 'reference',
+              name: 'inlineReference',
+              title: 'Inline reference',
+              to: [{type: 'book'}],
+            }),
           ],
         }),
 
@@ -140,6 +152,9 @@ export const ptAllTheBellsAndWhistlesType = defineType({
           icon: ImageIcon,
           name: 'image',
           title: 'Image',
+          deprecated: {
+            reason: 'Use imageObject instead',
+          },
           options: {
             hotspot: true,
           },

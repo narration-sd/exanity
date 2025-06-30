@@ -1,3 +1,4 @@
+import {type ReleaseDocument} from '@sanity/client'
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import {describe, expect, it, vi} from 'vitest'
 
@@ -8,7 +9,6 @@ import {
   useReleasePermissionsMockReturn,
   useReleasesPermissionsMockReturnTrue,
 } from '../../../../store/__tests__/__mocks/useReleasePermissions.mock'
-import {type ReleaseDocument} from '../../../../store/types'
 import {VersionContextMenu} from '../VersionContextMenu'
 
 vi.mock('sanity/router', async (importOriginal) => ({
@@ -89,7 +89,7 @@ describe('VersionContextMenu', () => {
       fireEvent.click(screen.getByText('Copy version to'))
     })
     await waitFor(() => {
-      expect(screen.getByText('New Release')).toBeInTheDocument()
+      expect(screen.getByText('New release')).toBeInTheDocument()
       expect(screen.getByText('Release 1')).toBeInTheDocument()
       expect(screen.getByText('Release 2')).toBeInTheDocument()
     })
@@ -113,7 +113,7 @@ describe('VersionContextMenu', () => {
     })
 
     await waitFor(() => {
-      fireEvent.click(screen.getByText('New Release'))
+      fireEvent.click(screen.getByText('New release'))
     })
     expect(defaultProps.onCreateRelease).toHaveBeenCalled()
   })
@@ -168,7 +168,7 @@ describe('VersionContextMenu', () => {
     })
 
     await waitFor(() => {
-      fireEvent.click(screen.getByText('New Release'))
+      fireEvent.click(screen.getByText('New release'))
     })
     expect(defaultProps.onCreateRelease).toHaveBeenCalled()
   })

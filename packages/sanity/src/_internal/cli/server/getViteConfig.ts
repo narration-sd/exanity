@@ -7,7 +7,10 @@ import {type ConfigEnv, type InlineConfig, type Rollup} from 'vite'
 
 import {createExternalFromImportMap} from './createExternalFromImportMap'
 import {getSanityPkgExportAliases} from './getBrowserAliases'
-import {getStudioEnvironmentVariables} from './getStudioEnvironmentVariables'
+import {
+  getAppEnvironmentVariables,
+  getStudioEnvironmentVariables,
+} from './getStudioEnvironmentVariables'
 import {normalizeBasePath} from './helpers'
 import {getMonorepoAliases, loadSanityMonorepo} from './sanityMonorepo'
 import {sanityBuildEntries} from './vite/plugin-sanity-build-entries'
@@ -89,6 +92,11 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const staticPath = `${basePath}static`
 
   const {default: viteReact} = await import('@vitejs/plugin-react')
+
+  const envVars = isApp
+    ? getAppEnvironmentVariables({prefix: 'process.env.', jsonEncode: true})
+    : getStudioEnvironmentVariables({prefix: 'process.env.', jsonEncode: true})
+
   const viteConfig: InlineConfig = {
     // Define a custom cache directory so that sanity's vite cache
     // does not conflict with any potential local vite projects
@@ -103,6 +111,16 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       host: server?.host,
       port: server?.port || 3333,
       strictPort: true,
+      /**
+       * Significantly speed up startup time,
+       * and most importantly eliminates the `new dependencies optimized: foobar. optimized dependencies changed. reloading`
+       * types of initial reload loops that otherwise happen as vite discovers deps that need to be optimized.
+       * This option starts the traversal up front, and warms up the dep tree required to render the userland sanity.config.ts file,
+       * and thus avoids frustrating reload loops.
+       */
+      warmup: {
+        clientFiles: ['./.sanity/runtime/app.js'],
+      },
     },
     configFile: false,
     mode,
@@ -114,7 +132,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       sanityRuntimeRewritePlugin(),
       sanityBuildEntries({basePath, cwd, monorepo, importMap, isApp}),
     ],
-    envPrefix: isApp ? 'VITE_' : 'SANITY_STUDIO_',
+    envPrefix: isApp ? 'SANITY_APP_' : 'SANITY_STUDIO_',
     logLevel: mode === 'production' ? 'silent' : 'info',
     resolve: {
       alias: monorepo?.path
@@ -136,7 +154,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
        * and there is no longer any reason to use the much slower method in dev mode.
        */
       'process.env.SC_DISABLE_SPEEDY': JSON.stringify('false'),
-      ...getStudioEnvironmentVariables({prefix: 'process.env.', jsonEncode: true}),
+      ...envVars,
     },
   }
 

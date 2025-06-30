@@ -17,11 +17,7 @@ import {ChangeIndicator} from '../../../changeIndicators'
 import {EMPTY_ARRAY} from '../../../util'
 import {ActivateOnFocus} from '../../components/ActivateOnFocus/ActivateOnFocus'
 import {TreeEditingEnabledProvider} from '../../studio/tree-editing'
-import {
-  type ArrayOfObjectsInputProps,
-  type PortableTextInputProps,
-  type RenderCustomMarkers,
-} from '../../types'
+import {type ArrayOfObjectsInputProps, type RenderCustomMarkers} from '../../types'
 import {type RenderBlockActionsCallback} from '../../types/_transitional'
 import {UploadTargetCard} from '../arrays/common/UploadTargetCard'
 import {ExpandedLayer, Root} from './Compositor.styles'
@@ -50,7 +46,6 @@ interface InputProps extends ArrayOfObjectsInputProps<PortableTextBlock> {
   rangeDecorations?: RangeDecoration[]
   renderBlockActions?: RenderBlockActionsCallback
   renderCustomMarkers?: RenderCustomMarkers
-  renderEditable?: PortableTextInputProps['renderEditable']
 }
 
 /** @internal */
@@ -82,7 +77,6 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
     renderBlock,
     renderBlockActions,
     renderCustomMarkers,
-    renderEditable,
     renderField,
     renderInlineBlock,
     renderInput,
@@ -108,7 +102,7 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
       ...hotkeys,
       custom: {
         'mod+enter': onToggleFullscreen,
-        ...(hotkeys?.custom || {}),
+        ...hotkeys?.custom,
       },
     }),
 
@@ -406,6 +400,8 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
     return undefined
   })
 
+  const isOneLineEditor = Boolean(editor.schemaTypes.block.options?.oneLine)
+
   const editorNode = useMemo(
     () => (
       <UploadTargetCard
@@ -422,6 +418,7 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
           hotkeys={editorHotkeys}
           isActive={isActive}
           isFullscreen={isFullscreen}
+          isOneLine={isOneLineEditor}
           onItemOpen={onItemOpen}
           onCopy={onCopy}
           onPaste={onPaste}
@@ -432,7 +429,6 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
           renderAnnotation={editorRenderAnnotation}
           renderBlock={editorRenderBlock}
           renderChild={editorRenderChild}
-          renderEditable={renderEditable}
           setPortalElement={setPortalElement}
           scrollElement={scrollElement}
           setScrollElement={setScrollElement}
@@ -454,6 +450,7 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
       initialSelection,
       isActive,
       isFullscreen,
+      isOneLineEditor,
       onCopy,
       onItemOpen,
       onPaste,
@@ -462,7 +459,6 @@ export function Compositor(props: Omit<InputProps, 'schemaType' | 'arrayFunction
       resolveUploader,
       rangeDecorations,
       readOnly,
-      renderEditable,
       scrollElement,
     ],
   )

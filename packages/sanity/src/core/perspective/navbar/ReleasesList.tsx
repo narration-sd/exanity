@@ -1,19 +1,14 @@
-import {AddIcon} from '@sanity/icons'
+import {type ReleaseDocument, type ReleaseType} from '@sanity/client'
 import {Box, Flex, MenuDivider, Spinner} from '@sanity/ui'
-import {type RefObject, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {type RefObject, useCallback, useMemo} from 'react'
 import {css, styled} from 'styled-components'
 
-import {MenuItem} from '../../../ui-components/menuItem/MenuItem'
-import {useTranslation} from '../../i18n/hooks/useTranslation'
+import {CreateReleaseMenuItem} from '../../releases/components/CreateReleaseMenuItem'
 import {useReleasesUpsell} from '../../releases/contexts/upsell/useReleasesUpsell'
-import {useCreateReleaseMetadata} from '../../releases/hooks/useCreateReleaseMetadata'
-import {type ReleaseDocument, type ReleaseType} from '../../releases/store/types'
 import {useActiveReleases} from '../../releases/store/useActiveReleases'
-import {useReleaseOperations} from '../../releases/store/useReleaseOperations'
-import {useReleasePermissions} from '../../releases/store/useReleasePermissions'
 import {LATEST} from '../../releases/util/const'
 import {getReleaseIdFromReleaseDocumentId} from '../../releases/util/getReleaseIdFromReleaseDocumentId'
-import {getReleaseDefaults} from '../../releases/util/util'
+import {type ReleasesNavMenuItemPropsGetter} from '../types'
 import {usePerspective} from '../usePerspective'
 import {
   getRangePosition,
@@ -54,6 +49,7 @@ export function ReleasesList({
   selectedReleaseId,
   setCreateBundleDialogOpen,
   scrollElementRef,
+  menuItemProps,
 }: {
   areReleasesEnabled: boolean
   setScrollContainer: (el: HTMLDivElement) => void
@@ -62,31 +58,12 @@ export function ReleasesList({
   selectedReleaseId: string | undefined
   setCreateBundleDialogOpen: (open: boolean) => void
   scrollElementRef: RefObject<ScrollElement>
+  menuItemProps?: ReleasesNavMenuItemPropsGetter
 }): React.JSX.Element {
-  const {guardWithReleaseLimitUpsell, mode} = useReleasesUpsell()
+  const {guardWithReleaseLimitUpsell} = useReleasesUpsell()
+
   const {loading, data: releases} = useActiveReleases()
-  const {createRelease} = useReleaseOperations()
-  const {checkWithPermissionGuard} = useReleasePermissions()
-  const [hasCreatePermission, setHasCreatePermission] = useState<boolean | null>(null)
-  const createReleaseMetadata = useCreateReleaseMetadata()
   const {selectedPerspectiveName} = usePerspective()
-
-  const {t} = useTranslation()
-
-  const isMounted = useRef(false)
-  useEffect(() => {
-    isMounted.current = true
-
-    checkWithPermissionGuard(createRelease, createReleaseMetadata(getReleaseDefaults())).then(
-      (hasPermission) => {
-        if (isMounted.current) setHasCreatePermission(hasPermission)
-      },
-    )
-
-    return () => {
-      isMounted.current = false
-    }
-  }, [checkWithPermissionGuard, createRelease, createReleaseMetadata])
 
   const handleCreateBundleClick = useCallback(
     () => guardWithReleaseLimitUpsell(() => setCreateBundleDialogOpen(true)),
@@ -158,10 +135,12 @@ export function ReleasesList({
           <GlobalPerspectiveMenuItem
             rangePosition={isRangeVisible ? getRangePosition(range, 0) : undefined}
             release={'published'}
+            menuItemProps={menuItemProps}
           />
           <GlobalPerspectiveMenuItem
             rangePosition={isRangeVisible ? getRangePosition(range, 1) : undefined}
             release={LATEST}
+            menuItemProps={menuItemProps}
           />
         </StyledPublishedBox>
         {areReleasesEnabled && (
@@ -173,6 +152,7 @@ export function ReleasesList({
                 releases={sortedReleaseTypeReleases[releaseType]}
                 range={range}
                 currentGlobalBundleMenuItemRef={scrollElementRef}
+                menuItemProps={menuItemProps}
               />
             ))}
           </>
@@ -181,17 +161,7 @@ export function ReleasesList({
       {areReleasesEnabled && (
         <>
           <MenuDivider />
-          <MenuItem
-            icon={AddIcon}
-            disabled={!hasCreatePermission || mode === 'disabled'}
-            onClick={handleCreateBundleClick}
-            text={t('release.action.create-new')}
-            data-testid="create-new-release-button"
-            tooltipProps={{
-              disabled: hasCreatePermission === true,
-              content: t('release.action.permission.error'),
-            }}
-          />
+          <CreateReleaseMenuItem onCreateRelease={handleCreateBundleClick} />
         </>
       )}
     </>

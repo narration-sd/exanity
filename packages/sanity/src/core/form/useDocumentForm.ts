@@ -8,7 +8,6 @@ import {
   type SanityDocumentLike,
   type ValidationMarker,
 } from '@sanity/types'
-import {useToast} from '@sanity/ui'
 import {pathFor} from '@sanity/util/paths'
 import {throttle} from 'lodash'
 import {
@@ -22,13 +21,14 @@ import {
 } from 'react'
 import deepEquals from 'react-fast-compare'
 
+import {useCanvasCompanionDoc} from '../canvas/actions/useCanvasCompanionDoc'
 import {isSanityCreateLinkedDocument} from '../create/createUtils'
+import {useReconnectingToast} from '../hooks'
 import {type ConnectionState, useConnectionState} from '../hooks/useConnectionState'
 import {useDocumentOperation} from '../hooks/useDocumentOperation'
 import {useEditState} from '../hooks/useEditState'
 import {useSchema} from '../hooks/useSchema'
 import {useValidationStatus} from '../hooks/useValidationStatus'
-import {useTranslation} from '../i18n/hooks/useTranslation'
 import {getSelectedPerspective} from '../perspective/getSelectedPerspective'
 import {type ReleaseId} from '../perspective/types'
 import {usePerspective} from '../perspective/usePerspective'
@@ -48,7 +48,15 @@ import {
   useDocumentValuePermissions,
   usePresenceStore,
 } from '../store'
-import {EMPTY_ARRAY, getDraftId, getPublishedId, getVersionFromId, useUnique} from '../util'
+import {isNewDocument} from '../store/_legacy/document/isNewDocument'
+import {
+  EMPTY_ARRAY,
+  getDraftId,
+  getPublishedId,
+  getVersionFromId,
+  getVersionId,
+  useUnique,
+} from '../util'
 import {
   type FormState,
   getExpandOperations,
@@ -145,6 +153,7 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
     throw new Error(`Schema type for '${documentType}' not found`)
   }
   const liveEdit = Boolean(schemaType.liveEdit)
+  const publishedId = getPublishedId(documentId)
 
   const telemetry = useTelemetry()
 
@@ -182,7 +191,7 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
   const editState = useEditState(documentId, documentType, 'default', activeDocumentReleaseId)
 
   const connectionState = useConnectionState(documentId, documentType, releaseId)
-  useConnectionToast(connectionState)
+  useReconnectingToast(connectionState === 'reconnecting')
 
   const [focusPath, setFocusPath] = useState<Path>(initialFocusPath || EMPTY_ARRAY)
 
@@ -258,12 +267,21 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
   )
 
   const requiredPermission = value._createdAt ? 'update' : 'create'
+  const targetDocumentId = useMemo(() => {
+    if (releaseId) {
+      return getVersionId(publishedId, releaseId)
+    }
+
+    // in cases where there is a draft in a live edit, we need to use it so that it can be published
+    // in case if the user has permissions to do so otherwise just use the published id
+    return liveEdit ? editState?.draft?._id || publishedId : getDraftId(documentId)
+  }, [documentId, editState?.draft?._id, liveEdit, publishedId, releaseId])
   const docPermissionsInput = useMemo(() => {
     return {
       ...value,
-      _id: liveEdit ? getPublishedId(documentId) : getDraftId(documentId),
+      _id: targetDocumentId,
     }
-  }, [liveEdit, value, documentId])
+  }, [value, targetDocumentId])
 
   const [permissions, isPermissionsLoading] = useDocumentValuePermissions({
     document: docPermissionsInput,
@@ -286,6 +304,7 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
         : false,
     [selectedPerspective],
   )
+  const {isLinked} = useCanvasCompanionDoc(value._id)
 
   const readOnly = useMemo(() => {
     const hasNoPermission = !isPermissionsLoading && !permissions?.granted
@@ -303,7 +322,8 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
       !editState.draft &&
       !editState.published &&
       onlyHasVersions &&
-      selectedPerspectiveName !== getVersionFromId(editState.version._id)
+      selectedPerspectiveName !== getVersionFromId(editState.version._id) &&
+      isNewDocument(editState) === false
     ) {
       return true
     }
@@ -316,13 +336,23 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
       return true
     }
 
-    // If a release is selected, validate that the document id matches the selected release id
-    if (releaseId && getVersionFromId(value._id) !== releaseId) {
+    // If a release is selected, validate that the document id matches the selected release id.
+    //
+    // If the user is viewing a new document (a document that exists locally, but has not yet been
+    // created in the dataset), they are permitted to edit it, regardless of which perspective was
+    // selected when they created it. This will cause it to be created in the dataset, attached to
+    // the currently selected perspective.
+    if (
+      releaseId &&
+      getVersionFromId(value._id) !== releaseId &&
+      isNewDocument(editState) === false
+    ) {
       return true
     }
 
     const isReadOnly =
       !ready ||
+      isLinked ||
       hasNoPermission ||
       updateActionDisabled ||
       createActionDisabled ||
@@ -337,6 +367,7 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
     return Boolean(readOnlyProp)
   }, [
     isPermissionsLoading,
+    isLinked,
     permissions?.granted,
     schemaType,
     isNonExistent,
@@ -547,25 +578,4 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
     onSetCollapsedPath: handleOnSetCollapsedPath,
     onSetCollapsedFieldSet: handleOnSetCollapsedFieldSet,
   }
-}
-
-const useConnectionToast = (connectionState: ConnectionState) => {
-  const {push: pushToast} = useToast()
-  const {t} = useTranslation('studio')
-
-  useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout>
-    if (connectionState === 'reconnecting') {
-      timeout = setTimeout(() => {
-        pushToast({
-          id: 'sanity/reconnecting',
-          status: 'warning',
-          title: t('form.reconnecting.toast.title'),
-        })
-      }, 2000) // 2 seconds, we can iterate on the value
-    }
-    return () => {
-      if (timeout) clearTimeout(timeout)
-    }
-  }, [connectionState, pushToast, t])
 }

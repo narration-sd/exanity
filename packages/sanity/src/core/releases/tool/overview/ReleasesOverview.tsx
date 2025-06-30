@@ -1,3 +1,4 @@
+import {type ReleaseDocument} from '@sanity/client'
 import {AddIcon, ChevronDownIcon, EarthGlobeIcon} from '@sanity/icons'
 import {Box, type ButtonMode, Card, Flex, Inline, Stack, Text, useMediaIndex} from '@sanity/ui'
 import {format, isSameDay} from 'date-fns'
@@ -8,14 +9,15 @@ import {type SearchParam, useRouter} from 'sanity/router'
 import {Tooltip} from '../../../../ui-components'
 import {Button} from '../../../../ui-components/button/Button'
 import {CalendarFilter} from '../../../components/inputs/DateFilters/calendar/CalendarFilter'
+import useDialogTimeZone from '../../../hooks/useDialogTimeZone'
+import {useTimeZone} from '../../../hooks/useTimeZone'
 import {useTranslation} from '../../../i18n'
 import {usePerspective} from '../../../perspective/usePerspective'
-import useDialogTimeZone from '../../../scheduledPublishing/hooks/useDialogTimeZone'
-import useTimeZone from '../../../scheduledPublishing/hooks/useTimeZone'
+import {CONTENT_RELEASES_TIME_ZONE_SCOPE} from '../../../studio/constants'
 import {CreateReleaseDialog} from '../../components/dialog/CreateReleaseDialog'
 import {useReleasesUpsell} from '../../contexts/upsell/useReleasesUpsell'
 import {releasesLocaleNamespace} from '../../i18n'
-import {isReleaseDocument, type ReleaseDocument} from '../../store/types'
+import {isReleaseDocument} from '../../store/types'
 import {useActiveReleases} from '../../store/useActiveReleases'
 import {useArchivedReleases} from '../../store/useArchivedReleases'
 import {useReleaseOperations} from '../../store/useReleaseOperations'
@@ -53,7 +55,7 @@ const DEFAULT_ARCHIVED_RELEASES_OVERVIEW_SORT: TableSort = {
   column: 'lastActivity',
   direction: 'desc',
 }
-// eslint-disable-next-line max-statements
+
 export function ReleasesOverview() {
   const {data: releases, loading: loadingReleases} = useActiveReleases()
   const {data: archivedReleases} = useArchivedReleases()
@@ -71,9 +73,10 @@ export function ReleasesOverview() {
   const loadingTableData = loading || (!releasesMetadata && Boolean(releaseIds.length))
   const {t} = useTranslation(releasesLocaleNamespace)
   const {t: tCore} = useTranslation()
-  const {timeZone, utcToCurrentZoneDate} = useTimeZone()
+  const timeZoneScope = CONTENT_RELEASES_TIME_ZONE_SCOPE
+  const {timeZone, utcToCurrentZoneDate} = useTimeZone(timeZoneScope)
   const {selectedPerspective} = usePerspective()
-  const {DialogTimeZone, dialogProps, dialogTimeZoneShow} = useDialogTimeZone()
+  const {DialogTimeZone, dialogProps, dialogTimeZoneShow} = useDialogTimeZone(timeZoneScope)
   const getTimezoneAdjustedDateTimeRange = useTimezoneAdjustedDateTimeRange()
 
   const {createRelease} = useReleaseOperations()
@@ -104,13 +107,11 @@ export function ReleasesOverview() {
 
   const tableReleases = useMemo<TableRelease[]>(() => {
     if (!hasReleases || !releasesMetadata) return []
-    return [
-      ...releases.map((release) => ({
-        ...release,
-        publishAt: release.publishAt || release.metadata.intendedPublishAt,
-        documentsMetadata: releasesMetadata[release._id] || {},
-      })),
-    ]
+    return releases.map((release) => ({
+      ...release,
+      publishAt: release.publishAt || release.metadata.intendedPublishAt,
+      documentsMetadata: releasesMetadata[release._id] || {},
+    }))
   }, [hasReleases, releasesMetadata, releases])
 
   const isMounted = useRef(false)
@@ -188,7 +189,7 @@ export function ReleasesOverview() {
         ? {
             initial: {opacity: 0},
             animate: {opacity: 1},
-            transition: {duration: 0.4, ease: 'easeInOut'},
+            transition: {duration: 0.4, ease: 'easeInOut' as const},
           }
         : {}),
     }
@@ -341,6 +342,7 @@ export function ReleasesOverview() {
             renderCalendarDay={ReleaseCalendarFilterDay}
             selectedDate={releaseFilterDate}
             onSelect={handleSelectFilterDate}
+            timeZoneScope={CONTENT_RELEASES_TIME_ZONE_SCOPE}
           />
         </Card>
       </Flex>

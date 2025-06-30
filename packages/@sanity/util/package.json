@@ -1,6 +1,6 @@
 {
   "name": "@sanity/util",
-  "version": "3.86.1",
+  "version": "3.95.0",
   "description": "Utilities shared across projects of Sanity",
   "keywords": [
     "sanity",
@@ -103,29 +103,32 @@
     }
   },
   "files": [
-    "lib",
-    "src"
+    "lib"
   ],
   "scripts": {
     "build": "pnpm clean && pkg-utils build --strict --check --clean",
-    "check:types": "tsc --project tsconfig.lib.json",
+    "check:types": "(cd ../../.. && tsc --project packages/@sanity/util/tsconfig.lib.json --erasableSyntaxOnly)",
     "clean": "rimraf client.js concurrency-limiter.js content.js createSafeJsonParser.js fs.js legacyDateFormat.js lib paths.js",
+    "lint": "eslint .",
     "prepublishOnly": "turbo run build",
     "test": "vitest run",
     "watch": "pkg-utils watch"
   },
   "dependencies": {
-    "@sanity/client": "^6.29.0",
+    "@date-fns/tz": "^1.2.0",
+    "@date-fns/utc": "^2.1.0",
+    "@sanity/client": "^7.6.0",
     "@sanity/types": "workspace:*",
+    "date-fns": "^4.1.0",
     "get-random-values-esm": "1.0.2",
-    "moment": "^2.30.1",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
     "@repo/package.config": "workspace:*",
     "@repo/test-config": "workspace:*",
     "rimraf": "^5.0.10",
-    "vitest": "^3.1.1"
+    "vitest": "^3.2.3"
   },
   "engines": {
     "node": ">=18"

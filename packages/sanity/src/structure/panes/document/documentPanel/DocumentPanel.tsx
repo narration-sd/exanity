@@ -3,6 +3,8 @@ import {useEffect, useMemo, useRef, useState} from 'react'
 import {
   getSanityCreateLinkMetadata,
   getVersionFromId,
+  isNewDocument,
+  isPerspectiveWriteable,
   isReleaseDocument,
   isReleaseScheduledOrScheduling,
   isSanityCreateLinked,
@@ -17,6 +19,7 @@ import {css, styled} from 'styled-components'
 
 import {PaneContent, usePane, usePaneLayout, usePaneRouter} from '../../../components'
 import {isLiveEditEnabled} from '../../../components/paneItem/helpers'
+import {mustChooseNewDocumentDestination} from '../../../mustChooseNewDocumentDestination'
 import {useStructureTool} from '../../../useStructureTool'
 import {DocumentInspectorPanel} from '../documentInspector'
 import {InspectDialog} from '../inspectDialog'
@@ -27,11 +30,14 @@ import {
   InsufficientPermissionBanner,
   ReferenceChangedBanner,
 } from './banners'
-import {AddToReleaseBanner} from './banners/AddToReleaseBanner'
 import {ArchivedReleaseDocumentBanner} from './banners/ArchivedReleaseDocumentBanner'
+import {CanvasLinkedBanner} from './banners/CanvasLinkedBanner'
+import {ChooseNewDocumentDestinationBanner} from './banners/ChooseNewDocumentDestinationBanner'
 import {CreateLinkedBanner} from './banners/CreateLinkedBanner'
+import {DocumentNotInReleaseBanner} from './banners/DocumentNotInReleaseBanner'
 import {DraftLiveEditBanner} from './banners/DraftLiveEditBanner'
 import {OpenReleaseToEditBanner} from './banners/OpenReleaseToEditBanner'
+import {RevisionNotFoundBanner} from './banners/RevisionNotFoundBanner'
 import {ScheduledReleaseBanner} from './banners/ScheduledReleaseBanner'
 import {UnpublishedDocumentBanner} from './banners/UnpublishedDocumentBanner'
 import {FormView} from './documentViews'
@@ -167,9 +173,39 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
     if (params?.historyVersion) {
       return <ArchivedReleaseDocumentBanner />
     }
+
     const isScheduledRelease =
       isReleaseDocument(selectedPerspective) && isReleaseScheduledOrScheduling(selectedPerspective)
-    if (isScheduledRelease) {
+
+    const documentInScheduledRelease = Boolean(
+      isScheduledRelease &&
+        displayed?._id &&
+        getVersionFromId(displayed?._id) === selectedReleaseId,
+    )
+
+    const isSelectedPerspectiveWriteable = isPerspectiveWriteable({
+      selectedPerspective,
+      schemaType,
+    })
+
+    if (
+      mustChooseNewDocumentDestination({
+        isSelectedPerspectiveWriteable,
+        editState,
+      })
+    ) {
+      return (
+        !isSelectedPerspectiveWriteable.result && (
+          <ChooseNewDocumentDestinationBanner
+            schemaType={schemaType}
+            selectedPerspective={selectedPerspective}
+            reason={isSelectedPerspectiveWriteable.reason}
+          />
+        )
+      )
+    }
+
+    if (documentInScheduledRelease) {
       return <ScheduledReleaseBanner currentRelease={selectedPerspective as ReleaseDocument} />
     }
     const isPinnedDraftOrPublish = isSystemBundle(selectedPerspective)
@@ -178,13 +214,15 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
       displayed?._id &&
       getVersionFromId(displayed._id) !== selectedReleaseId &&
       ready &&
-      !isPinnedDraftOrPublish
+      !isPinnedDraftOrPublish &&
+      isNewDocument(editState) === false
     ) {
       return (
-        <AddToReleaseBanner
+        <DocumentNotInReleaseBanner
           documentId={value._id}
           currentRelease={selectedPerspective as ReleaseDocument}
           value={displayed || undefined}
+          isScheduledRelease={isScheduledRelease}
         />
       )
     }
@@ -205,7 +243,7 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
       )
     }
 
-    if (activeView.type !== 'form' || isPermissionsLoading || !ready) return null
+    if (activeView.type !== 'form' || isPermissionsLoading) return null
 
     return (
       <>
@@ -213,8 +251,10 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
         {!permissions?.granted && (
           <InsufficientPermissionBanner requiredPermission={requiredPermission} />
         )}
+        <RevisionNotFoundBanner />
         <ReferenceChangedBanner />
         <DeprecatedDocumentTypeBanner />
+        <CanvasLinkedBanner />
         <DeletedDocumentBanners />
         <UnpublishedDocumentBanner />
         <OpenReleaseToEditBanner
@@ -228,10 +268,10 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
     selectedPerspective,
     displayed,
     selectedReleaseId,
+    editState,
     ready,
     activeView.type,
     isLiveEdit,
-    editState?.draft?._id,
     isPermissionsLoading,
     showCreateBanner,
     permissions?.granted,

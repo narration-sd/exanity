@@ -1,3 +1,4 @@
+import {type ReleaseType} from '@sanity/client'
 import {LockIcon, PublishIcon} from '@sanity/icons'
 import {Card, Flex, Spinner, Stack, TabList, Text, useClickOutsideEvent, useToast} from '@sanity/ui'
 import {format, isBefore, isValid, parse, startOfMinute} from 'date-fns'
@@ -10,12 +11,12 @@ import {type CalendarLabels} from '../../../components/inputs/DateInputs/calenda
 import {DatePicker} from '../../../components/inputs/DateInputs/DatePicker'
 import {LazyTextInput} from '../../../components/inputs/DateInputs/LazyTextInput'
 import {getCalendarLabels} from '../../../form/inputs/DateInputs/utils'
+import {useTimeZone} from '../../../hooks/useTimeZone'
 import {useTranslation} from '../../../i18n/hooks/useTranslation'
-import useTimeZone from '../../../scheduledPublishing/hooks/useTimeZone'
+import {CONTENT_RELEASES_TIME_ZONE_SCOPE} from '../../../studio/constants'
 import {ReleaseAvatar} from '../../components/ReleaseAvatar'
 import {useReleaseTime} from '../../hooks/useReleaseTime'
 import {releasesLocaleNamespace} from '../../i18n'
-import {type ReleaseType} from '../../store'
 import {useReleaseOperations} from '../../store/useReleaseOperations'
 import {getIsScheduledDateInPast} from '../../util/getIsScheduledDateInPast'
 import {getReleaseTone} from '../../util/getReleaseTone'
@@ -40,7 +41,7 @@ export function ReleaseTypePicker(props: {release: NotArchivedRelease}): React.J
   const {t} = useTranslation()
   const {updateRelease} = useReleaseOperations()
   const toast = useToast()
-  const {utcToCurrentZoneDate, zoneDateToUtc} = useTimeZone()
+  const {utcToCurrentZoneDate, zoneDateToUtc} = useTimeZone(CONTENT_RELEASES_TIME_ZONE_SCOPE)
   const getReleaseTime = useReleaseTime()
 
   const [open, setOpen] = useState(false)
@@ -228,7 +229,8 @@ export function ReleaseTypePicker(props: {release: NotArchivedRelease}): React.J
               value={intendedPublishAtTimezoneAdjusted}
               onChange={handlePublishAtCalendarChange}
               isPastDisabled
-              showTimezone
+              showTimeZone
+              timeZoneScope={CONTENT_RELEASES_TIME_ZONE_SCOPE}
             />
           </>
         )}
