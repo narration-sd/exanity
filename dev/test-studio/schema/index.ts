@@ -5,6 +5,7 @@ import {commentsCI} from './ci/comments'
 import conditionalFieldset from './ci/conditionalFieldset'
 import validationTest from './ci/validationCI'
 import actions from './debug/actions'
+import {allFieldsGroupHidden} from './debug/allFieldsGroupHidden'
 import {allNativeInputComponents} from './debug/allNativeInputComponents'
 import {arrayCapabilities} from './debug/arrayCapabilities'
 import button from './debug/button'
@@ -84,6 +85,7 @@ import {virtualizationInObject} from './debug/virtualizationInObject'
 import {v3docs} from './docs/v3'
 import markdown from './externalPlugins/markdown'
 import mux from './externalPlugins/mux'
+import house from './house'
 import playlist from './playlist'
 import playlistTrack from './playlistTrack'
 import code from './plugins/code'
@@ -121,6 +123,7 @@ import slugs, {slugAlias} from './standard/slugs'
 import strings from './standard/strings'
 import texts from './standard/texts'
 import urls from './standard/urls'
+import videos from './standard/videos'
 
 // @todo temporary, until code input is v3 compatible
 const codeInputType = {
@@ -168,6 +171,7 @@ export function createSchemaTypes(projectId: string) {
     emails,
     files,
     images,
+    videos,
     numbers,
     objects,
     ptAllTheBellsAndWhistlesType,
@@ -253,6 +257,7 @@ export function createSchemaTypes(projectId: string) {
     patchOnMountDebug,
     simpleArrayOfObjects,
     arrayCapabilities,
+    allFieldsGroupHidden,
     simpleReferences,
     reservedFieldNames,
     review,
@@ -288,6 +293,7 @@ export function createSchemaTypes(projectId: string) {
     author,
     book,
     species,
+    house,
     playlist,
     playlistTrack,
 

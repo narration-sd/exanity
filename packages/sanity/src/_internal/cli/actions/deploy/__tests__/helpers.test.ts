@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// oxlint-disable no-explicit-any
 import {type Dirent, type Stats} from 'node:fs'
 import fs from 'node:fs/promises'
 import {Readable} from 'node:stream'
@@ -116,7 +116,7 @@ describe('getOrCreateStudio', () => {
     mockClientRequest.mockResolvedValueOnce([existingApp]) // Simulate no list of deployments
     ;(mockPrompt.single as Mock<any>).mockImplementationOnce(async ({choices}: any) => {
       // Simulate user input
-      return Promise.resolve(choices[2].value)
+      return Promise.resolve(choices[0].value)
     })
 
     const result = await getOrCreateStudio({
@@ -151,11 +151,37 @@ describe('getOrCreateUserApplicationFromConfig', () => {
       spinner: mockSpinner,
       context,
       appHost: 'example',
+      appId: undefined,
     })
 
     expect(mockClientRequest).toHaveBeenCalledWith({
       uri: '/user-applications',
       query: {appHost: 'example'},
+    })
+    expect(result).toEqual({
+      id: 'existing-app',
+      urlType: 'internal',
+      appHost: 'example.sanity.studio',
+    })
+  })
+
+  it('gets an existing user application if `deployment.appId` is provided in the config', async () => {
+    mockClientRequest.mockResolvedValueOnce({
+      id: 'existing-app',
+      appHost: 'example.sanity.studio',
+      urlType: 'internal',
+    })
+
+    const result = await getOrCreateUserApplicationFromConfig({
+      client: mockClient,
+      spinner: mockSpinner,
+      context,
+      appHost: undefined,
+      appId: 'existing-app',
+    })
+
+    expect(mockClientRequest).toHaveBeenCalledWith({
+      uri: '/user-applications/existing-app',
     })
     expect(result).toEqual({
       id: 'existing-app',
@@ -177,6 +203,7 @@ describe('getOrCreateUserApplicationFromConfig', () => {
       client: mockClient,
       spinner: mockSpinner,
       context,
+      appId: undefined,
       appHost: 'newhost',
     })
 
@@ -432,7 +459,7 @@ describe('getOrCreateApplication', () => {
     mockClientRequest.mockResolvedValueOnce([existingApp]) // getUserApplications response
     ;(mockPrompt.single as Mock<any>).mockImplementationOnce(async ({choices}: any) => {
       // Simulate selecting the existing app
-      return Promise.resolve(choices[2].value)
+      return Promise.resolve(choices[0].value)
     })
 
     const result = await getOrCreateApplication({

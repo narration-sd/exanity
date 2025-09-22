@@ -319,6 +319,7 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
             count: rejected.length,
           }),
           description: rejected.map((task, i) => (
+            // oxlint-disable-next-line no-array-index-key
             <Flex key={i} gap={2} padding={2}>
               <Box>
                 <Text weight="medium">{task.file.name}</Text>
@@ -336,7 +337,6 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
       readyTasks.forEach((task) => {
         uploadFile(
           task.file,
-          // eslint-disable-next-line max-nested-callbacks
           sortBy(task.uploaderCandidates, (candidate) => candidate.uploader.priority)[0],
         )
       })
@@ -418,6 +418,8 @@ export function PortableTextInput(props: PortableTextInputProps): ReactNode {
 
 /**
  * Custom PTE plugin that translates `EditorEmittedEvent`s to `EditorChange`s
+ *
+ * @internal
  */
 function EditorChangePlugin(props: {onChange: (change: EditorChange) => void}) {
   const handleEditorEvent = useCallback(
@@ -534,8 +536,10 @@ function UpdateValuePlugin(props: {value: Array<PortableTextBlock> | undefined})
  * `EditorProvider` doesn't have a `readOnly` prop. Instead, this custom PTE
  * plugin listens for the prop change and sends a `toggle readOnly` event to
  * the editor.
+ *
+ * @internal
  */
-function UpdateReadOnlyPlugin(props: {readOnly: boolean}) {
+export function UpdateReadOnlyPlugin(props: {readOnly: boolean}) {
   const editor = useEditor()
 
   useEffect(() => {

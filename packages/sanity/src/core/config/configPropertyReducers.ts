@@ -16,6 +16,7 @@ import {
   type DocumentInspector,
 } from './document'
 import {flattenConfig} from './flattenConfig'
+import {type ReleaseActionComponent, type ReleaseActionsContext} from './releases/actions'
 import {
   type AsyncConfigPropertyReducer,
   type ConfigContext,
@@ -28,6 +29,7 @@ import {
   type DocumentLanguageFilterContext,
   type NewDocumentOptionsContext,
   type PluginOptions,
+  QUOTA_EXCLUDED_RELEASES_ENABLED,
   type ResolveProductionUrlContext,
   type Tool,
 } from './types'
@@ -62,7 +64,6 @@ export const resolveProductionUrlReducer: AsyncConfigPropertyReducer<
   const resolveProductionUrl = document?.productionUrl
   // the redundant await is useful for error logging because the error is caught
   // in this stack vs somewhere down stream
-  // eslint-disable-next-line no-return-await
   if (resolveProductionUrl) return await resolveProductionUrl(prev, context)
   return prev
 }
@@ -188,6 +189,23 @@ export const documentActionsReducer: ConfigPropertyReducer<
   throw new Error(
     `Expected \`document.actions\` to be an array or a function, but received ${getPrintableType(
       documentActions,
+    )}`,
+  )
+}
+
+export const releaseActionsReducer: ConfigPropertyReducer<
+  ReleaseActionComponent[],
+  ReleaseActionsContext
+> = (prev, {releases}, context) => {
+  const releaseActions = releases?.actions
+  if (!releaseActions) return prev
+
+  if (typeof releaseActions === 'function') return releaseActions(prev, context)
+  if (Array.isArray(releaseActions)) return [...prev, ...releaseActions]
+
+  throw new Error(
+    `Expected \`releases.actions\` to be an array or a function, but received ${getPrintableType(
+      releaseActions,
     )}`,
   )
 }
@@ -487,6 +505,25 @@ export const serverDocumentActionsReducer = (opts: {
   return result
 }
 
+export const internalQuotaExcludedReleasesEnabledReducer = (opts: {
+  config: PluginOptions
+  initialValue: boolean | undefined
+}): boolean | undefined => {
+  const {config, initialValue} = opts
+  const flattenedConfig = flattenConfig(config, [])
+
+  const result = flattenedConfig.reduce((acc: boolean | undefined, {config: innerConfig}) => {
+    const enabled = innerConfig[QUOTA_EXCLUDED_RELEASES_ENABLED]
+
+    if (typeof enabled === 'undefined') return acc
+    if (typeof enabled === 'boolean') return enabled
+
+    throw new Error(`Expected a boolean, but received ${getPrintableType(enabled)}`)
+  }, initialValue)
+
+  return result
+}
+
 export const partialIndexingEnabledReducer = (opts: {
   config: PluginOptions
   initialValue: boolean
@@ -516,6 +553,21 @@ export const legacySearchEnabledReducer: ConfigPropertyReducer<boolean, ConfigCo
 ): boolean => {
   if (typeof search?.enableLegacySearch !== 'undefined') {
     return search.enableLegacySearch
+  }
+
+  return prev
+}
+
+export const draftsEnabledReducer: ConfigPropertyReducer<boolean, ConfigContext> = (
+  prev,
+  {document},
+): boolean => {
+  if (typeof document?.drafts?.enabled === 'boolean') {
+    return document?.drafts?.enabled
+  }
+
+  if (typeof document?.drafts?.enabled !== 'undefined') {
+    throw new Error(`Expected boolean, but received ${getPrintableType(document?.drafts?.enabled)}`)
   }
 
   return prev
@@ -597,4 +649,26 @@ export const announcementsEnabledReducer = (opts: {
   }, initialValue)
 
   return result
+}
+
+export const advancedVersionControlEnabledReducer: ConfigPropertyReducer<boolean, ConfigContext> = (
+  prev,
+  {advancedVersionControl},
+  context,
+): boolean => {
+  const resolver = advancedVersionControl?.enabled
+
+  if (typeof resolver === 'boolean') {
+    return resolver
+  }
+
+  if (typeof resolver === 'function') {
+    return resolver(prev, context)
+  }
+
+  if (typeof resolver !== 'undefined') {
+    throw new Error(`Expected boolean, but received ${getPrintableType(resolver)}`)
+  }
+
+  return prev
 }

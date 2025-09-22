@@ -57,7 +57,6 @@ export const PaneHeaderActions = memo(function PaneHeaderActions(props: PaneHead
       }
 
       const handler =
-        // eslint-disable-next-line no-nested-ternary
         typeof item.action === 'function'
           ? item.action
           : typeof item.action === 'string'
@@ -151,9 +150,7 @@ export const PaneHeaderActions = memo(function PaneHeaderActions(props: PaneHead
 
   return (
     <Flex gap={1}>
-      {combinedInitialValueTemplates.length > 0 && (
-        <PaneHeaderCreateButton templateItems={combinedInitialValueTemplates} />
-      )}
+      <PaneHeaderCreateButton templateItems={combinedInitialValueTemplates} />
 
       {actionNodes.map((node) => (
         <PaneHeaderActionButton key={node.key} node={node} />

@@ -84,8 +84,8 @@ export function CreateButton(props: Props) {
         <Menu ref={menuRef}>
           {createOptions.map((createOption) => (
             <Tooltip
-              disabled={createOption.permission.granted}
               key={createOption.id}
+              disabled={createOption.permission.granted}
               content={
                 <InsufficientPermissionsMessage
                   currentUser={currentUser}
@@ -100,7 +100,6 @@ export function CreateButton(props: Props) {
                   disabled={!createOption.permission.granted}
                   icon={createOption.icon}
                   text={getI18nText(createOption).title}
-                  // eslint-disable-next-line react/jsx-no-bind
                   onClick={() => onCreate(createOption)}
                 />
               </div>
@@ -116,7 +115,6 @@ export function CreateButton(props: Props) {
       text={t('inputs.reference.action.create-new-document-select')}
       mode="ghost"
       disabled={!createOptions[0].permission.granted || props.readOnly}
-      // eslint-disable-next-line react/jsx-no-bind
       onClick={() => onCreate(createOptions[0])}
       icon={AddIcon}
       size="large"

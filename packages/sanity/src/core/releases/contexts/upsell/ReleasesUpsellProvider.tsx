@@ -1,18 +1,10 @@
-import {useTelemetry} from '@sanity/telemetry/react'
-import {template} from 'lodash'
-import {useCallback, useEffect, useMemo, useState} from 'react'
+import {useCallback, useMemo, useState} from 'react'
 import {firstValueFrom} from 'rxjs'
 import {ReleasesUpsellContext} from 'sanity/_singletons'
 
-import {useClient, useFeatureEnabled, useProjectId} from '../../../hooks'
-import {
-  UpsellDialogDismissed,
-  UpsellDialogLearnMoreCtaClicked,
-  UpsellDialogUpgradeCtaClicked,
-  UpsellDialogViewed,
-} from '../../../studio'
-import {TEMPLATE_OPTIONS} from '../../../studio/upsell/constants'
-import {type UpsellData} from '../../../studio/upsell/types'
+import {useFeatureEnabled} from '../../../hooks'
+import {FEATURES} from '../../../hooks/useFeatureEnabled'
+import {useUpsellData} from '../../../hooks/useUpsellData'
 import {UpsellDialog} from '../../../studio/upsell/UpsellDialog'
 import {useActiveReleases} from '../../store/useActiveReleases'
 import {useOrgActiveReleaseCount} from '../../store/useOrgActiveReleaseCount'
@@ -31,23 +23,18 @@ class StudioReleaseLimitExceededError extends Error {
   }
 }
 
-const FEATURE = 'content-releases'
-const BASE_URL = 'www.sanity.io'
-// Date when the change from array to object in the data returned was introduced.
-const API_VERSION = '2024-04-19'
-
 /**
  * @beta
  * @hidden
  */
 export function ReleasesUpsellProvider(props: {children: React.ReactNode}) {
   const [upsellDialogOpen, setUpsellDialogOpen] = useState(false)
-  const [upsellData, setUpsellData] = useState<UpsellData | null>(null)
-  const projectId = useProjectId()
-  const telemetry = useTelemetry()
-  const client = useClient({apiVersion: API_VERSION})
   const {data: activeReleases} = useActiveReleases()
-  const {enabled: isReleasesFeatureEnabled} = useFeatureEnabled('contentReleases')
+  const {enabled: isReleasesFeatureEnabled} = useFeatureEnabled(FEATURES.contentReleases)
+  const {upsellData, telemetryLogs} = useUpsellData({
+    dataUri: '/journey/content-releases',
+    feature: 'content-releases',
+  })
 
   const mode = useMemo(() => {
     /**
@@ -63,43 +50,6 @@ export function ReleasesUpsellProvider(props: {children: React.ReactNode}) {
     return 'default'
   }, [isReleasesFeatureEnabled, upsellData])
 
-  const telemetryLogs = useMemo(
-    (): ReleasesUpsellContextValue['telemetryLogs'] => ({
-      dialogSecondaryClicked: () =>
-        telemetry.log(UpsellDialogLearnMoreCtaClicked, {
-          feature: FEATURE,
-          type: 'modal',
-        }),
-      dialogPrimaryClicked: () =>
-        telemetry.log(UpsellDialogUpgradeCtaClicked, {
-          feature: FEATURE,
-          type: 'modal',
-        }),
-      panelViewed: (source) =>
-        telemetry.log(UpsellDialogViewed, {
-          feature: FEATURE,
-          type: 'inspector',
-          source,
-        }),
-      panelDismissed: () =>
-        telemetry.log(UpsellDialogDismissed, {
-          feature: FEATURE,
-          type: 'inspector',
-        }),
-      panelPrimaryClicked: () =>
-        telemetry.log(UpsellDialogUpgradeCtaClicked, {
-          feature: FEATURE,
-          type: 'inspector',
-        }),
-      panelSecondaryClicked: () =>
-        telemetry.log(UpsellDialogLearnMoreCtaClicked, {
-          feature: FEATURE,
-          type: 'inspector',
-        }),
-    }),
-    [telemetry],
-  )
-
   const handlePrimaryButtonClick = useCallback(() => {
     telemetryLogs.dialogPrimaryClicked()
   }, [telemetryLogs])
@@ -110,40 +60,8 @@ export function ReleasesUpsellProvider(props: {children: React.ReactNode}) {
 
   const handleClose = useCallback(() => {
     setUpsellDialogOpen(false)
-    telemetry.log(UpsellDialogDismissed, {
-      feature: FEATURE,
-      type: 'modal',
-    })
-  }, [telemetry])
-
-  useEffect(() => {
-    const data$ = client.observable.request<UpsellData | null>({
-      uri: '/journey/content-releases',
-    })
-
-    const sub = data$.subscribe({
-      next: (data) => {
-        if (!data) return
-        try {
-          const ctaUrl = template(data.ctaButton.url, TEMPLATE_OPTIONS)
-          data.ctaButton.url = ctaUrl({baseUrl: BASE_URL, projectId})
-
-          const secondaryUrl = template(data.secondaryButton.url, TEMPLATE_OPTIONS)
-          data.secondaryButton.url = secondaryUrl({baseUrl: BASE_URL, projectId})
-          setUpsellData(data)
-        } catch (e) {
-          // silently fail
-        }
-      },
-      error: () => {
-        // silently fail
-      },
-    })
-
-    return () => {
-      sub.unsubscribe()
-    }
-  }, [client, projectId])
+    telemetryLogs.dialogDismissed()
+  }, [telemetryLogs])
 
   const [releaseCount, setReleaseCount] = useState<number | null>(null)
 
@@ -153,21 +71,20 @@ export function ReleasesUpsellProvider(props: {children: React.ReactNode}) {
       if (orgActiveReleaseCount !== undefined) {
         setReleaseCount(orgActiveReleaseCount)
       }
-
-      telemetry.log(UpsellDialogViewed, {
-        feature: FEATURE,
-        type: 'modal',
-        source: 'navbar',
-      })
+      telemetryLogs.dialogViewed('navbar')
     },
-    [telemetry],
+    [telemetryLogs],
   )
 
   const {releaseLimits$} = useReleaseLimits()
   const {orgActiveReleaseCount$} = useOrgActiveReleaseCount()
 
   const guardWithReleaseLimitUpsell = useCallback(
-    async (cb: () => void, throwError: boolean = false) => {
+    async (
+      cb: () => void,
+      throwError: boolean = false,
+      whenResolved?: (hasPassed: boolean) => void,
+    ) => {
       const doUpsell: (count?: number) => false = (count) => {
         handleOpenDialog(count)
         if (throwError) {
@@ -176,7 +93,10 @@ export function ReleasesUpsellProvider(props: {children: React.ReactNode}) {
         return false
       }
 
-      if (mode === 'upsell') return doUpsell()
+      if (mode === 'upsell') {
+        whenResolved?.(false)
+        return doUpsell()
+      }
 
       const fetchLimitsCount = async () => {
         try {
@@ -195,17 +115,26 @@ export function ReleasesUpsellProvider(props: {children: React.ReactNode}) {
       const result = await fetchLimitsCount()
 
       // silently fail and allow pass through guard
-      if (result === null) return cb()
+      if (result === null) {
+        whenResolved?.(true)
+        return cb()
+      }
 
       const [orgActiveReleaseCount, releaseLimits] = result
 
-      if (releaseLimits === null || orgActiveReleaseCount === null) return cb()
+      if (releaseLimits === null || orgActiveReleaseCount === null) {
+        whenResolved?.(true)
+        return cb()
+      }
 
       const {orgActiveReleaseLimit, datasetReleaseLimit} = releaseLimits
 
       // orgActiveReleaseCount might be missing due to internal server error
       // allow pass through guard in that case
-      if (orgActiveReleaseCount === null) return cb()
+      if (orgActiveReleaseCount === null) {
+        whenResolved?.(true)
+        return cb()
+      }
 
       const activeReleasesCount = activeReleases?.length || 0
 
@@ -220,8 +149,12 @@ export function ReleasesUpsellProvider(props: {children: React.ReactNode}) {
         isCurrentDatasetAtAboveOrgLimit ||
         isOrgAtAboveOrgLimit
 
-      if (shouldShowDialog) return doUpsell(orgActiveReleaseCount)
+      if (shouldShowDialog) {
+        whenResolved?.(false)
+        return doUpsell(orgActiveReleaseCount)
+      }
 
+      whenResolved?.(true)
       return cb()
     },
     [mode, handleOpenDialog, orgActiveReleaseCount$, releaseLimits$, activeReleases?.length],

@@ -1,6 +1,6 @@
 import {readFile} from 'node:fs/promises'
 
-import * as json5 from 'json5'
+import json5 from 'json5'
 import * as z from 'zod'
 
 export const configDefintion = z.object({
@@ -27,7 +27,10 @@ export async function readConfig(path: string): Promise<CodegenConfig> {
     return configDefintion.parseAsync(json)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      throw new Error(`Error in config file\n ${error.errors.map((err) => err.message).join('\n')}`)
+      throw new Error(
+        `Error in config file\n ${error.errors.map((err) => err.message).join('\n')}`,
+        {cause: error},
+      )
     }
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
       return configDefintion.parse({})

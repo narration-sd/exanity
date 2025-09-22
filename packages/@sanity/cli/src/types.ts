@@ -36,6 +36,7 @@ export interface PackageJson {
   peerDependencies?: Record<string, string>
 
   repository?: {type: string; url: string}
+  engines?: Record<string, string>
 }
 
 export interface CliCommandGroupDefinition {
@@ -77,22 +78,6 @@ export interface CliCommandArguments<F = Record<string, unknown>> {
   extraArguments: string[]
 }
 
-export type CliCommandContext = CliV2CommandContext | CliV3CommandContext
-
-export interface CliBaseCommandContext {
-  output: CliOutputter
-  prompt: CliPrompter
-  apiClient: CliApiClient
-  sanityMajorVersion: 2 | 3
-  cliConfigPath?: string
-  cliRoot: string
-  workDir: string
-  corePath?: string
-  chalk: typeof chalk
-  commandRunner: CliCommandRunner
-  fromInitCommand?: boolean
-}
-
 export interface TelemetryUserProperties {
   runtime: string
   runtimeVersion: string
@@ -103,15 +88,17 @@ export interface TelemetryUserProperties {
   dataset?: string
 }
 
-export interface CliV2CommandContext extends CliBaseCommandContext {
-  sanityMajorVersion: 2
-  cliConfig?: SanityJson
-  cliPackageManager?: CliPackageManager
-  telemetry: TelemetryLogger<TelemetryUserProperties>
-}
-
-export interface CliV3CommandContext extends CliBaseCommandContext {
-  sanityMajorVersion: 3
+export interface CliCommandContext {
+  output: CliOutputter
+  prompt: CliPrompter
+  apiClient: CliApiClient
+  cliConfigPath?: string
+  cliRoot: string
+  workDir: string
+  corePath?: string
+  chalk: typeof chalk
+  commandRunner: CliCommandRunner
+  fromInitCommand?: boolean
   cliConfig?: CliConfig
   cliPackageManager: CliPackageManager
   telemetry: TelemetryLogger<TelemetryUserProperties>
@@ -195,7 +182,6 @@ export interface SanityJson {
 
   api?: CliApiConfig
 
-  // eslint-disable-next-line camelcase
   __experimental_spaces?: {
     name: string
     title: string
@@ -312,11 +298,18 @@ export interface ReactCompilerConfig {
 }
 
 interface AppConfig {
+  /**
+   * The ID of your Sanity organization
+   */
   organizationId: string
   /**
-   * Defaults to './src/App'
+   * The entrypoint for your Sanity app. Defaults to './src/App'.
    */
   entry?: string
+
+  /**
+   * @deprecated - Moved to `deployment.appId`
+   */
   id?: string
 }
 
@@ -351,8 +344,14 @@ export interface CliConfig {
 
   vite?: UserViteConfig
 
+  /**
+   * @deprecated - Moved to deployment.autoUpdates
+   */
   autoUpdates?: boolean
 
+  /**
+   * @deprecated - Replaced by deployment.appId
+   */
   studioHost?: string
 
   /**
@@ -361,6 +360,24 @@ export interface CliConfig {
    */
   app?: AppConfig
 
+  /**
+   * Deployment configuration
+   */
+  deployment?: {
+    /**
+     * The ID of your Sanity studio or app. Generated when deploying your studio or app for the first time.
+     * Get the appId either by
+     * - Checking the output of `sanity deploy`.
+     * - Get it from your project's Studio tab in https://sanity.io/manage
+     */
+    appId?: string
+
+    /**
+     * Enable auto-updates for studios.
+     * {@link https://www.sanity.io/docs/cli#auto-updates}
+     */
+    autoUpdates?: boolean
+  }
   /**
    * Configuration for Sanity media libraries.
    */

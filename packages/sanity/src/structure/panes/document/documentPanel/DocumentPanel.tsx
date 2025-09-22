@@ -3,6 +3,8 @@ import {useEffect, useMemo, useRef, useState} from 'react'
 import {
   getSanityCreateLinkMetadata,
   getVersionFromId,
+  isCardinalityOneRelease,
+  isGoingToUnpublish,
   isNewDocument,
   isPerspectiveWriteable,
   isReleaseDocument,
@@ -12,13 +14,15 @@ import {
   LegacyLayerProvider,
   type ReleaseDocument,
   ScrollContainer,
+  useFilteredReleases,
   usePerspective,
+  useWorkspace,
   VirtualizerScrollInstanceProvider,
 } from 'sanity'
 import {css, styled} from 'styled-components'
 
 import {PaneContent, usePane, usePaneLayout, usePaneRouter} from '../../../components'
-import {isLiveEditEnabled} from '../../../components/paneItem/helpers'
+import {hasObsoleteDraft} from '../../../hasObsoleteDraft'
 import {mustChooseNewDocumentDestination} from '../../../mustChooseNewDocumentDestination'
 import {useStructureTool} from '../../../useStructureTool'
 import {DocumentInspectorPanel} from '../documentInspector'
@@ -29,13 +33,14 @@ import {
   DeprecatedDocumentTypeBanner,
   InsufficientPermissionBanner,
   ReferenceChangedBanner,
+  ScheduledDraftOverrideBanner,
 } from './banners'
 import {ArchivedReleaseDocumentBanner} from './banners/ArchivedReleaseDocumentBanner'
 import {CanvasLinkedBanner} from './banners/CanvasLinkedBanner'
 import {ChooseNewDocumentDestinationBanner} from './banners/ChooseNewDocumentDestinationBanner'
 import {CreateLinkedBanner} from './banners/CreateLinkedBanner'
 import {DocumentNotInReleaseBanner} from './banners/DocumentNotInReleaseBanner'
-import {DraftLiveEditBanner} from './banners/DraftLiveEditBanner'
+import {ObsoleteDraftBanner} from './banners/ObsoleteDraftBanner'
 import {OpenReleaseToEditBanner} from './banners/OpenReleaseToEditBanner'
 import {RevisionNotFoundBanner} from './banners/RevisionNotFoundBanner'
 import {ScheduledReleaseBanner} from './banners/ScheduledReleaseBanner'
@@ -103,6 +108,7 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
   const [_portalElement, setPortalElement] = useState<HTMLDivElement | null>(null)
   const [documentScrollElement, setDocumentScrollElement] = useState<HTMLDivElement | null>(null)
   const formContainerElement = useRef<HTMLDivElement | null>(null)
+  const workspace = useWorkspace()
 
   const requiredPermission = value._createdAt ? 'update' : 'create'
 
@@ -147,8 +153,6 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
     return false
   }, [activeView, displayed, documentId, editState?.draft, editState?.published, schemaType, value])
 
-  const isLiveEdit = isLiveEditEnabled(schemaType)
-
   // Scroll to top as `documentId` changes
   useEffect(() => {
     if (!documentScrollElement?.scrollTo) return
@@ -169,6 +173,13 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
   const showInspector = Boolean(!collapsed && inspector)
   const {selectedPerspective, selectedReleaseId} = usePerspective()
 
+  const filteredReleases = useFilteredReleases({
+    historyVersion: params?.historyVersion,
+    displayed,
+    documentId,
+  })
+
+  // eslint-disable-next-line complexity
   const banners = useMemo(() => {
     if (params?.historyVersion) {
       return <ArchivedReleaseDocumentBanner />
@@ -185,6 +196,7 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
 
     const isSelectedPerspectiveWriteable = isPerspectiveWriteable({
       selectedPerspective,
+      isDraftModelEnabled: workspace.document.drafts.enabled,
       schemaType,
     })
 
@@ -208,39 +220,62 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
     if (documentInScheduledRelease) {
       return <ScheduledReleaseBanner currentRelease={selectedPerspective as ReleaseDocument} />
     }
+
+    const hasCardinalityOneReleases = filteredReleases.currentReleases.some(isCardinalityOneRelease)
+    if (selectedPerspective === 'drafts' && hasCardinalityOneReleases) {
+      return <ScheduledDraftOverrideBanner />
+    }
+
     const isPinnedDraftOrPublish = isSystemBundle(selectedPerspective)
+    const isCurrentVersionGoingToUnpublish =
+      editState?.version && isGoingToUnpublish(editState?.version)
 
     if (
       displayed?._id &&
       getVersionFromId(displayed._id) !== selectedReleaseId &&
       ready &&
       !isPinnedDraftOrPublish &&
-      isNewDocument(editState) === false
+      isNewDocument(editState) === false &&
+      !isCurrentVersionGoingToUnpublish
     ) {
       return (
         <DocumentNotInReleaseBanner
           documentId={value._id}
           currentRelease={selectedPerspective as ReleaseDocument}
-          value={displayed || undefined}
           isScheduledRelease={isScheduledRelease}
         />
       )
     }
 
-    if (
-      activeView.type === 'form' &&
-      isLiveEdit &&
-      ready &&
-      editState?.draft?._id &&
-      !selectedReleaseId
-    ) {
-      return (
-        <DraftLiveEditBanner
-          displayed={displayed}
-          documentId={documentId}
-          schemaType={schemaType}
-        />
-      )
+    const displayedHasObsoleteDraft = hasObsoleteDraft({
+      editState,
+      workspace,
+      schemaType,
+    })
+
+    if (activeView.type === 'form' && !selectedReleaseId && displayedHasObsoleteDraft.result) {
+      if (displayedHasObsoleteDraft.reason === 'DRAFT_MODEL_INACTIVE') {
+        return (
+          <ObsoleteDraftBanner
+            displayed={displayed}
+            documentId={documentId}
+            schemaType={schemaType}
+            i18nKey="banners.obsolete-draft.draft-model-inactive.text"
+          />
+        )
+      }
+
+      if (displayedHasObsoleteDraft.reason === 'LIVE_EDIT_ACTIVE') {
+        return (
+          <ObsoleteDraftBanner
+            displayed={displayed}
+            documentId={documentId}
+            schemaType={schemaType}
+            i18nKey="banners.live-edit-draft-banner.text"
+            isEditBlocking
+          />
+        )
+      }
     }
 
     if (activeView.type !== 'form' || isPermissionsLoading) return null
@@ -271,7 +306,6 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
     editState,
     ready,
     activeView.type,
-    isLiveEdit,
     isPermissionsLoading,
     showCreateBanner,
     permissions?.granted,
@@ -279,7 +313,13 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
     documentId,
     value._id,
     schemaType,
+    filteredReleases,
+    workspace,
   ])
+  const portalElements = useMemo(
+    () => ({documentScrollElement: documentScrollElement}),
+    [documentScrollElement],
+  )
   const showFormView = features.resizablePanes || !showInspector
   return (
     <PaneContent>
@@ -291,10 +331,7 @@ export const DocumentPanel = function DocumentPanel(props: DocumentPanelProps) {
               <DocumentPanelSubHeader />
             </LegacyLayerProvider>
             <DocumentBox flex={2} overflow="hidden">
-              <PortalProvider
-                element={portalElement}
-                __unstable_elements={{documentScrollElement: documentScrollElement}}
-              >
+              <PortalProvider element={portalElement} __unstable_elements={portalElements}>
                 <BoundaryElementProvider element={documentScrollElement}>
                   <VirtualizerScrollInstanceProvider
                     scrollElement={documentScrollElement}

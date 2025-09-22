@@ -1,5 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
-/* eslint-disable @sanity/i18n/no-attribute-string-literals */
 import {useToast} from '@sanity/ui'
 import {type ReactNode, useCallback, useEffect, useState} from 'react'
 import {useHotModuleReload} from 'use-hot-module-reload'
@@ -8,6 +6,7 @@ import {SchemaError} from '../config'
 import {errorReporter} from '../error/errorReporter'
 import {isImportError} from '../error/isImportError'
 import {isKnownError} from '../error/isKnownError'
+import {isDocumentLimitError} from '../limits/context/documents/isDocumentLimitError'
 import {CorsOriginError} from '../store'
 import {globalScope} from '../util'
 import {CorsOriginErrorScreen, SchemaErrorsScreen} from './screens'
@@ -45,6 +44,10 @@ export function StudioRootErrorHandler(props: {children: ReactNode}) {
     // errorChannel.subscribe() returns a unsubscriber function.
     // By returning it from this `useEffect`, it'll unsubscribe on unmount.
     return errorChannel.subscribe((event) => {
+      if (isDocumentLimitError(event.error)) {
+        return
+      }
+
       // NOTE: Certain errors (such as the `ResizeObserver loop limit exceeded` error) is thrown
       // by the browser, and does not include an `error` property. We ignore these errors.
       if (!event.error) {
@@ -94,7 +97,12 @@ export function StudioRootErrorHandler(props: {children: ReactNode}) {
   }
 
   if (errorState.error instanceof CorsOriginError) {
-    return <CorsOriginErrorScreen projectId={errorState.error.projectId} />
+    return (
+      <CorsOriginErrorScreen
+        projectId={errorState.error.projectId}
+        isStaging={errorState.error.isStaging}
+      />
+    )
   }
 
   if (errorState.error instanceof SchemaError) {

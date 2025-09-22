@@ -1,6 +1,6 @@
 import {createClient, type SanityClient} from '@sanity/client'
 
-import {getCliConfigSync} from './util/getCliConfig'
+import {getSanityCliConfig} from './util/getCliConfig'
 import {resolveRootDir} from './util/resolveRootDir'
 
 export interface CliClientOptions {
@@ -29,7 +29,6 @@ function getCliClientImpl(options: CliClientOptions = {}): SanityClient {
   }
 
   const {
-    // eslint-disable-next-line no-process-env
     cwd = process.env.SANITY_BASE_PATH || process.cwd(),
     useCdn = false,
     apiVersion = '2022-06-06',
@@ -43,7 +42,7 @@ function getCliClientImpl(options: CliClientOptions = {}): SanityClient {
   }
 
   const rootDir = resolveRootDir(cwd)
-  const {config} = getCliConfigSync(rootDir) || {}
+  const {config} = getSanityCliConfig(rootDir) || {}
   if (!config) {
     throw new Error('Unable to resolve CLI configuration')
   }

@@ -146,7 +146,7 @@ export type AssetFromSource = {
 export interface AssetSourceComponentProps {
   action?: 'select' | 'upload'
   assetSource: AssetSource
-  assetType?: 'file' | 'image'
+  assetType?: 'file' | 'image' | 'sanity.video'
   accept: string
   selectionType: 'single'
   dialogHeaderTitle?: React.ReactNode
@@ -189,7 +189,7 @@ export interface AssetSourceUploadFile {
   id: string
   file: globalThis.File
   progress: number // 0 to 100
-  status: 'pending' | 'uploading' | 'complete' | 'error' | 'aborted'
+  status: 'pending' | 'uploading' | 'complete' | 'error' | 'aborted' | 'alreadyExists'
   error?: Error
   result?: unknown // The upload result in the source
 }

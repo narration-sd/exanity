@@ -89,17 +89,19 @@ const renderTest = async () => {
   const wrapper = await createTestProvider({
     resources: [releasesUsEnglishLocaleBundle],
   })
-  return render(
-    <RouterProvider
-      state={{
-        releaseId: activeASAPRelease._id,
-      }}
-      onNavigate={mockRouterNavigate}
-      router={route.create('/', [route.create('/:releaseId')])}
-    >
-      <ReleaseDetail />
-    </RouterProvider>,
-    {wrapper},
+  return act(() =>
+    render(
+      <RouterProvider
+        state={{
+          releaseId: activeASAPRelease._id,
+        }}
+        onNavigate={mockRouterNavigate}
+        router={route.create('/', [route.create('/:releaseId')])}
+      >
+        <ReleaseDetail />
+      </RouterProvider>,
+      {wrapper},
+    ),
   )
 }
 
@@ -336,7 +338,7 @@ describe('after releases have loaded', () => {
     })
 
     it('should not show the pin release button', () => {
-      expect(screen.queryByText('Pin release')).not.toBeInTheDocument()
+      expect(screen.queryByText('Pin release to studio')).not.toBeInTheDocument()
     })
   })
 
@@ -375,7 +377,7 @@ describe('after releases have loaded', () => {
     })
 
     it('should not show the pin release button', () => {
-      expect(screen.queryByText('Pin release')).not.toBeInTheDocument()
+      expect(screen.queryByText('Pin release to studio')).not.toBeInTheDocument()
     })
 
     it('should not show the publish button', () => {

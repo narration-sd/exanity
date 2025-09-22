@@ -1,9 +1,8 @@
-/* eslint-disable camelcase */
 import {useTelemetry} from '@sanity/telemetry/react'
 import {type ObjectSchemaType, type SanityDocument, type SanityDocumentLike} from '@sanity/types'
 import {useToast} from '@sanity/ui'
 import {fromString as pathFromString, resolveKeyedPath} from '@sanity/util/paths'
-import {memo, useCallback, useEffect, useMemo, useState} from 'react'
+import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {
   type DocumentActionsContext,
   type DocumentActionsVersionType,
@@ -11,23 +10,29 @@ import {
   type EditStateFor,
   EMPTY_ARRAY,
   getPublishedId,
+  getReleaseIdFromReleaseDocumentId,
+  isCardinalityOneRelease,
+  isGoingToUnpublish,
   isPerspectiveWriteable,
   isVersionId,
   type PartialContext,
+  useActiveReleases,
   useCopyPaste,
   useDocumentForm,
+  useDocumentIdStack,
   usePerspective,
   useSchema,
   useSource,
   useStudioUrl,
   useTranslation,
   useUnique,
+  useWorkspace,
 } from 'sanity'
 import {DocumentPaneContext} from 'sanity/_singletons'
 
 import {usePaneRouter} from '../../components'
 import {useDiffViewRouter} from '../../diffView/hooks/useDiffViewRouter'
-import {useDocumentIdStack} from '../../hooks/useDocumentIdStack'
+import {useDocumentLastRev} from '../../hooks/useDocumentLastRev'
 import {structureLocaleNamespace} from '../../i18n'
 import {type PaneMenuItem} from '../../types'
 import {DocumentURLCopied} from './__telemetry__'
@@ -48,7 +53,7 @@ interface DocumentPaneProviderProps extends DocumentPaneProviderWrapperProps {
 /**
  * @internal
  */
-// eslint-disable-next-line complexity, max-statements
+// eslint-disable-next-line max-statements
 export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
   const {children, index, pane, paneKey, onFocusPath, forcedVersion, historyStore} = props
   const {
@@ -71,6 +76,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       badges: documentBadges,
       unstable_fieldActions: fieldActionsResolver,
       unstable_languageFilter: languageFilterResolver,
+      drafts: {enabled: draftsEnabled},
     },
   } = useSource()
   const telemetry = useTelemetry()
@@ -92,11 +98,18 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
 
   const perspective = usePerspective()
 
+  const {
+    document: {
+      drafts: {enabled: isDraftModelEnabled},
+    },
+  } = useWorkspace()
+
   const {selectedReleaseId, selectedPerspectiveName} = useMemo(() => {
     // TODO: COREL - Remove this after updating sanity-assist to use <PerspectiveProvider>
     if (forcedVersion) {
       return forcedVersion
     }
+
     return {
       selectedPerspectiveName: perspective.selectedPerspectiveName,
       selectedReleaseId: perspective.selectedReleaseId,
@@ -127,6 +140,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
   } = useDocumentPaneInspector({documentId, documentType, params, setParams: setPaneParams})
 
   const [isDeleting, setIsDeleting] = useState(false)
+  const {lastRevisionDocument} = useDocumentLastRev(documentId, documentType)
 
   /**
    * Determine if the current document is deleted.
@@ -151,8 +165,12 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
   )
 
   const getComparisonValue = useCallback(
-    (editState: EditStateFor) => {
-      return changesOpen ? sinceDocument || editState?.published : editState?.published || null
+    (upstreamEditState: EditStateFor) => {
+      const upstream = upstreamEditState.version ?? upstreamEditState.published
+      if (changesOpen) {
+        return sinceDocument || upstream
+      }
+      return upstream || null
     },
     [changesOpen, sinceDocument],
   )
@@ -169,11 +187,19 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
         isDeleted ||
         !isPerspectiveWriteable({
           selectedPerspective: perspective.selectedPerspective,
+          isDraftModelEnabled,
           schemaType,
         }).result
       )
     },
-    [getIsDeleted, isDeleting, params.rev, perspective.selectedPerspective, schemaType],
+    [
+      getIsDeleted,
+      isDeleting,
+      isDraftModelEnabled,
+      params.rev,
+      perspective.selectedPerspective,
+      schemaType,
+    ],
   )
 
   const getDisplayed = useCallback(
@@ -181,13 +207,24 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       if (onOlderRevision) {
         return revisionDocument || {_id: value._id, _type: value._type}
       }
+
+      // If the document is deleted (no draft, published, or version), return the last revision
+      const isDeleted = !value._createdAt && !value._updatedAt
+      if (isDeleted && lastNonDeletedRevId) {
+        // Return the fetched last revision document if available
+        if (lastRevisionDocument) {
+          return lastRevisionDocument
+        }
+      }
+
       return value
     },
-    [onOlderRevision, revisionDocument],
+    [onOlderRevision, revisionDocument, lastNonDeletedRevId, lastRevisionDocument],
   )
 
   const {
     editState,
+    upstreamEditState,
     connectionState,
     focusPath,
     onChange,
@@ -210,6 +247,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
     onSetCollapsedFieldSet,
     openPath,
   } = useDocumentForm({
+    changesOpen,
     documentType,
     documentId,
     initialValue: initialValue,
@@ -222,24 +260,39 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
     getFormDocumentValue: getDisplayed,
   })
 
+  const {data: releases = []} = useActiveReleases()
+
   const getDocumentVersionType = useCallback(() => {
     let version: DocumentActionsVersionType
     switch (true) {
       case Boolean(params.rev):
         version = 'revision'
         break
-      case selectedReleaseId && isVersionId(value._id):
-        version = 'version'
+      case selectedReleaseId && isVersionId(value._id): {
+        // Check if this is a scheduled draft (cardinality one release)
+        const releaseDocument = releases.find(
+          (r) => getReleaseIdFromReleaseDocumentId(r._id) === selectedReleaseId,
+        )
+
+        if (releaseDocument && isCardinalityOneRelease(releaseDocument)) {
+          version = 'scheduled-draft'
+        } else {
+          version = 'version'
+        }
         break
+      }
       case selectedPerspectiveName === 'published':
         version = 'published'
         break
-      default:
+      case draftsEnabled:
         version = 'draft'
+        break
+      default:
+        version = 'published'
     }
 
     return version
-  }, [selectedPerspectiveName, selectedReleaseId, params, value._id])
+  }, [params.rev, selectedReleaseId, value._id, selectedPerspectiveName, draftsEnabled, releases])
 
   const actionsPerspective = useMemo(() => getDocumentVersionType(), [getDocumentVersionType])
 
@@ -305,7 +358,12 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
     [getDisplayed, value],
   )
 
-  const {previousId} = useDocumentIdStack({displayed, documentId, editState})
+  const {previousId} = useDocumentIdStack({
+    strict: true,
+    displayed,
+    documentId,
+    editState,
+  })
 
   const setTimelineRange = useCallback(
     (newSince: string, newRev: string | null) => {
@@ -401,9 +459,20 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
     })
   }, [documentId, documentType, schemaType, onChange, setDocumentMeta])
 
-  const compareValue = useMemo(() => getComparisonValue(editState), [editState, getComparisonValue])
+  const compareValue = useMemo(
+    () => getComparisonValue(upstreamEditState),
+    [upstreamEditState, getComparisonValue],
+  )
+
   const isDeleted = useMemo(() => getIsDeleted(editState), [editState, getIsDeleted])
   const revisionNotFound = onOlderRevision && !revisionDocument
+
+  const currentDisplayed = useMemo(() => {
+    if (editState.version && isGoingToUnpublish(editState.version)) {
+      return editState.published
+    }
+    return displayed
+  }, [editState.version, editState.published, displayed])
 
   const documentPane: DocumentPaneContextValue = useMemo(
     () =>
@@ -417,7 +486,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
         collapsedPaths,
         compareValue,
         connectionState,
-        displayed,
+        displayed: currentDisplayed,
         documentId,
         documentIdRaw,
         documentType,
@@ -467,6 +536,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
         revisionId,
         revisionNotFound,
         lastNonDeletedRevId,
+        lastRevisionDocument,
       }) satisfies DocumentPaneContextValue,
     [
       actions,
@@ -478,7 +548,7 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       collapsedPaths,
       compareValue,
       connectionState,
-      displayed,
+      currentDisplayed,
       documentId,
       documentIdRaw,
       documentType,
@@ -527,19 +597,25 @@ export const DocumentPaneProvider = memo((props: DocumentPaneProviderProps) => {
       revisionId,
       revisionNotFound,
       lastNonDeletedRevId,
+      lastRevisionDocument,
     ],
   )
 
-  // Reset `focusPath` when `documentId` or `params.path` changes
+  const pathRef = useRef<string | undefined>(undefined)
   useEffect(() => {
     if (ready && params.path) {
       const {path, ...restParams} = params
-      const pathFromUrl = resolveKeyedPath(formStateRef.current?.value, pathFromString(path))
-      onProgrammaticFocus(pathFromUrl)
+
+      // trigger a focus when `params.path` changes
+      if (path !== pathRef.current) {
+        const pathFromUrl = resolveKeyedPath(formStateRef.current?.value, pathFromString(path))
+        onProgrammaticFocus(pathFromUrl)
+      }
 
       // remove the `path`-param from url after we have consumed it as the initial focus path
       paneRouter.setParams(restParams)
     }
+    pathRef.current = params.path
 
     return undefined
   }, [formStateRef, onProgrammaticFocus, paneRouter, params, ready])

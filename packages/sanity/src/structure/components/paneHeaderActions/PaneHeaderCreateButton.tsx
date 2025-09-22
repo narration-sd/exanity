@@ -67,6 +67,7 @@ export function PaneHeaderCreateButton({templateItems}: PaneHeaderCreateButtonPr
   const nothingGranted = useMemo(() => {
     return (
       !isTemplatePermissionsLoading &&
+      templatePermissions?.length !== 0 &&
       templatePermissions?.every((permission) => !permission.granted)
     )
   }, [isTemplatePermissionsLoading, templatePermissions])
@@ -81,6 +82,8 @@ export function PaneHeaderCreateButton({templateItems}: PaneHeaderCreateButtonPr
       {},
     )
   }, [templatePermissions])
+
+  if (templateItems.length === 0) return null
 
   if (nothingGranted) {
     return (
@@ -172,8 +175,8 @@ export function PaneHeaderCreateButton({templateItems}: PaneHeaderCreateButtonPr
 
             return (
               <InsufficientPermissionsMessageTooltip
-                context="create-document-type"
                 key={item.id}
+                context="create-document-type"
                 reveal={disabled}
                 loading={isTemplatePermissionsLoading}
               >

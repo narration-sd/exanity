@@ -22,13 +22,16 @@ import {styled} from 'styled-components'
 
 import {Popover, Tooltip} from '../../../../ui-components'
 import {useCanvasCompanionDocsStore} from '../../../canvas/store/useCanvasCompanionDocsStore'
-import {useTranslation} from '../../../i18n/hooks/useTranslation'
+import {Translate, useTranslation} from '../../../i18n'
 import {getDraftId, getPublishedId, getVersionId} from '../../../util/draftUtils'
-import {useReleasesUpsell} from '../../contexts/upsell/useReleasesUpsell'
+import {getErrorMessage} from '../../../util/getErrorMessage'
+import {isCardinalityOneRelease} from '../../../util/releaseUtils'
 import {useReleasesToolAvailable} from '../../hooks/useReleasesToolAvailable'
+import {useScheduleDraftOperations} from '../../hooks/useScheduleDraftOperations'
 import {useVersionOperations} from '../../hooks/useVersionOperations'
 import {getReleaseIdFromReleaseDocumentId} from '../../util/getReleaseIdFromReleaseDocumentId'
 import {DiscardVersionDialog} from '../dialog/DiscardVersionDialog'
+import {ScheduleDraftDialog} from '../dialog/ScheduleDraftDialog'
 import {ReleaseAvatarIcon} from '../ReleaseAvatar'
 import {VersionContextMenu} from './contextMenu/VersionContextMenu'
 import {CopyToNewReleaseDialog} from './dialog/CopyToNewReleaseDialog'
@@ -81,6 +84,8 @@ export const VersionChip = memo(function VersionChip(props: {
     releaseState?: ReleaseState
     isVersion: boolean
     disabled?: boolean
+    isGoingToUnpublish?: boolean
+    release?: ReleaseDocument
   }
 }) {
   const {
@@ -101,6 +106,8 @@ export const VersionChip = memo(function VersionChip(props: {
       releaseState,
       isVersion,
       disabled: contextMenuDisabled = false,
+      isGoingToUnpublish = false,
+      release,
     },
   } = props
   const releasesToolAvailable = useReleasesToolAvailable()
@@ -112,7 +119,8 @@ export const VersionChip = memo(function VersionChip(props: {
   const popoverRef = useRef<HTMLDivElement | null>(null)
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false)
   const [isCreateReleaseDialogOpen, setIsCreateReleaseDialogOpen] = useState(false)
-  const {guardWithReleaseLimitUpsell} = useReleasesUpsell()
+  const [isChangeScheduleDialogOpen, setIsChangeScheduleDialogOpen] = useState(false)
+  const [isPerformingScheduleOperation, setIsPerformingScheduleOperation] = useState(false)
 
   const chipRef = useRef<HTMLButtonElement | null>(null)
 
@@ -125,6 +133,8 @@ export const VersionChip = memo(function VersionChip(props: {
   const {createVersion} = useVersionOperations()
   const toast = useToast()
   const {t} = useTranslation()
+  const releaseTitle = release?.metadata.title || t('release.placeholder-untitled-release')
+  const operations = useScheduleDraftOperations()
 
   const close = useCallback(() => setContextMenuPoint(undefined), [])
 
@@ -158,9 +168,42 @@ export const VersionChip = memo(function VersionChip(props: {
     setIsDiscardDialogOpen(true)
   }, [setIsDiscardDialogOpen])
 
-  const openCreateReleaseDialog = useCallback(
-    () => guardWithReleaseLimitUpsell(() => setIsCreateReleaseDialogOpen(true)),
-    [guardWithReleaseLimitUpsell],
+  const openCreateReleaseDialog = useCallback(() => setIsCreateReleaseDialogOpen(true), [])
+
+  const openChangeScheduleDialog = useCallback(() => {
+    setIsChangeScheduleDialogOpen(true)
+  }, [])
+
+  const handleReschedule = useCallback(
+    async (newPublishAt: Date) => {
+      if (!release) return
+
+      setIsPerformingScheduleOperation(true)
+
+      try {
+        await operations.rescheduleScheduledDraft(release._id, newPublishAt)
+        setIsChangeScheduleDialogOpen(false)
+      } catch (error) {
+        console.error('Failed to reschedule draft:', error)
+        toast.push({
+          closable: true,
+          status: 'error',
+          description: (
+            <Translate
+              t={t}
+              i18nKey="release.toast.reschedule-scheduled-draft.error"
+              values={{
+                title: releaseTitle,
+                error: getErrorMessage(error),
+              }}
+            />
+          ),
+        })
+      } finally {
+        setIsPerformingScheduleOperation(false)
+      }
+    },
+    [release, operations, toast, t, releaseTitle],
   )
 
   const handleAddVersion = useCallback(
@@ -203,6 +246,8 @@ export const VersionChip = memo(function VersionChip(props: {
   }, [contextMenuPoint])
 
   const contextMenuHandler = disabled || !releasesToolAvailable ? undefined : handleContextMenu
+  const canShowScheduleDialog =
+    isChangeScheduleDialogOpen && release && isCardinalityOneRelease(release)
 
   return (
     <>
@@ -244,6 +289,9 @@ export const VersionChip = memo(function VersionChip(props: {
             onCreateVersion={handleAddVersion}
             locked={locked}
             type={documentType}
+            isGoingToUnpublish={isGoingToUnpublish}
+            release={release}
+            onChangeSchedule={openChangeScheduleDialog}
           />
         }
         fallbackPlacements={[]}
@@ -280,6 +328,16 @@ export const VersionChip = memo(function VersionChip(props: {
           documentType={documentType}
           tone={tone}
           title={text}
+        />
+      )}
+
+      {canShowScheduleDialog && (
+        <ScheduleDraftDialog
+          onClose={() => !isPerformingScheduleOperation && setIsChangeScheduleDialogOpen(false)}
+          onSchedule={handleReschedule}
+          variant="edit-schedule"
+          loading={isPerformingScheduleOperation}
+          initialDate={release.publishAt || release.metadata.intendedPublishAt}
         />
       )}
     </>

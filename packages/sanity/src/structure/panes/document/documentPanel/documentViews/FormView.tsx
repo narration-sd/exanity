@@ -1,4 +1,3 @@
-/* eslint-disable no-nested-ternary */
 import {Box, Container, Flex, focusFirstDescendant, Spinner, Text} from '@sanity/ui'
 import {type FormEvent, forwardRef, useCallback, useEffect, useMemo, useState} from 'react'
 import {tap} from 'rxjs/operators'
@@ -55,8 +54,9 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
     onSetCollapsedFieldSet,
     onSetActiveFieldGroup,
     openPath,
+    compareValue,
   } = useDocumentPane()
-  const {selectedReleaseId} = usePerspective()
+  const {selectedReleaseId, selectedPerspective} = usePerspective()
   const documentStore = useDocumentStore()
   const presence = useDocumentPresence(documentId)
   const {title} = useDocumentTitle()
@@ -192,6 +192,7 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
                 changed={formState.changed}
                 collapsedFieldSets={collapsedFieldSets}
                 collapsedPaths={collapsedPaths}
+                compareValue={compareValue ?? undefined}
                 focused={formState.focused}
                 focusPath={formState.focusPath}
                 groups={formState.groups}
@@ -205,6 +206,7 @@ export const FormView = forwardRef<HTMLDivElement, FormViewProps>(function FormV
                 onSetFieldSetCollapsed={onSetCollapsedFieldSet}
                 onSetPathCollapsed={onSetCollapsedPath}
                 openPath={openPath}
+                perspective={selectedPerspective}
                 presence={presence}
                 readOnly={isReadOnly}
                 schemaType={formState.schemaType}

@@ -6,6 +6,7 @@ export const STANDARD_INPUT_TYPES = [
   'emailsTest',
   'filesTest',
   'imagesTest',
+  'videosTest',
   'numbersTest',
   'objectsTest',
   'referenceTest',
@@ -39,6 +40,7 @@ export const PLUGIN_INPUT_TYPES = [
 
 export const DEBUG_INPUT_TYPES = [
   'actionsTest',
+  'allFieldsGroupHidden',
   'allNativeInputComponents',
   'collapsibleObjects',
   'commentsDebug',
@@ -108,17 +110,3 @@ export const DEBUG_FIELD_GROUP_TYPES = [
 ]
 
 export const EXTERNAL_PLUGIN_INPUT_TYPES = ['markdownTest', 'muxVideoPost']
-
-export const TS_DOC_TYPES = [
-  'api.class',
-  'api.enum',
-  'api.export',
-  'api.function',
-  'api.interface',
-  'api.namespace',
-  'api.package',
-  'api.release',
-  'api.symbol',
-  'api.typeAlias',
-  'api.variable',
-]

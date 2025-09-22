@@ -3,6 +3,159 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.9.0](https://github.com/sanity-io/sanity/compare/v4.8.1...v4.9.0) (2025-09-16)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.8.1](https://github.com/sanity-io/sanity/compare/v4.8.0...v4.8.1) (2025-09-10)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.8.0](https://github.com/sanity-io/sanity/compare/v4.7.0...v4.8.0) (2025-09-10)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.7.0](https://github.com/sanity-io/sanity/compare/v4.6.1...v4.7.0) (2025-09-09)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.6.1](https://github.com/sanity-io/sanity/compare/v4.6.0...v4.6.1) (2025-09-02)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.6.0](https://github.com/sanity-io/sanity/compare/v4.5.0...v4.6.0) (2025-08-26)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.5.0](https://github.com/sanity-io/sanity/compare/v4.4.1...v4.5.0) (2025-08-19)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.4.1](https://github.com/sanity-io/sanity/compare/v4.4.0...v4.4.1) (2025-08-14)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.4.0](https://github.com/sanity-io/sanity/compare/v4.3.0...v4.4.0) (2025-08-13)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.3.0](https://github.com/sanity-io/sanity/compare/v4.2.0...v4.3.0) (2025-08-05)
+
+
+### Bug Fixes
+
+* **ci:** set SANITY_INTERNAL_ENV=staging when building esm bundles for staging ([#10118](https://github.com/sanity-io/sanity/issues/10118)) ([b757108](https://github.com/sanity-io/sanity/commit/b75710805b8e9bc7b377ae4e181fd33a92e4e7c5))
+
+
+
+## [4.2.0](https://github.com/sanity-io/sanity/compare/v4.1.1...v4.2.0) (2025-07-29)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.1.1](https://github.com/sanity-io/sanity/compare/v4.1.0...v4.1.1) (2025-07-22)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.1.0](https://github.com/sanity-io/sanity/compare/v4.0.1...v4.1.0) (2025-07-21)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.0.1](https://github.com/sanity-io/sanity/compare/v4.0.0...v4.0.1) (2025-07-16)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [4.0.0](https://github.com/sanity-io/sanity/compare/v3.99.0...v4.0.0) (2025-07-14)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [3.99.0](https://github.com/sanity-io/sanity/compare/v3.98.1...v3.99.0) (2025-07-11)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## <small>3.98.1 (2025-07-09)</small>
+
+**Note:** Version bump only for package @repo/package.bundle
+
+
+
+
+
+## [3.98.0](https://github.com/sanity-io/sanity/compare/v3.97.1...v3.98.0) (2025-07-07)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+## [3.97.1](https://github.com/sanity-io/sanity/compare/v3.97.0...v3.97.1) (2025-07-04)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+## [3.97.0](https://github.com/sanity-io/sanity/compare/v3.96.0...v3.97.0) (2025-07-04)
+
+**Note:** Version bump only for package @repo/package.bundle
+
+## [3.96.0](https://github.com/sanity-io/sanity/compare/v3.95.0...v3.96.0) (2025-07-02)
+
+**Note:** Version bump only for package @repo/package.bundle
+
 ## [3.95.0](https://github.com/sanity-io/sanity/compare/v3.94.2...v3.95.0) (2025-06-25)
 
 **Note:** Version bump only for package @repo/package.bundle

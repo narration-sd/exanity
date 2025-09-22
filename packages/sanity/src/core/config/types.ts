@@ -10,6 +10,7 @@ import {
   type SchemaTypeDefinition,
   type SearchStrategy,
 } from '@sanity/types'
+import {type ButtonTone} from '@sanity/ui'
 // eslint-disable-next-line @sanity/i18n/no-i18next-import -- figure out how to have the linter be fine with importing types-only
 import {type i18n} from 'i18next'
 import {type ComponentType, type ErrorInfo, type ReactNode} from 'react'
@@ -33,7 +34,45 @@ import {
   type DocumentInspector,
 } from './document'
 import {type FormComponents} from './form'
+import {type ReleaseActionComponent, type ReleaseActionsContext} from './releases/actions'
 import {type StudioComponents, type StudioComponentsPluginOptions} from './studio'
+
+/**
+ * @hidden
+ * @beta
+ */
+export interface ActionComponent<ActionProps, ActionDescription> {
+  (props: ActionProps): ActionDescription | null
+}
+
+/**
+ * @hidden
+ * @beta
+ */
+export interface BaseActionDescription {
+  disabled?: boolean
+  icon?: ReactNode | ComponentType
+  label: string
+  onHandle?: () => void
+  title?: ReactNode
+  tone?: ButtonTone
+  shortcut?: string | null
+  dialog?: unknown
+}
+
+/**
+ * @hidden
+ * @beta
+ */
+export interface GroupableActionDescription<GroupType = unknown> extends BaseActionDescription {
+  group?: GroupType[]
+}
+
+/**
+ * Symbol for enabling releases outside of quota restrictions for single docs
+ * @internal
+ */
+export const QUOTA_EXCLUDED_RELEASES_ENABLED = Symbol('__internal_quotaExcludedReleasesEnabled')
 
 /**
  * @hidden
@@ -213,6 +252,8 @@ export interface ConfigContext {
    * Localization resources
    */
   i18n: LocaleSource
+  /** @internal */
+  [QUOTA_EXCLUDED_RELEASES_ENABLED]?: boolean
 }
 
 /** @public */
@@ -299,6 +340,18 @@ export interface DocumentPluginOptions {
   comments?: {
     enabled: boolean | ((context: DocumentCommentsEnabledContext) => boolean)
   }
+
+  drafts?: {
+    /**
+     * Whether the workspace provides the draft model for interacting with documents.
+     *
+     * When switched off, documents may only be edited:
+     *
+     *  - Inside a release.
+     *  - Outside a release if they support live-edit.
+     */
+    enabled?: boolean
+  }
 }
 
 /**
@@ -344,6 +397,15 @@ export type DocumentActionsResolver = ComposableOption<
 export type DocumentBadgesResolver = ComposableOption<
   DocumentBadgeComponent[],
   DocumentBadgesContext
+>
+
+/**
+ * @hidden
+ * @public
+ */
+export type ReleaseActionsResolver = ComposableOption<
+  ReleaseActionComponent[],
+  ReleaseActionsContext
 >
 
 /** @hidden @beta */
@@ -403,12 +465,6 @@ export interface PluginOptions {
     components?: StudioComponentsPluginOptions
   }
 
-  /**
-   * Config for the Sanity Media Library asset source integration.
-   * @beta
-   */
-  mediaLibrary?: MediaLibraryConfig
-
   /** @beta @hidden */
   i18n?: LocalePluginOptions
   search?: {
@@ -442,6 +498,12 @@ export interface PluginOptions {
   /** @internal */
   __internal_serverDocumentActions?: WorkspaceOptions['__internal_serverDocumentActions']
 
+  /** @internal */
+  [QUOTA_EXCLUDED_RELEASES_ENABLED]?: WorkspaceOptions[typeof QUOTA_EXCLUDED_RELEASES_ENABLED]
+
+  /** Configuration for Content Releases */
+  releases?: DefaultPluginsWorkspaceOptions['releases']
+
   /** Configuration for studio beta features.
    * @internal
    */
@@ -457,6 +519,30 @@ export interface PluginOptions {
    */
   announcements?: {
     enabled: boolean
+  }
+
+  /**
+   * Config for the Sanity Media Library asset source integration.
+   * @beta
+   */
+  mediaLibrary?: DefaultPluginsWorkspaceOptions['mediaLibrary']
+
+  /**
+   * Advanced version control provides features such as inline content diffs in Studio to make
+   * resolving conflicts across document versions easier.
+   *
+   * @beta
+   */
+  advancedVersionControl?: {
+    /**
+     * Control whether advanced version control functionality is enabled.
+     *
+     * Advanced version control provides features such as inline content diffs in Studio to make
+     * resolving conflicts across document versions easier.
+     *
+     * @beta
+     */
+    enabled?: boolean | ComposableOption<boolean, ConfigContext>
   }
 }
 
@@ -519,6 +605,10 @@ export interface WorkspaceOptions extends SourceOptions {
    * @internal
    */
   releases?: DefaultPluginsWorkspaceOptions['releases']
+  /**
+   * @internal
+   */
+  mediaLibrary?: DefaultPluginsWorkspaceOptions['mediaLibrary']
   apps?: AppsOptions
 
   /**
@@ -531,6 +621,12 @@ export interface WorkspaceOptions extends SourceOptions {
      */
     enabled?: boolean
   }
+
+  /**
+   * @hidden
+   * @internal
+   */
+  [QUOTA_EXCLUDED_RELEASES_ENABLED]?: boolean
 
   scheduledPublishing?: DefaultPluginsWorkspaceOptions['scheduledPublishing']
 }
@@ -587,7 +683,12 @@ export interface ResolveProductionUrlContext extends ConfigContext {
  * @beta
  */
 
-export type DocumentActionsVersionType = 'published' | 'draft' | 'revision' | 'version'
+export type DocumentActionsVersionType =
+  | 'published'
+  | 'draft'
+  | 'revision'
+  | 'version'
+  | 'scheduled-draft'
 
 /**
  * @hidden
@@ -601,6 +702,8 @@ export interface DocumentActionsContext extends ConfigContext {
   releaseId: string | undefined
   /** the type of the currently active document. */
   versionType: DocumentActionsVersionType
+  /** @internal */
+  [QUOTA_EXCLUDED_RELEASES_ENABLED]?: boolean
 }
 
 /**
@@ -719,6 +822,18 @@ export interface Source {
      * @internal
      */
     components?: DocumentComponents
+
+    drafts: {
+      /**
+       * Whether the workspace provides the draft model for interacting with documents.
+       *
+       * When switched off, documents may only be edited:
+       *
+       *  - Inside a release.
+       *  - Outside a release if they support live-edit.
+       */
+      enabled: boolean
+    }
 
     /** @internal */
     unstable_fieldActions: (
@@ -858,12 +973,31 @@ export interface Source {
      * @internal
      */
     i18next: i18n
+
+    /**
+     * The schema descriptor ID.
+     *
+     * This can be `undefined` in the case where uploading the schema has been disabled.
+     *
+     * @internal
+     */
+    schemaDescriptorId: Promise<string | undefined>
   }
   /** @beta */
   tasks?: WorkspaceOptions['tasks']
 
   /** @beta */
-  releases?: WorkspaceOptions['releases']
+  releases?: {
+    enabled?: boolean
+    /**
+     * Limit the number of releases that can be created by this workspace.
+     */
+    limit?: number
+    /**
+     * Returns an array of actions for the release.
+     */
+    actions?: (props: PartialContext<ReleaseActionsContext>) => ReleaseActionComponent[]
+  }
 
   /** @internal */
   __internal_serverDocumentActions?: WorkspaceOptions['__internal_serverDocumentActions']
@@ -886,7 +1020,25 @@ export interface Source {
    * Config for the Sanity Media Library asset source integration.
    * @beta
    */
-  mediaLibrary?: MediaLibraryConfig
+  mediaLibrary?: WorkspaceOptions['mediaLibrary']
+
+  /**
+   * Advanced version control provides features such as inline content diffs in Studio to make
+   * resolving conflicts across document versions easier.
+   *
+   * @beta
+   */
+  advancedVersionControl: {
+    /**
+     * Control whether advanced version control functionality is enabled.
+     *
+     * Advanced version control provides features such as inline content diffs in Studio to make
+     * resolving conflicts across document versions easier.
+     *
+     * @beta
+     */
+    enabled: boolean
+  }
 }
 
 /** @internal */
@@ -1032,7 +1184,12 @@ export type DefaultPluginsWorkspaceOptions = {
      * Limit the number of releases that can be created by this workspace.
      */
     limit?: number
+    /**
+     * Actions for releases.
+     */
+    actions?: ReleaseActionComponent[] | ReleaseActionsResolver
   }
+  mediaLibrary?: MediaLibraryConfig
 }
 
 /**

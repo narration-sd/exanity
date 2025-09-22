@@ -5,7 +5,7 @@ import {
 } from '@sanity/telemetry'
 import {TelemetryProvider} from '@sanity/telemetry/react'
 import arrify from 'arrify'
-import {type ReactNode, useEffect, useMemo} from 'react'
+import {type ReactNode, useEffect, useMemo, version as reactVersion} from 'react'
 
 import {type Config} from '../../config'
 import {useClient} from '../../hooks'
@@ -18,7 +18,7 @@ const DEBUG_TELEMETRY = !!(
   typeof process !== 'undefined' && process.env?.SANITY_STUDIO_DEBUG_TELEMETRY
 )
 
-/* eslint-disable no-console */
+// oxlint-disable no-console
 const debugLoggingStore: CreateBatchedStoreOptions = {
   // submit any pending events every <n> ms
   flushInterval: 1000,
@@ -36,7 +36,7 @@ const debugLoggingStore: CreateBatchedStoreOptions = {
     return true
   },
 }
-/* eslint-enable no-console */
+// oxlint-enable no-console
 
 // Wrap the app in a TelemetryProvider
 // This will enable usage of the `useTelemetry()` hook
@@ -92,6 +92,7 @@ export function StudioTelemetryProvider(props: {children: ReactNode; config: Con
         innerHeight: window.innerHeight,
         innerWidth: window.innerWidth,
       },
+      reactVersion,
       studioVersion: SANITY_VERSION,
       plugins: workspaces.flatMap(
         (workspace) =>

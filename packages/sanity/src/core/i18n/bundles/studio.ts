@@ -10,32 +10,60 @@ import {type LocaleResourceBundle} from '../types'
  * @hidden
  */
 export const studioLocaleStrings = defineLocalesResources('studio', {
+  /** "Configuration issue" header */
+  'about-dialog.configuration-issue.header': 'Configuration issue detected',
+  /** Message shown if sanity.cli.ts is missing deployment.appId */
+  'about-dialog.configuration-issue.missing-appid':
+    'Auto updates is enabled, but no <code>deployment.appId</code> configured in <code>sanity.cli.ts</code>. This Studio is updating against the <strong>latest</strong>-channel.',
+  /** "View documentation" link for auto-updating studios */
+  'about-dialog.configuration-issue.missing-appid.view-documentation': 'View documentation',
   /** "Disabled" status for auto-updates in About-dialog */
-  'about-dialog.version-info.auto-updates.disabled': 'Disabled',
+  'about-dialog.version-info.auto-updates.disabled': 'Auto Updates not enabled',
   /** "Enabled" status for auto-updates in About-dialog */
-  'about-dialog.version-info.auto-updates.enabled': 'Enabled',
-  /** "Auto Updates" status header in About-dialog */
+  'about-dialog.version-info.auto-updates.enabled': 'Auto Updates Enabled',
+  /** @deprecated "Auto Updates" status header in About-dialog */
   'about-dialog.version-info.auto-updates.header': 'Auto Updates',
-  /** "How to enable" next to Disabled state for Auto updates in about dialog */
-  'about-dialog.version-info.auto-updates.how-to-enable': 'How to enable',
+  /** "How to enable" next to Disabled state for Auto updates in version info dialog */
+  'about-dialog.version-info.auto-updates.how-to-enable': 'Enable',
+  /** "Manage version" link text */
+  'about-dialog.version-info.auto-updates.manage-version': 'Manage version',
   /** Text displayed on the "Copy to clipboard"-button after clicked */
   'about-dialog.version-info.copy-to-clipboard-button.copied-text':
     'Copied to Clipboard. Happy pasting!',
   /** "Copy to Clipboard" button text for copying version details from About-dialog */
   'about-dialog.version-info.copy-to-clipboard-button.text': 'Copy to Clipboard',
-  /** "Current version" header in about dialog  */
+  /** "Current version" header in version info dialog  */
   'about-dialog.version-info.current-version.header': 'Current version',
-  /** "How to upgrade" link text */
-  'about-dialog.version-info.how-to-upgrade': 'How to upgrade',
-  /** "Latest version" header in about dialog */
+  /** @deprecated "How to upgrade" link text */
+  'about-dialog.version-info.how-to-upgrade': 'Update now',
+  /** "Latest version" header in version info dialog */
   'about-dialog.version-info.latest-version.header': 'Latest version',
-  /** "Latest version" header in about dialog */
-  'about-dialog.version-info.latest-version.text': 'Latest version is {{latestVersion}}',
-  /** "Up to date" status in About-dialog */
+  /** Info text when auto updates is enabled and a new version is available */
+  'about-dialog.version-info.new-auto-update-version-available': 'New version available',
+  /** "New version" header in version info dialog - Note that this is not necessary a *higher* version compared to current:
+   *  It's a new version configured for auto updates which in some cases could even be a version below current  */
+  'about-dialog.version-info.new-version.text': 'New version',
+  /** "Reload"-button when auto updates is enabled and a new version is available */
+  'about-dialog.version-info.reload': 'Reload',
+  /** "Reload to update"-tooltip when auto updates is enabled and a new version is available */
+  'about-dialog.version-info.reload-to-update': 'Reload Studio to update',
+  /** "New version available" tooltip in About-dialog */
+  'about-dialog.version-info.tooltip.new-version-available': 'New version available',
+  /** "Prerelease" tooltip in About-dialog */
+  'about-dialog.version-info.tooltip.prerelease': 'Prerelease',
+  /** "Up to date" tooltip in About-dialog */
+  'about-dialog.version-info.tooltip.up-to-date': 'Up to date',
+  /** @deprecated "Up to date" status in About-dialog */
   'about-dialog.version-info.up-to-date': 'Up to date',
+  /** "Upgrade"-button text */
+  'about-dialog.version-info.update-button.text': 'Update',
+  /** "Upgrade"-button tooltip text */
+  'about-dialog.version-info.update-button.tooltip': 'Learn how to update Sanity Studio',
+
   /** "User agent" header in About-dialog */
   'about-dialog.version-info.user-agent.header': 'User agent',
-
+  /** "View on GitHub" link from version info dialog */
+  'about-dialog.version-info.view-on-github': 'View on GitHub',
   /** The text used in the tooltip shown in the dialog close button */
   'announcement.dialog.close': 'Close',
   /** Aria label to be used in the dialog close button */
@@ -172,13 +200,22 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'asset-sources.media-library.error.library-could-not-be-resolved':
     'Something went wrong trying to resolve the Media Library for this project.',
 
+  /** Error message shown when no media library has been provisioned for the current organization */
+  'asset-sources.media-library.error.no-media-library-provisioned':
+    'No media library has been provisioned for this organization.',
+
   /** Menu Items for Media Library Asset Source */
   'asset-sources.media-library.file.title': 'Media Library',
   'asset-sources.media-library.image.title': 'Media Library',
 
   /** Info messages for the Media Library Asset Source  */
-  'asset-sources.media-library.info.provisioning':
-    'Please wait while we prepare your Media Library',
+  'asset-sources.media-library.select-dialog.title': 'Selecting {{assetType}} for {{targetTitle}}',
+
+  /** Warning message shown when uploading already existing files to the Media Library Asset Source */
+  'asset-sources.media-library.warning.file-already-exist.description':
+    'Using the existing file found in the library.',
+  'asset-sources.media-library.warning.file-already-exist.title':
+    "File: '{{filename}}' already exists",
 
   /** Label when a release has been deleted by a different user */
   'banners.deleted-bundle-banner.text':
@@ -549,9 +586,13 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'help-resources.action.join-our-community': 'Join our community',
 
   /** Information for what the latest sanity version is */
-  'help-resources.latest-sanity-version': 'Latest version is {{latestVersion}}',
+  'help-resources.latest-sanity-version': 'Latest version is v{{latestVersion}}',
+
+  /** Menu item for reloading Studio to update */
+  'help-resources.studio-auto-update-now': 'Reload to update to v{{newVersion}}',
+
   /** Information for what studio version the current studio is running */
-  'help-resources.studio-version': 'Sanity Studio version {{studioVersion}}',
+  'help-resources.studio-version': 'Sanity Studio v{{studioVersion}}',
   /** Title for help and resources menus */
   'help-resources.title': 'Help and resources',
 
@@ -1222,9 +1263,9 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'new-document.open-dialog-aria-label': 'Create new document',
   /** Title for "Create new document" dialog */
   'new-document.title': 'Create new document',
-  /** Label for button that will make the browser reload when users' studio version is out-of-date */
+  /** @deprecated Label for button that will make the browser reload when users' studio version is out-of-date */
   'package-version.new-package-available.reload-button': 'Push to reload',
-  /** Title of the alert for studio users when packages in their studio are out-of-date */
+  /** @deprecated Title of the alert for studio users when packages in their studio are out-of-date */
   'package-version.new-package-available.title': 'Sanity Studio is ready to update!',
   /** Label for action to invite members to the current studio project */
   'presence.action.manage-members': 'Invite members',
@@ -1259,10 +1300,14 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'release.action.copy-to': 'Copy version to',
   /** Action message for creating new releases */
   'release.action.create-new': 'New release',
+  /** Action message for deleting a scheduled publish */
+  'release.action.delete-schedule': 'Delete schedule',
   /** Action message for when document is already in release  */
   'release.action.discard-version': 'Discard version',
   /** Description for toast when version discarding failed */
   'release.action.discard-version.failure': 'Failed to discard version',
+  /** Action message for editing the schedule of a scheduled publish */
+  'release.action.edit-schedule': 'Edit schedule',
   /** Action message for when a new release is created off an existing version, draft or published document */
   'release.action.new-release': 'New release',
   /** Explanation provided when releases can't be created because the workspace release limit has been reached */
@@ -1271,6 +1316,19 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
     'This workspace is limited to {{count}} releases',
   /** Tooltip message for not having permissions for creating new releases */
   'release.action.permission.error': 'You do not have permission to perform this action',
+  /** Action message for running a scheduled draft immediately */
+  'release.action.publish-now': 'Publish now',
+  /** Error message description for when a version is reverted from being unpublished */
+  'release.action.revert-unpublish-version.failure.description':
+    'Please try again or check your connection. The document is still going to be unpublished upon release.',
+  /** Error message title for when a version is reverted from being unpublished */
+  'release.action.revert-unpublish-version.failure.title':
+    'Failed to revert from setting to unpublish on release.',
+  /** Action message description for when a version is reverted from being unpublished */
+  'release.action.revert-unpublish-version.success.description': 'You can now edit this version.',
+  /** Action message title for when a version is reverted from being unpublished */
+  'release.action.revert-unpublish-version.success.title':
+    'Successfully reverted from setting to unpublish on release.',
   /** Error message for when a version is set to be unpublished */
   'release.action.unpublish-version.failure': 'Failed to set version to be unpublished on release',
   /** Action message for when a version is set to be unpublished successfully */
@@ -1315,6 +1373,26 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'release.dialog.create.confirm': 'Create release',
   /** Title for creating releases dialog */
   'release.dialog.create.title': 'New release',
+  /** Body text for the dialog confirming deletion of a scheduled draft */
+  'release.dialog.delete-schedule-draft.body':
+    'Are you sure you want to delete this scheduled draft? This action cannot be undone.',
+  /** Confirm button text for deleting a scheduled draft */
+  'release.dialog.delete-schedule-draft.confirm': 'Yes, delete schedule',
+  /** Header for the dialog confirming deletion of a scheduled draft */
+  'release.dialog.delete-schedule-draft.header': 'Delete scheduled draft',
+  /** Body text for change schedule dialog */
+  'release.dialog.edit-schedule.body': 'Select a new date and time for the scheduled publish.',
+  /** Confirm button text for change schedule dialog */
+  'release.dialog.edit-schedule.confirm': 'Update schedule',
+  /** Header for change schedule dialog */
+  'release.dialog.edit-schedule.header': 'Change schedule',
+  /** Body text for the dialog confirming running a scheduled draft immediately */
+  'release.dialog.publish-scheduled-draft.body':
+    'Are you sure you want to publish this scheduled draft immediately?',
+  /** Confirm button text for running a scheduled draft immediately */
+  'release.dialog.publish-scheduled-draft.confirm': 'Yes, run now',
+  /** Header for the dialog confirming running a scheduled draft immediately */
+  'release.dialog.publish-scheduled-draft.header': 'Publish draft now',
   /** Label for description in tooltip to explain release types */
   'release.dialog.tooltip.description':
     'The intended release time is used to create better previews and hints about whether documents conflict.',
@@ -1326,6 +1404,10 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'release.form.placeholder-describe-release': 'Describe the release…',
   /** Tooltip for button to hide release visibility */
   'release.layer.hide': 'Hide release',
+  /** Label for the release menu */
+  'release.menu.label': 'Release menu',
+  /** Tooltip for the release menu */
+  'release.menu.tooltip': 'Actions',
   /** Label for draft perspective in navbar */
   'release.navbar.drafts': 'Drafts',
   /** Label for published releases in navbar */
@@ -1334,23 +1416,45 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'release.navbar.tooltip': 'Releases',
   /** The placeholder text when the release doesn't have a title */
   'release.placeholder-untitled-release': 'Untitled release',
+  /** Description for warning that the published schedule time is in the past */
+  'release.schedule-dialog.publish-date-in-past-warning':
+    'Schedule this release for a future time and date.',
+  /** Label for date picker when scheduling a release */
+  'release.schedule-dialog.select-publish-date-label': 'Schedule on',
   /** The toast description that will be shown when the user has a release perspective which is now archived */
   'release.toast.archived-release.description': 'This release has been unpinned',
   /** The toast title that will be shown when the user has a release perspective which is now archived */
   'release.toast.archived-release.title': "The '{{title}}' release was archived",
   /** The toast title that will be shown the creating a release fails */
   'release.toast.create-release-error.title': 'Failed to create release',
-  /**The toast title that will be shown when the user has a release perspective which is now deleted */
+  /** Error toast for deleting a scheduled draft */
+  'release.toast.delete-schedule-draft.error':
+    'Failed to delete the scheduled draft document <strong>{{title}}</strong>: {{error}}',
+  /** Success toast for deleting a scheduled draft */
+  'release.toast.delete-schedule-draft.success':
+    'The scheduled draft document <strong>{{title}}</strong> has been deleted.',
+  /** The toast title that will be shown when the user has a release perspective which is now deleted */
   'release.toast.not-found-release.title': "The '{{title}}' release could not be found",
+  /** Error toast for running a scheduled publish immediately */
+  'release.toast.publish-scheduled-draft.error':
+    'Failed to publish the scheduled draft document <strong>{{title}}</strong>: {{error}}',
+  /** Success toast for running a scheduled publish immediately */
+  'release.toast.publish-scheduled-draft.success':
+    'The scheduled draft document <strong>{{title}}</strong> has been published.',
   /** The toast description that will be shown when the user has a release perspective which is now published */
   'release.toast.published-release.description': 'This release has been unpinned',
   /** The toast title that will be shown when the user has a release perspective which is now deleted */
   'release.toast.published-release.title': "The '{{title}}' release was published",
+  /** Error toast for rescheduling a draft */
+  'release.toast.reschedule-scheduled-draft.error':
+    'Failed to reschedule the scheduled draft document <strong>{{title}}</strong>: {{error}}',
+  /** Success toast for rescheduling a draft */
+  'release.toast.reschedule-scheduled-draft.success':
+    'The scheduled draft document <strong>{{title}}</strong> has been rescheduled.',
   /** Label for when a version of a document has already been added to the release */
   'release.tooltip.already-added': 'A version of this document has already been added',
   /** Label for when a release is scheduled / scheduling and a user can't add a document version to it */
-  'release.tooltip.locked':
-    'This release has been scheduled. Unsechedule it to add more documents.',
+  'release.tooltip.locked': 'This release has been scheduled. Unschedule it to add more documents.',
   /** Label for the release type 'as soon as possible' */
   'release.type.asap': 'ASAP',
   /** Label for the release type 'at time', meaning it's a release with a scheduled date */
@@ -1359,6 +1463,13 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
   'release.type.undecided': 'Undecided',
   /** Tooltip for the dropdown to show all versions of document */
   'release.version-list.tooltip': 'See all document versions',
+
+  /** Confirm button text for the schedule publish dialog */
+  'schedule-publish-dialog.confirm': 'Schedule',
+  /** Description for the schedule publish dialog */
+  'schedule-publish-dialog.description': 'Select when this document should be published.',
+  /** Header for the schedule publish dialog */
+  'schedule-publish-dialog.header': 'Schedule draft for Publish',
 
   /** Accessibility label to open search action when the search would go fullscreen (eg on narrower screens) */
   'search.action-open-aria-label': 'Open search',
@@ -2016,6 +2127,8 @@ export const studioLocaleStrings = defineLocalesResources('studio', {
    * workspace to authenticate in.
    */
   'workspaces.action.choose-another-workspace': 'Choose another workspace',
+  /** Label for title to switch workspace before workspaces are listed */
+  'workspaces.action.switch-workspace': 'Switch workspace',
   /** Label for heading that indicates that you can choose your workspace */
   'workspaces.choose-your-workspace-label': 'Choose your workspace',
   /** Label for the workspace menu */

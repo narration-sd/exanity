@@ -25,13 +25,13 @@ import {useCanvasCompanionDoc} from '../canvas/actions/useCanvasCompanionDoc'
 import {isSanityCreateLinkedDocument} from '../create/createUtils'
 import {useReconnectingToast} from '../hooks'
 import {type ConnectionState, useConnectionState} from '../hooks/useConnectionState'
+import {useDocumentIdStack} from '../hooks/useDocumentIdStack'
 import {useDocumentOperation} from '../hooks/useDocumentOperation'
 import {useEditState} from '../hooks/useEditState'
 import {useSchema} from '../hooks/useSchema'
 import {useValidationStatus} from '../hooks/useValidationStatus'
 import {getSelectedPerspective} from '../perspective/getSelectedPerspective'
 import {type ReleaseId} from '../perspective/types'
-import {usePerspective} from '../perspective/usePerspective'
 import {useDocumentVersions} from '../releases/hooks/useDocumentVersions'
 import {useDocumentVersionTypeSortedList} from '../releases/hooks/useDocumentVersionTypeSortedList'
 import {useOnlyHasVersions} from '../releases/hooks/useOnlyHasVersions'
@@ -95,7 +95,14 @@ interface DocumentFormOptions {
   getFormDocumentValue?: (value: SanityDocumentLike) => SanityDocumentLike
 }
 interface DocumentFormValue {
+  /**
+   * `EditStateFor` for the displayed document.
+   * */
   editState: EditStateFor
+  /**
+   *  `EditStateFor` for the displayed document's upstream version.
+   */
+  upstreamEditState: EditStateFor
   connectionState: ConnectionState
   collapsedFieldSets: StateTree<boolean> | undefined
   collapsedPaths: StateTree<boolean> | undefined
@@ -127,7 +134,6 @@ interface DocumentFormValue {
  *
  * Use this as a base point to create your own form.
  */
-// eslint-disable-next-line max-statements
 export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue {
   const {
     documentType,
@@ -146,7 +152,6 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
   const presenceStore = usePresenceStore()
   const {data: releases} = useActiveReleases()
   const {data: documentVersions} = useDocumentVersions({documentId})
-  const {selectedReleaseId} = usePerspective()
 
   const schemaType = schema.get(documentType) as ObjectSchemaType | undefined
   if (!schemaType) {
@@ -175,18 +180,18 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
 
   const activeDocumentReleaseId = useMemo(() => {
     // if a document version exists with the selected release id, then it should use that
-    if (documentVersions.some((id) => getVersionFromId(id) === selectedReleaseId)) {
-      return selectedReleaseId
+    if (documentVersions.some((id) => getVersionFromId(id) === releaseId)) {
+      return releaseId
     }
 
     // check if the selected version is the only version, if it isn't and it doesn't exist in the release
     // then it needs to use the documentVersions
-    if (selectedReleaseId && (!documentVersions || !onlyHasVersions)) {
-      return selectedReleaseId
+    if (releaseId && (!documentVersions || !onlyHasVersions)) {
+      return releaseId
     }
 
     return getVersionFromId(firstVersion ?? '')
-  }, [documentVersions, onlyHasVersions, selectedReleaseId, firstVersion])
+  }, [documentVersions, onlyHasVersions, releaseId, firstVersion])
 
   const editState = useEditState(documentId, documentType, 'default', activeDocumentReleaseId)
 
@@ -195,16 +200,14 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
 
   const [focusPath, setFocusPath] = useState<Path>(initialFocusPath || EMPTY_ARRAY)
 
-  const comparisonValue = useMemo(() => {
-    if (typeof comparisonValueRaw === 'function') {
-      return comparisonValueRaw(editState)
-    }
-    return comparisonValueRaw
-  }, [comparisonValueRaw, editState])
-
   const value: SanityDocumentLike = useMemo(() => {
     const baseValue = initialValue?.value || {_id: documentId, _type: documentType}
     if (releaseId) {
+      // in cases where the current version is going to be unpublished, we need to show the published document
+      // this way, instead of showing the version that will stop existing, we show instead the published document with a fall back
+      if (editState.version && isGoingToUnpublish(editState.version)) {
+        return editState.published || baseValue
+      }
       return editState.version || editState.draft || editState.published || baseValue
     }
     if (selectedPerspectiveName && isPublishedPerspective(selectedPerspectiveName)) {
@@ -234,6 +237,27 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
     selectedPerspectiveName,
     onlyHasVersions,
   ])
+
+  const {previousId: upstreamId} = useDocumentIdStack({
+    strict: true,
+    displayed: value,
+    documentId,
+    editState,
+  })
+
+  const upstreamEditState = useEditState(
+    documentId,
+    documentType,
+    'low',
+    getVersionFromId(upstreamId ?? ''),
+  )
+
+  const comparisonValue = useMemo(() => {
+    if (typeof comparisonValueRaw === 'function') {
+      return comparisonValueRaw(upstreamEditState)
+    }
+    return comparisonValueRaw
+  }, [comparisonValueRaw, upstreamEditState])
 
   const [presence, setPresence] = useState<DocumentPresence[]>([])
   useEffect(() => {
@@ -306,6 +330,7 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
   )
   const {isLinked} = useCanvasCompanionDoc(value._id)
 
+  // eslint-disable-next-line complexity
   const readOnly = useMemo(() => {
     const hasNoPermission = !isPermissionsLoading && !permissions?.granted
     const updateActionDisabled = !isActionEnabled(schemaType!, 'update')
@@ -442,6 +467,7 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
     comparisonValue: comparisonValue || value,
     focusPath,
     openPath,
+    perspective: selectedPerspective,
     collapsedPaths,
     presence,
     validation,
@@ -511,14 +537,8 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
     [onFocusPath, setFocusPath, handleSetOpenPath, updatePresenceThrottled],
   )
 
-  const disableBlurRef = useRef(false)
-
   const handleBlur = useCallback(
     (_blurredPath: Path) => {
-      if (disableBlurRef.current) {
-        return
-      }
-
       setFocusPath(EMPTY_ARRAY)
 
       if (focusPathRef.current !== EMPTY_ARRAY) {
@@ -535,8 +555,6 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
   const handleProgrammaticFocus = useCallback(
     (nextPath: Path) => {
       // Supports changing the focus path not by a user interaction, but by a programmatic change, e.g. the url path changes.
-      // to avoid the blur event to be triggered, we set a flag to disable it for a short period of time.
-      disableBlurRef.current = true
 
       if (!deepEquals(focusPathRef.current, nextPath)) {
         setFocusPath(nextPath)
@@ -545,16 +563,12 @@ export function useDocumentForm(options: DocumentFormOptions): DocumentFormValue
 
         focusPathRef.current = nextPath
       }
-
-      const timeout = setTimeout(() => {
-        disableBlurRef.current = false
-      }, 0)
-      return () => clearTimeout(timeout)
     },
     [onFocusPath, handleSetOpenPath],
   )
   return {
     editState,
+    upstreamEditState,
     connectionState,
     focusPath,
     validation,

@@ -201,14 +201,14 @@ export const ReleaseScheduleButton = ({
 
     return (
       <Dialog
-        id="confirm-schedule-dialog"
-        data-testid="confirm-schedule-dialog"
         /**
          * rerenderDialog should force this function to rerun
          * since the selected scheduled date was in the future when selected
          * but at time of submit it is in the past
          */
         key={rerenderDialog}
+        id="confirm-schedule-dialog"
+        data-testid="confirm-schedule-dialog"
         header={t('schedule-dialog.confirm-title', {
           documentsLength: documents.length,
           count: documents.length,
@@ -230,13 +230,13 @@ export const ReleaseScheduleButton = ({
         <Stack space={3}>
           {_isScheduledDateInPast && (
             <Card marginBottom={1} padding={2} radius={2} shadow={1} tone="critical">
-              <Text size={1}>{t('schedule-dialog.publish-date-in-past-warning')}</Text>
+              <Text size={1}>{tCore('release.schedule-dialog.publish-date-in-past-warning')}</Text>
             </Card>
           )}
           <label>
             <Stack space={3}>
               <Text size={1} weight="semibold">
-                {t('schedule-dialog.select-publish-date-label')}
+                {tCore('release.schedule-dialog.select-publish-date-label')}
               </Text>
               <DateTimeInput
                 selectTime

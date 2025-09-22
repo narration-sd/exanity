@@ -20,14 +20,16 @@ import {
 } from '../form/studio/assetSourceMediaLibrary'
 import {type LocaleSource} from '../i18n'
 import {prepareI18n} from '../i18n/i18nConfig'
-import {createSchema, DESCRIPTOR_CONVERTER} from '../schema'
+import {createSchema} from '../schema'
 import {type AuthStore, createAuthStore, isAuthStore} from '../store/_legacy'
 import {validateWorkspaces} from '../studio'
 import {filterDefinitions} from '../studio/components/navbar/search/definitions/defaultFilters'
 import {operatorDefinitions} from '../studio/components/navbar/search/definitions/operators/defaultOperators'
+import {DEFAULT_STUDIO_CLIENT_OPTIONS} from '../studioClient'
 import {type InitialValueTemplateItem, type Template, type TemplateItem} from '../templates'
 import {EMPTY_ARRAY, isNonNullable} from '../util'
 import {
+  advancedVersionControlEnabledReducer,
   announcementsEnabledReducer,
   directUploadsReducer,
   documentActionsReducer,
@@ -35,12 +37,14 @@ import {
   documentCommentsEnabledReducer,
   documentInspectorsReducer,
   documentLanguageFilterReducer,
+  draftsEnabledReducer,
   eventsAPIReducer,
   fileAssetSourceResolver,
   imageAssetSourceResolver,
   initialDocumentActions,
   initialDocumentBadges,
   initialLanguageFilter,
+  internalQuotaExcludedReleasesEnabledReducer,
   internalTasksReducer,
   legacySearchEnabledReducer,
   mediaLibraryEnabledReducer,
@@ -48,6 +52,7 @@ import {
   newDocumentOptionsResolver,
   onUncaughtErrorResolver,
   partialIndexingEnabledReducer,
+  releaseActionsReducer,
   resolveProductionUrlReducer,
   schemaTemplatesReducer,
   searchStrategyReducer,
@@ -67,6 +72,7 @@ import {
   type MissingConfigFile,
   type PluginOptions,
   type PreparedConfig,
+  QUOTA_EXCLUDED_RELEASES_ENABLED,
   type SingleWorkspace,
   type Source,
   type SourceClientOptions,
@@ -74,6 +80,7 @@ import {
   type WorkspaceOptions,
   type WorkspaceSummary,
 } from './types'
+import {uploadSchema} from './uploadSchema'
 
 type InternalSource = WorkspaceSummary['__internal']['sources'][number]
 
@@ -221,19 +228,6 @@ export function prepareConfig(
         types: schemaTypes,
       })
 
-      if (typeof process !== 'undefined' && process?.env?.SANITY_STUDIO_SCHEMA_DESCRIPTOR) {
-        const before = performance.now()
-        const sync = DESCRIPTOR_CONVERTER.get(schema)
-        const after = performance.now()
-        const duration = after - before
-        debug('Built schema for synchronization', {sync, duration})
-        if (duration > 1000) {
-          console.warn(
-            `Building schema for synchronization took more than 1 second (${duration}ms)`,
-          )
-        }
-      }
-
       const schemaValidationProblemGroups = schema._validation
       const schemaErrors = schemaValidationProblemGroups?.filter((msg) =>
         msg.problems.some(isError),
@@ -364,6 +358,10 @@ function resolveSource({
     projectId,
     schema,
     i18n: i18n.source,
+    [QUOTA_EXCLUDED_RELEASES_ENABLED]: internalQuotaExcludedReleasesEnabledReducer({
+      config,
+      initialValue: false,
+    }),
   }
 
   // <TEMPORARY UGLY HACK TO PRINT DEPRECATION WARNINGS ON USE>
@@ -593,6 +591,15 @@ function resolveSource({
           propertyName: 'document.badges',
           reducer: documentBadgesReducer,
         }),
+      drafts: {
+        enabled: resolveConfigProperty({
+          config,
+          context,
+          reducer: draftsEnabledReducer,
+          propertyName: 'document.drafts.enabled',
+          initialValue: true,
+        }),
+      },
       unstable_fieldActions: (partialContext) =>
         resolveConfigProperty({
           config,
@@ -716,6 +723,12 @@ function resolveSource({
       i18next: i18n.i18next,
       staticInitialValueTemplateItems,
       options: config,
+      schemaDescriptorId: authenticated
+        ? catchTap(uploadSchema(schema, getClient(DEFAULT_STUDIO_CLIENT_OPTIONS)), (err) => {
+            debug('Uploading schema failed', {err})
+            return undefined
+          })
+        : Promise.resolve(undefined),
     },
     onUncaughtError: (error: Error, errorInfo: ErrorInfo) => {
       return onUncaughtErrorResolver({
@@ -754,6 +767,31 @@ function resolveSource({
       enabled: mediaLibraryEnabledReducer({config, initialValue: false}),
       libraryId: mediaLibraryLibraryIdReducer({config, initialValue: undefined}),
     },
+
+    advancedVersionControl: {
+      enabled: resolveConfigProperty({
+        config,
+        context,
+        reducer: advancedVersionControlEnabledReducer,
+        propertyName: 'advancedVersionControl.enabled',
+        initialValue: false,
+      }),
+    },
+
+    releases: config.releases
+      ? {
+          enabled: config.releases.enabled,
+          limit: config.releases.limit,
+          actions: (partialContext) =>
+            resolveConfigProperty({
+              config,
+              context: {...context, ...partialContext},
+              initialValue: [],
+              propertyName: 'releases.actions',
+              reducer: releaseActionsReducer,
+            }),
+        }
+      : undefined,
   }
 
   return source
@@ -801,4 +839,13 @@ function joinBasePath(rootPath: string, basePath?: string) {
     .join('/')
 
   return `/${joined}`
+}
+
+/**
+ * Registers a catch to a promise (to prevent it from being caught by the
+ * "unhandled promise" handler) while returning the original promise.
+ */
+function catchTap<T>(promise: Promise<T>, cb: (reason: unknown) => void): Promise<T> {
+  promise.catch(cb)
+  return promise
 }

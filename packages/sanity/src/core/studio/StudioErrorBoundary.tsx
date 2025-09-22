@@ -1,10 +1,8 @@
-/* eslint-disable i18next/no-literal-string */
-/* eslint-disable @sanity/i18n/no-attribute-string-literals */
 import {type ErrorBoundaryProps} from '@sanity/ui'
 import {lazy, type ReactNode, useCallback, useState} from 'react'
 import {useHotModuleReload} from 'use-hot-module-reload'
 
-import {ErrorBoundary} from '../../ui-components'
+import {ErrorBoundary} from '../../ui-components/errorBoundary/ErrorBoundary'
 import {SchemaError} from '../config'
 import {errorReporter} from '../error/errorReporter'
 import {isImportError} from '../error/isImportError'
@@ -27,6 +25,7 @@ const DevServerStoppedErrorScreen = lazy(() =>
 interface StudioErrorBoundaryProps {
   children: ReactNode
   heading?: string
+  getErrorScreen?: (error: Error) => ReactNode | null
 }
 
 type ErrorBoundaryState = {
@@ -45,26 +44,32 @@ type ErrorBoundaryState = {
  * @param props - {@link StudioErrorBoundaryProps}
  */
 export function StudioErrorBoundary(props: StudioErrorBoundaryProps) {
-  const {children, heading = 'An error occurred'} = props
+  const {children, heading = 'An error occurred', getErrorScreen} = props
   const [caughtError, setCaughtError] = useState<ErrorBoundaryState>()
+  const [errorScreen, setErrorScreen] = useState<ReactNode>()
   const handleResetError = useCallback(() => setCaughtError(undefined), [])
-  const handleCatchError: ErrorBoundaryProps['onCatch'] = useCallback((params) => {
-    let eventId: string | undefined
-    try {
-      eventId = errorReporter.reportError(params.error, {
-        reactErrorInfo: params.info,
-        errorBoundary: 'StudioErrorBoundary',
-      })?.eventId
-    } catch (e) {
-      e.message = `Encountered an additional error when reporting error: ${e.message}`
-      console.error(e)
-    }
-    setCaughtError({
-      error: params.error,
-      componentStack: params.info.componentStack,
-      eventId,
-    })
-  }, [])
+
+  const handleCatchError: ErrorBoundaryProps['onCatch'] = useCallback(
+    (params) => {
+      let eventId: string | undefined
+      try {
+        eventId = errorReporter.reportError(params.error, {
+          reactErrorInfo: params.info,
+          errorBoundary: 'StudioErrorBoundary',
+        })?.eventId
+      } catch (e) {
+        e.message = `Encountered an additional error when reporting error: ${e.message}`
+        console.error(e)
+      }
+      setErrorScreen(getErrorScreen?.(params.error))
+      setCaughtError({
+        error: params.error,
+        componentStack: params.info.componentStack,
+        eventId,
+      })
+    },
+    [getErrorScreen],
+  )
 
   useHotModuleReload(handleResetError)
 
@@ -72,8 +77,17 @@ export function StudioErrorBoundary(props: StudioErrorBoundaryProps) {
     return <ErrorBoundary onCatch={handleCatchError}>{children}</ErrorBoundary>
   }
 
+  if (errorScreen) {
+    return errorScreen
+  }
+
   if (caughtError.error instanceof CorsOriginError) {
-    return <CorsOriginErrorScreen projectId={caughtError.error.projectId} />
+    return (
+      <CorsOriginErrorScreen
+        projectId={caughtError.error.projectId}
+        isStaging={caughtError.error.isStaging}
+      />
+    )
   }
 
   if (caughtError.error instanceof SchemaError) {

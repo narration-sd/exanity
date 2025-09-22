@@ -130,6 +130,7 @@ import type {
   SerializePath,
   shallowIntentChecker,
   SortMenuItem,
+  StrictVersionLayeringOptions,
   StructureBuilder,
   StructureBuilderOptions,
   StructureContext,
@@ -151,6 +152,7 @@ import type {
   UnserializedListItemChild,
   useDocumentPane,
   useDocumentTitle,
+  UseDocumentTitle,
   usePaneOptions,
   usePaneRouter,
   UserComponent,
@@ -539,6 +541,9 @@ describe('sanity/structure', () => {
   test('SortMenuItem', () => {
     expectTypeOf<SortMenuItem>().toBeObject()
   })
+  test('StrictVersionLayeringOptions', () => {
+    expectTypeOf<StrictVersionLayeringOptions>().toBeObject()
+  })
   test('StructureBuilder', () => {
     expectTypeOf<StructureBuilder>().toBeObject()
   })
@@ -601,6 +606,9 @@ describe('sanity/structure', () => {
   })
   test('useDocumentTitle', () => {
     expectTypeOf<typeof useDocumentTitle>().toBeFunction()
+  })
+  test('UseDocumentTitle', () => {
+    expectTypeOf<UseDocumentTitle>().toBeObject()
   })
   test('usePaneOptions', () => {
     expectTypeOf<typeof usePaneOptions>().toBeFunction()

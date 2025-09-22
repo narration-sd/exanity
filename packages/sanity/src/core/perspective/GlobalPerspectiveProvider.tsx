@@ -1,18 +1,22 @@
 import {type ReleaseDocument} from '@sanity/client'
 import {Text, useToast} from '@sanity/ui'
 import {type ReactNode, useEffect, useMemo} from 'react'
+import {RawPerspectiveContext} from 'sanity/_singletons'
 import {useRouter} from 'sanity/router'
 
 import {useTranslation} from '../i18n/hooks/useTranslation'
 import {Translate} from '../i18n/Translate'
 import {useActiveReleases} from '../releases/store/useActiveReleases'
 import {useArchivedReleases} from '../releases/store/useArchivedReleases'
-import {LATEST} from '../releases/util/const'
+import {LATEST, PUBLISHED} from '../releases/util/const'
 import {getReleaseIdFromReleaseDocumentId} from '../releases/util/getReleaseIdFromReleaseDocumentId'
 import {isPublishedPerspective} from '../releases/util/util'
+import {useWorkspace} from '../studio/workspace'
+import {isSystemBundleName} from '../util/draftUtils'
 import {EMPTY_ARRAY} from '../util/empty'
+import {getSelectedPerspective} from './getSelectedPerspective'
 import {PerspectiveProvider} from './PerspectiveProvider'
-import {type ReleaseId} from './types'
+import {type RawPerspectiveContextValue, type ReleaseId, type TargetPerspective} from './types'
 import {usePerspective} from './usePerspective'
 import {useSetPerspective} from './useSetPerspective'
 
@@ -101,23 +105,54 @@ const ResetPerspectiveHandler = () => {
  */
 export function GlobalPerspectiveProvider({children}: {children: ReactNode}) {
   const router = useRouter()
+  const {data: releases} = useActiveReleases()
 
-  const selectedPerspectiveName = router.stickyParams.perspective as
+  const {
+    document: {
+      drafts: {enabled: isDraftModelEnabled},
+    },
+  } = useWorkspace()
+
+  let selectedPerspectiveName = router.stickyParams.perspective as
     | 'published'
     | ReleaseId
     | undefined
+
+  if (!isDraftModelEnabled && typeof selectedPerspectiveName === 'undefined') {
+    selectedPerspectiveName = PUBLISHED
+  }
 
   const excludedPerspectives = useMemo(
     () => router.stickyParams.excludedPerspectives?.split(',') || EMPTY_ARRAY,
     [router.stickyParams.excludedPerspectives],
   )
+
+  // Calculate raw perspective values
+  const selectedPerspective: TargetPerspective = useMemo(
+    () => getSelectedPerspective(selectedPerspectiveName, releases),
+    [selectedPerspectiveName, releases],
+  )
+
+  const rawValue: RawPerspectiveContextValue = useMemo(
+    () => ({
+      selectedPerspective,
+      selectedPerspectiveName,
+      selectedReleaseId: isSystemBundleName(selectedPerspectiveName)
+        ? undefined
+        : selectedPerspectiveName,
+    }),
+    [selectedPerspective, selectedPerspectiveName],
+  )
+
   return (
-    <PerspectiveProvider
-      selectedPerspectiveName={selectedPerspectiveName}
-      excludedPerspectives={excludedPerspectives}
-    >
-      {children}
-      <ResetPerspectiveHandler />
-    </PerspectiveProvider>
+    <RawPerspectiveContext.Provider value={rawValue}>
+      <PerspectiveProvider
+        selectedPerspectiveName={selectedPerspectiveName}
+        excludedPerspectives={excludedPerspectives}
+      >
+        {children}
+        <ResetPerspectiveHandler />
+      </PerspectiveProvider>
+    </RawPerspectiveContext.Provider>
   )
 }

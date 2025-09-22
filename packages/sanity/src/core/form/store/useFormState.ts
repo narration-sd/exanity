@@ -1,10 +1,16 @@
-/* eslint-disable camelcase */
-
-import {type ObjectSchemaType, type Path, type ValidationMarker} from '@sanity/types'
+import {
+  type ObjectSchemaType,
+  type Path,
+  type SanityDocument,
+  type ValidationMarker,
+} from '@sanity/types'
 import {useMemo, useState} from 'react'
 
+import {type TargetPerspective} from '../../perspective/types'
 import {type FormNodePresence} from '../../presence'
+import {isGoingToUnpublish} from '../../releases/util/isGoingToUnpublish'
 import {useCurrentUser} from '../../store'
+import {EMPTY_ARRAY} from '../../util/empty'
 import {createCallbackResolver} from './conditional-property/createCallbackResolver'
 import {createPrepareFormState} from './formState'
 import {type ObjectFormNode, type StateTree} from './types'
@@ -23,6 +29,7 @@ export interface UseFormStateOptions {
   comparisonValue: unknown
   openPath: Path
   focusPath: Path
+  perspective: TargetPerspective
   presence: FormNodePresence[]
   validation: ValidationMarker[]
   fieldGroupState?: StateTree<string> | undefined
@@ -49,6 +56,7 @@ export function useFormState<
   readOnly: inputReadOnly,
   changesOpen,
   schemaType,
+  perspective,
 }: UseFormStateOptions): FormState<T, S> | null {
   // note: feel free to move these state pieces out of this hook
   const currentUser = useCurrentUser()
@@ -119,6 +127,11 @@ export function useFormState<
     inputReadOnly,
   ])
 
+  // if a version is going to be unpublished, we don't want to show the validation errors
+  // in the form
+  const isVersionGoingToUnpublish =
+    documentValue && isGoingToUnpublish(documentValue as SanityDocument)
+
   return useMemo(() => {
     return prepareFormState({
       schemaType,
@@ -133,8 +146,9 @@ export function useFormState<
       hidden,
       currentUser,
       presence,
-      validation,
+      validation: isVersionGoingToUnpublish ? EMPTY_ARRAY : validation,
       changesOpen,
+      perspective,
     }) as ObjectFormNode<T, S>
   }, [
     prepareFormState,
@@ -146,10 +160,12 @@ export function useFormState<
     comparisonValue,
     focusPath,
     openPath,
+    perspective,
     readOnly,
     hidden,
     currentUser,
     presence,
+    isVersionGoingToUnpublish,
     validation,
     changesOpen,
   ])

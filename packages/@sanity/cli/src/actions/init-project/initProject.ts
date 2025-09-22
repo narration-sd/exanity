@@ -43,6 +43,10 @@ import {getUserConfig} from '../../util/getUserConfig'
 import {isCommandGroup} from '../../util/isCommandGroup'
 import {isInteractive} from '../../util/isInteractive'
 import {fetchJourneyConfig} from '../../util/journeyConfig'
+import {
+  type OrganizationCreateResponse,
+  type ProjectOrganization,
+} from '../../util/organizationUtils'
 import {checkIsRemoteTemplate, getGitHubRepoInfo, type RepoInfo} from '../../util/remoteTemplate'
 import {login, type LoginFlags} from '../login/login'
 import {createProject} from '../project/createProject'
@@ -69,7 +73,6 @@ import {
   sanityStudioTemplate,
 } from './templates/nextjs'
 
-// eslint-disable-next-line no-process-env
 const isCI = Boolean(process.env.CI)
 
 /**
@@ -100,22 +103,6 @@ export interface ProjectTemplate {
   typescriptOnly?: boolean
   entry?: string
   scripts?: Record<string, string>
-}
-
-export interface ProjectOrganization {
-  id: string
-  name: string
-  slug: string
-}
-
-interface OrganizationCreateResponse {
-  id: string
-  name: string
-  createdByUserId: string
-  slug: string | null
-  defaultRoleName: string | null
-  members: unknown[]
-  features: unknown[]
 }
 
 // eslint-disable-next-line max-statements, complexity
@@ -212,10 +199,12 @@ export default async function initSanity(
         if (useDefaultPlan) {
           print(`Using default plan.`)
         } else {
-          throw new Error(`Coupon "${intendedCoupon}" does not exist`)
+          throw new Error(`Coupon "${intendedCoupon}" does not exist`, {cause: err})
         }
       } else {
-        throw new Error(`Unable to validate coupon, please try again later:\n\n${err.message}`)
+        throw new Error(`Unable to validate coupon, please try again later:\n\n${err.message}`, {
+          cause: err,
+        })
       }
     }
   } else if (intendedPlan) {
@@ -241,10 +230,12 @@ export default async function initSanity(
         if (useDefaultPlan) {
           print(`Using default plan.`)
         } else {
-          throw new Error(`Plan id "${intendedPlan}" does not exist`)
+          throw new Error(`Plan id "${intendedPlan}" does not exist`, {cause: err})
         }
       } else {
-        throw new Error(`Unable to validate plan, please try again later:\n\n${err.message}`)
+        throw new Error(`Unable to validate plan, please try again later:\n\n${err.message}`, {
+          cause: err,
+        })
       }
     }
   }
@@ -555,7 +546,7 @@ export default async function initSanity(
 
     const chosen = await resolvePackageManager(workDir)
     trace.log({step: 'selectPackageManager', selectedOption: chosen})
-    const packages = ['@sanity/vision@3', 'sanity@3', '@sanity/image-url@1', 'styled-components@6']
+    const packages = ['@sanity/vision@4', 'sanity@4', '@sanity/image-url@1', 'styled-components@6']
     if (templateToUse === 'blog') {
       packages.push('@sanity/icons')
     }
@@ -579,11 +570,11 @@ export default async function initSanity(
     }
 
     if (chosen === 'npm') {
-      await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@9'], execOptions)
+      await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@11'], execOptions)
     } else if (chosen === 'yarn') {
-      await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@9'], execOptions)
+      await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@11'], execOptions)
     } else if (chosen === 'pnpm') {
-      await execa('pnpm', ['install', 'next-sanity@9'], execOptions)
+      await execa('pnpm', ['install', 'next-sanity@11'], execOptions)
     }
 
     print(
@@ -868,7 +859,7 @@ export default async function initSanity(
           userAction: 'select',
         }
       }
-      throw new Error(`Failed to communicate with the Sanity API:\n${err.message}`)
+      throw new Error(`Failed to communicate with the Sanity API:\n${err.message}`, {cause: err})
     }
 
     if (projects.length === 0 && unattended) {
@@ -1235,6 +1226,11 @@ export default async function initSanity(
 
   // eslint-disable-next-line complexity
   async function prepareFlags() {
+    // Handle --project-id alias by setting it to --project
+    if (cliFlags['project-id'] && !cliFlags.project) {
+      cliFlags.project = cliFlags['project-id']
+    }
+
     const createProjectName = cliFlags['create-project']
     if (cliFlags.dataset || cliFlags.visibility || cliFlags['dataset-default'] || unattended) {
       showDefaultConfigPrompt = false

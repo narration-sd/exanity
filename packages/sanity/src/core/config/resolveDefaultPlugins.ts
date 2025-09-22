@@ -1,8 +1,9 @@
+import {MEDIA_LIBRARY_NAME, mediaLibrary} from '../../media-library/plugin'
 import {CANVAS_INTEGRATION_NAME, canvasIntegration} from '../canvas/canvasIntegrationPlugin'
 import {comments} from '../comments/plugin'
 import {createIntegration} from '../create/createIntegrationPlugin'
 import {releases, RELEASES_NAME} from '../releases/plugin'
-// eslint-disable-next-line no-restricted-imports
+// oxlint-disable-next-line no-restricted-imports
 import {SCHEDULED_PUBLISHING_NAME, scheduledPublishing} from '../scheduled-publishing/plugin'
 import {tasks, TASKS_NAME} from '../tasks/plugin'
 import {
@@ -20,6 +21,7 @@ const defaultPlugins = [
   createIntegration(),
   releases(),
   canvasIntegration(),
+  mediaLibrary(),
 ]
 
 type DefaultPluginsOptions = DefaultPluginsWorkspaceOptions & {
@@ -40,6 +42,9 @@ export function getDefaultPlugins(options: DefaultPluginsOptions, plugins?: Plug
     }
     if (plugin.name === CANVAS_INTEGRATION_NAME) {
       return options.apps?.canvas?.enabled ?? false
+    }
+    if (plugin.name === MEDIA_LIBRARY_NAME) {
+      return options.mediaLibrary?.enabled
     }
     return true
   })
@@ -75,5 +80,6 @@ export function getDefaultPluginsOptions(
         ...workspace.apps?.canvas,
       },
     },
+    mediaLibrary: workspace?.mediaLibrary,
   }
 }

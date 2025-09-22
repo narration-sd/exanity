@@ -4,13 +4,13 @@ import {
   type FileSchemaType,
   type ImageSchemaType,
 } from '@sanity/types'
-import {useTheme, useToast} from '@sanity/ui'
+import {useToast} from '@sanity/ui'
 import {createRef, type ReactNode, useCallback, useEffect, useState} from 'react'
 
 import {useTranslation} from '../../../../i18n'
 import {useAuthType} from '../hooks/useAuthType'
 import {useLinkAssets} from '../hooks/useLinkAssets'
-import {useMediaLibraryId} from '../hooks/useMediaLibraryId'
+import {useMediaLibraryIds} from '../hooks/useMediaLibraryIds'
 import {usePluginPostMessage} from '../hooks/usePluginPostMessage'
 import {useSanityMediaLibraryConfig} from '../hooks/useSanityMediaLibraryConfig'
 import {type AssetSelectionItem, type PluginPostMessage} from '../types'
@@ -31,9 +31,7 @@ export interface UploadAssetsDialogProps {
 export const UploadAssetsDialog = function UploadAssetsDialog(
   props: UploadAssetsDialogProps,
 ): ReactNode {
-  const theme = useTheme()
-  const libraryId = useMediaLibraryId()
-  const {dark} = theme.sanity.color
+  const mediaLibraryIds = useMediaLibraryIds()
   const {schemaType} = props
 
   const {onLinkAssets} = useLinkAssets({schemaType})
@@ -46,9 +44,8 @@ export const UploadAssetsDialog = function UploadAssetsDialog(
   const {t} = useTranslation()
 
   const appHost = pluginConfig.__internal.hosts.app
-  const pluginApiVersion = pluginConfig.__internal.pluginApiVersion
   const appBasePath = pluginConfig.__internal.appBasePath
-  const iframeUrl = `${appHost}${appBasePath}/plugin/${pluginApiVersion}/library/${libraryId}/upload?scheme=${dark ? 'dark' : 'light'}&auth=${authType}`
+  const iframeUrl = `${appHost}${appBasePath}/plugin/v1/library/${mediaLibraryIds?.libraryId}/upload?auth=${authType}`
   const uploaderRef = createRef<{
     uploader: AssetSourceUploader
     unsubscribe: () => void
@@ -66,6 +63,7 @@ export const UploadAssetsDialog = function UploadAssetsDialog(
         toast.push({
           closable: true,
           status: 'error',
+          id: 'insert-asset-error',
           title: t('asset-source.dialog.insert-asset-error'),
         })
         console.error(error)
@@ -122,6 +120,22 @@ export const UploadAssetsDialog = function UploadAssetsDialog(
       }
       const subscribe = () => {
         return uploader.subscribe((event) => {
+          if (event.type === 'all-complete') {
+            const existingFiles = event.files.filter((file) => file.status === 'alreadyExists')
+            existingFiles.forEach((file) => {
+              toast.push({
+                status: 'warning',
+                title: t('asset-sources.media-library.warning.file-already-exist.title', {
+                  filename: file.file.name,
+                }),
+                description: t(
+                  'asset-sources.media-library.warning.file-already-exist.description',
+                ),
+                closable: true,
+                duration: 10000,
+              })
+            })
+          }
           if (event.type === 'status' && event.status === 'aborted') {
             postMessage({
               type: 'abortUploadRequest',
@@ -141,7 +155,7 @@ export const UploadAssetsDialog = function UploadAssetsDialog(
       return uploaderRef.current.unsubscribe
     }
     return uploaderRef.current?.unsubscribe()
-  }, [open, pageReadyForUploads, postMessage, uploader, uploaderRef])
+  }, [open, pageReadyForUploads, postMessage, t, toast, uploader, uploaderRef])
 
   if (!open) {
     return null

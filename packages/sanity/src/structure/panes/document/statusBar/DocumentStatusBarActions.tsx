@@ -1,4 +1,3 @@
-/* eslint-disable no-warning-comments */
 /* eslint-disable camelcase */
 import {Flex, LayerProvider, Stack, Text} from '@sanity/ui'
 import {memo, useCallback, useMemo, useState} from 'react'
@@ -13,7 +12,7 @@ import {
 } from 'sanity'
 
 import {Button, Tooltip} from '../../../../ui-components'
-import {RenderActionCollectionState, type ResolvedAction} from '../../../components'
+import {RenderActionCollectionState, type ResolvedAction, usePaneRouter} from '../../../components'
 import {HistoryRestoreAction} from '../../../documentActions'
 import {toLowerCaseNoSpaces} from '../../../util/toLowerCaseNoSpaces'
 import {useDocumentPane} from '../useDocumentPane'
@@ -22,16 +21,18 @@ import {ActionStateDialog} from './ActionStateDialog'
 
 interface DocumentStatusBarActionsInnerProps {
   disabled: boolean
-  showMenu: boolean
   states: ResolvedAction[]
 }
 
 const DocumentStatusBarActionsInner = memo(function DocumentStatusBarActionsInner(
   props: DocumentStatusBarActionsInnerProps,
 ) {
-  const {disabled, showMenu, states} = props
+  const {disabled, states} = props
   const {__internal_tasks} = useSource()
   const {editState} = useDocumentPane()
+  const {params} = usePaneRouter()
+  const showingRevision = Boolean(params?.rev)
+
   const {selectedReleaseId} = usePerspective()
   const [firstActionState, ...menuActionStates] = states
   const [buttonElement, setButtonElement] = useState<HTMLButtonElement | null>(null)
@@ -56,10 +57,13 @@ const DocumentStatusBarActionsInner = memo(function DocumentStatusBarActionsInne
       </Flex>
     )
   }, [firstActionState])
-  const showFirstActionButton = selectedReleaseId
-    ? // If the first action is a custom action and we are in a version document show it.
-      firstActionState && !isSanityDefinedAction(firstActionState)
-    : firstActionState && !editState?.liveEdit
+
+  const showFirstActionButton = showingRevision
+    ? Boolean(firstActionState)
+    : selectedReleaseId
+      ? // If the first action is a custom action and we are in a version document show it.
+        firstActionState && !isSanityDefinedAction(firstActionState)
+      : firstActionState && !editState?.liveEdit
 
   const sideMenuItems = useMemo(() => {
     return showFirstActionButton ? menuActionStates : [firstActionState, ...menuActionStates]
@@ -86,10 +90,10 @@ const DocumentStatusBarActionsInner = memo(function DocumentStatusBarActionsInne
           </Tooltip>
         </LayerProvider>
       )}
-      {showMenu && menuActionStates.length > 0 && (
+      {sideMenuItems.length > 0 && (
         <ActionMenuButton actionStates={sideMenuItems} disabled={disabled} />
       )}
-      {firstActionState && firstActionState.dialog && (
+      {showFirstActionButton && firstActionState && firstActionState.dialog && (
         <ActionStateDialog dialog={firstActionState.dialog} referenceElement={buttonElement} />
       )}
     </Flex>
@@ -121,14 +125,13 @@ export const DocumentStatusBarActions = memo(function DocumentStatusBarActions()
   >(
     ({states}) => (
       <DocumentStatusBarActionsInner
-        disabled={connectionState !== 'connected'}
-        showMenu={actions.length > 1}
-        states={states}
         // Use document ID as key to make sure that the actions state is reset when the document changes
         key={documentId}
+        disabled={connectionState !== 'connected'}
+        states={states}
       />
     ),
-    [actions.length, connectionState, documentId],
+    [connectionState, documentId],
   )
 
   if (actions.length === 0 || !actionProps) {
@@ -173,7 +176,6 @@ export const HistoryStatusBarActions = memo(function HistoryStatusBarActions() {
     ({states}) => (
       <DocumentStatusBarActionsInner
         disabled={connectionState !== 'connected' || Boolean(disabled)}
-        showMenu={false}
         states={states}
       />
     ),

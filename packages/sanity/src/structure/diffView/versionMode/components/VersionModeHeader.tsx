@@ -23,8 +23,6 @@ import {
   getReleaseTone,
   getVersionFromId,
   getVersionId,
-  isDraftId,
-  isPublishedId,
   isReleaseDocument,
   isReleaseScheduledOrScheduling,
   ReleaseAvatar,
@@ -33,6 +31,7 @@ import {
   useDocumentVersions,
   useEditState,
   useTranslation,
+  useWorkspace,
 } from 'sanity'
 import {styled} from 'styled-components'
 
@@ -40,6 +39,7 @@ import {MenuButton} from '../../../../ui-components/menuButton/MenuButton'
 import {structureLocaleNamespace} from '../../../i18n'
 import {useDiffViewRouter} from '../../hooks/useDiffViewRouter'
 import {useDiffViewState} from '../../hooks/useDiffViewState'
+import {findRelease} from '../../utils/findRelease'
 
 const VersionModeHeaderLayout = styled.header`
   display: grid;
@@ -177,6 +177,12 @@ const VersionMenu: ComponentType<VersionMenuProps> = ({
   const {t: tStructure} = useTranslation(structureLocaleNamespace)
   const {t: tCore} = useTranslation()
 
+  const {
+    document: {
+      drafts: {enabled: isDraftModelEnabled},
+    },
+  } = useWorkspace()
+
   return (
     <MenuButton
       id={role}
@@ -201,7 +207,7 @@ const VersionMenu: ComponentType<VersionMenuProps> = ({
               documentId={documentId}
             />
           )}
-          {draft && (
+          {isDraftModelEnabled && draft && (
             <VersionMenuItem
               type="draft"
               onSelect={onSelectRelease}
@@ -352,26 +358,4 @@ function getMenuButtonProps({
     icon: <ReleaseAvatar padding={1} tone={tone} />,
     tone,
   }
-}
-
-/**
- * If the provided document id represents a version, find and return the corresponding release
- * document. Otherwise, return a string literal signifying whether the document id represents a
- * published or draft document.
- */
-function findRelease(
-  documentId: string,
-  releases: ReleaseDocument[],
-): ReleaseDocument | 'published' | 'draft' | undefined {
-  if (isPublishedId(documentId)) {
-    return 'published'
-  }
-
-  if (isDraftId(documentId)) {
-    return 'draft'
-  }
-
-  return releases.find(
-    ({_id}) => getReleaseIdFromReleaseDocumentId(_id) === getVersionFromId(documentId),
-  )
 }

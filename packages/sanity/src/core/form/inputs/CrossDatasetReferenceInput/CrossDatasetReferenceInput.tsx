@@ -1,4 +1,4 @@
-/* eslint-disable complexity, max-nested-callbacks, no-nested-ternary */
+/* eslint-disable complexity */
 import {ResetIcon as ClearIcon, SyncIcon as ReplaceIcon} from '@sanity/icons'
 import {type CrossDatasetReferenceSchemaType, type CrossDatasetReferenceValue} from '@sanity/types'
 import {Box, Card, Flex, Inline, Menu, Stack, useClickOutsideEvent, useToast} from '@sanity/ui'
@@ -21,6 +21,7 @@ import {PreviewCard} from '../../../components'
 import {ContextMenuButton} from '../../../components/contextMenuButton'
 import {type FIXME} from '../../../FIXME'
 import {useFeatureEnabled} from '../../../hooks'
+import {FEATURES} from '../../../hooks/useFeatureEnabled'
 import {useTranslation} from '../../../i18n'
 import {getPublishedId, isNonNullable} from '../../../util'
 import {useDidUpdate} from '../../hooks/useDidUpdate'
@@ -140,7 +141,7 @@ export function CrossDatasetReferenceInput(props: CrossDatasetReferenceInputProp
   const refDoc = useMemo(() => ({_id: value?._ref}), [value?._ref])
 
   const loadableReferenceInfo = useReferenceInfo(refDoc as FIXME, getReferenceInfoMemo)
-  const featureInfo = useFeatureEnabled(CROSS_DATASET_FEATUREKEY)
+  const featureInfo = useFeatureEnabled(FEATURES.crossDatasetReferences)
 
   const [autocompletePopoverReferenceElement, setAutocompletePopoverReferenceElement] =
     useState<HTMLDivElement | null>(null)

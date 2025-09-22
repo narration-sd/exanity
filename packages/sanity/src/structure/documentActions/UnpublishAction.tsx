@@ -4,16 +4,15 @@ import {
   type DocumentActionComponent,
   type DocumentActionModalDialogProps,
   InsufficientPermissionsMessage,
-  isDraftId,
   useCurrentUser,
   useDocumentOperation,
   useDocumentPairPermissions,
+  usePerspective,
   useTranslation,
 } from 'sanity'
 
 import {ConfirmDeleteDialog} from '../components'
 import {structureLocaleNamespace} from '../i18n'
-import {useDocumentPane} from '../panes/document/useDocumentPane'
 
 const DISABLED_REASON_KEY = {
   NOT_PUBLISHED: 'action.unpublish.disabled.not-published',
@@ -38,10 +37,10 @@ export const UnpublishAction: DocumentActionComponent = ({
     permission: 'unpublish',
   })
   const currentUser = useCurrentUser()
-  const {displayed} = useDocumentPane()
   const {t} = useTranslation(structureLocaleNamespace)
+  const {selectedPerspective} = usePerspective()
 
-  const isDraft = displayed?._id && isDraftId(displayed?._id)
+  const isDraft = selectedPerspective === 'drafts'
 
   const handleCancel = useCallback(() => {
     setConfirmDialogOpen(false)
@@ -63,7 +62,6 @@ export const UnpublishAction: DocumentActionComponent = ({
           <ConfirmDeleteDialog
             id={draft?._id || id}
             type={type}
-            // eslint-disable-next-line @sanity/i18n/no-attribute-string-literals
             action="unpublish"
             onCancel={handleCancel}
             onConfirm={handleConfirm}

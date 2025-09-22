@@ -28,6 +28,8 @@ import type {
   DocumentFieldActionsContextValue,
   DocumentIdContext,
   DocumentIdContextValue,
+  DocumentLimitUpsellContext,
+  DocumentLimitUpsellContextValue,
   DocumentPaneContext,
   DocumentSheetListContext,
   EventsContext,
@@ -45,9 +47,11 @@ import type {
   IsLastPaneContext,
   LocaleContext,
   LocaleContextValue,
-  MediaLibraryIdContext,
+  MediaLibraryIdsContext,
   MentionUserContext,
   NavbarContext,
+  PackageVersionInfoContext,
+  PackageVersionInfoContextValue,
   PaneContext,
   PaneLayoutContext,
   PaneRouterContext,
@@ -67,6 +71,7 @@ import type {
   PresentationParamsContext,
   PresentationSharedStateContext,
   PreviewCardContext,
+  RawPerspectiveContext,
   ReferenceInputOptionsContext,
   ReferenceItemRef,
   ReferenceItemRefContext,
@@ -175,6 +180,12 @@ describe('sanity/_singletons', () => {
   test('DocumentIdContextValue', () => {
     expectTypeOf<DocumentIdContextValue>().toBeObject()
   })
+  test('DocumentLimitUpsellContext', () => {
+    expectTypeOf<typeof DocumentLimitUpsellContext>().not.toBeNever()
+  })
+  test('DocumentLimitUpsellContextValue', () => {
+    expectTypeOf<DocumentLimitUpsellContextValue>().toBeObject()
+  })
   test('DocumentPaneContext', () => {
     expectTypeOf<typeof DocumentPaneContext>().not.toBeNever()
   })
@@ -226,14 +237,20 @@ describe('sanity/_singletons', () => {
   test('LocaleContextValue', () => {
     expectTypeOf<LocaleContextValue>().toBeObject()
   })
-  test('MediaLibraryIdContext', () => {
-    expectTypeOf<typeof MediaLibraryIdContext>().not.toBeNever()
+  test('MediaLibraryIdsContext', () => {
+    expectTypeOf<typeof MediaLibraryIdsContext>().not.toBeNever()
   })
   test('MentionUserContext', () => {
     expectTypeOf<typeof MentionUserContext>().not.toBeNever()
   })
   test('NavbarContext', () => {
     expectTypeOf<typeof NavbarContext>().not.toBeNever()
+  })
+  test('PackageVersionInfoContext', () => {
+    expectTypeOf<typeof PackageVersionInfoContext>().not.toBeNever()
+  })
+  test('PackageVersionInfoContextValue', () => {
+    expectTypeOf<PackageVersionInfoContextValue>().not.toBeNever()
   })
   test('PaneContext', () => {
     expectTypeOf<typeof PaneContext>().not.toBeNever()
@@ -291,6 +308,9 @@ describe('sanity/_singletons', () => {
   })
   test('PreviewCardContext', () => {
     expectTypeOf<typeof PreviewCardContext>().not.toBeNever()
+  })
+  test('RawPerspectiveContext', () => {
+    expectTypeOf<typeof RawPerspectiveContext>().not.toBeNever()
   })
   test('ReferenceInputOptionsContext', () => {
     expectTypeOf<typeof ReferenceInputOptionsContext>().not.toBeNever()

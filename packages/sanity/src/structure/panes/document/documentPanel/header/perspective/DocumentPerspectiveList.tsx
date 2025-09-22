@@ -6,26 +6,29 @@ import {
   getReleaseTone,
   getVersionFromId,
   isDraftId,
+  isGoingToUnpublish,
   isPublishedId,
   isPublishedPerspective,
   isReleaseScheduledOrScheduling,
   isVersionId,
   type ReleaseDocument,
+  type SanityDocumentLike,
   Translate,
   useActiveReleases,
   useDateTimeFormat,
   type UseDateTimeFormatOptions,
+  useFilteredReleases,
   useOnlyHasVersions,
   usePerspective,
   useSchema,
   useSetPerspective,
   useTranslation,
+  useWorkspace,
   VersionChip,
 } from 'sanity'
 
 import {isLiveEditEnabled} from '../../../../../components/paneItem/helpers'
 import {usePaneRouter} from '../../../../../components/paneRouter/usePaneRouter'
-import {useFilteredReleases} from '../../../../../hooks/useFilteredReleases'
 import {useDocumentPane} from '../../../useDocumentPane'
 
 const TooltipContent = ({release}: {release: ReleaseDocument}) => {
@@ -76,6 +79,7 @@ const DATE_TIME_FORMAT: UseDateTimeFormatOptions = {
   timeStyle: 'short',
 }
 
+// eslint-disable-next-line complexity
 export const DocumentPerspectiveList = memo(function DocumentPerspectiveList() {
   const {selectedReleaseId, selectedPerspectiveName} = usePerspective()
   const {t} = useTranslation()
@@ -86,8 +90,15 @@ export const DocumentPerspectiveList = memo(function DocumentPerspectiveList() {
   const schema = useSchema()
   const {editState, displayed, documentType, documentId} = useDocumentPane()
   const isCreatingDocument = displayed && !displayed._createdAt
-  const filteredReleases = useFilteredReleases({displayed, documentId})
+
+  const filteredReleases = useFilteredReleases({
+    historyVersion: params?.historyVersion,
+    displayed,
+    documentId,
+  })
+
   const onlyHasVersions = useOnlyHasVersions({documentId})
+  const workspace = useWorkspace()
 
   const handlePerspectiveChange = useCallback(
     (perspective: Parameters<typeof setPerspective>[0]) => () => {
@@ -118,19 +129,27 @@ export const DocumentPerspectiveList = memo(function DocumentPerspectiveList() {
 
   const getReleaseChipState = useCallback(
     (release: ReleaseDocument): {selected: boolean; disabled?: boolean} => {
-      if (!params?.historyVersion)
+      if (!params?.historyVersion) {
+        const isCurrentVersionGoingToUnpublish =
+          editState?.version &&
+          isGoingToUnpublish(editState?.version) &&
+          getReleaseIdFromReleaseDocumentId(release._id) ===
+            getVersionFromId(editState?.version?._id)
+
         return {
-          selected:
+          selected: Boolean(
             getReleaseIdFromReleaseDocumentId(release._id) ===
-            getVersionFromId(displayed?._id || ''),
+              getVersionFromId(displayed?._id || '') || isCurrentVersionGoingToUnpublish,
+          ),
         }
+      }
 
       const isReleaseHistoryMatch =
         getReleaseIdFromReleaseDocumentId(release._id) === params.historyVersion
 
       return {selected: isReleaseHistoryMatch, disabled: isReleaseHistoryMatch}
     },
-    [displayed?._id, params?.historyVersion],
+    [displayed?._id, editState?.version, params?.historyVersion],
   )
 
   const isPublishSelected: boolean = useMemo(() => {
@@ -201,6 +220,8 @@ export const DocumentPerspectiveList = memo(function DocumentPerspectiveList() {
     return false
   }, [editState?.draft, isCreatingDocument, isLiveEdit, onlyHasVersions, selectedReleaseId])
 
+  const isDraftModelEnabled = workspace.document.drafts?.enabled
+
   return (
     <>
       <VersionChip
@@ -233,50 +254,52 @@ export const DocumentPerspectiveList = memo(function DocumentPerspectiveList() {
           disabled: !editState?.published,
         }}
       />
-      <VersionChip
-        tooltipContent={
-          <Text size={1}>
-            {editState?.draft ? (
-              <>
-                {editState?.draft._updatedAt ? (
-                  <Translate
-                    t={t}
-                    i18nKey="release.chip.tooltip.edited-date"
-                    values={{date: dateTimeFormat.format(new Date(editState?.draft._updatedAt))}}
-                  />
-                ) : (
-                  <Translate
-                    t={t}
-                    i18nKey="release.chip.tooltip.created-date"
-                    values={{date: dateTimeFormat.format(new Date(editState?.draft._createdAt))}}
-                  />
-                )}
-              </>
-            ) : (
-              <>
-                {isLiveEdit
-                  ? t('release.chip.tooltip.draft-disabled.live-edit')
-                  : t('release.chip.tooltip.no-edits')}
-              </>
-            )}
-          </Text>
-        }
-        selected={isDraftSelected}
-        disabled={isDraftDisabled}
-        text={t('release.chip.draft')}
-        tone={editState?.draft ? 'caution' : 'neutral'}
-        onClick={handlePerspectiveChange('drafts')}
-        contextValues={{
-          documentId: editState?.draft?._id || editState?.published?._id || editState?.id || '',
-          menuReleaseId: editState?.draft?._id || editState?.published?._id || editState?.id || '',
-          releases: filteredReleases.notCurrentReleases,
-          releasesLoading: loading,
-          documentType: documentType,
-          fromRelease: 'draft',
-          isVersion: false,
-          disabled: !editState?.draft,
-        }}
-      />
+      {isDraftModelEnabled && (
+        <VersionChip
+          tooltipContent={
+            <Text size={1}>
+              {editState?.draft ? (
+                <>
+                  {editState?.draft._updatedAt ? (
+                    <Translate
+                      t={t}
+                      i18nKey="release.chip.tooltip.edited-date"
+                      values={{date: dateTimeFormat.format(new Date(editState?.draft._updatedAt))}}
+                    />
+                  ) : (
+                    <Translate
+                      t={t}
+                      i18nKey="release.chip.tooltip.created-date"
+                      values={{date: dateTimeFormat.format(new Date(editState?.draft._createdAt))}}
+                    />
+                  )}
+                </>
+              ) : (
+                <>
+                  {isLiveEdit
+                    ? t('release.chip.tooltip.draft-disabled.live-edit')
+                    : t('release.chip.tooltip.no-edits')}
+                </>
+              )}
+            </Text>
+          }
+          selected={isDraftSelected}
+          disabled={isDraftDisabled}
+          text={t('release.chip.draft')}
+          tone={editState?.draft ? 'caution' : 'neutral'}
+          onClick={handlePerspectiveChange('drafts')}
+          contextValues={{
+            documentId: editState?.draft?._id || editState?.published?._id || editState?.id || '',
+            menuReleaseId:
+              editState?.draft?._id || editState?.published?._id || editState?.id || '',
+            releases: filteredReleases.notCurrentReleases,
+            releasesLoading: loading,
+            documentType: documentType,
+            fromRelease: 'draft',
+            isVersion: false,
+          }}
+        />
+      )}
       {filteredReleases.inCreation && (
         <VersionChip
           tooltipContent={<TooltipContent release={filteredReleases.inCreation} />}
@@ -297,6 +320,7 @@ export const DocumentPerspectiveList = memo(function DocumentPerspectiveList() {
             fromRelease: getReleaseIdFromReleaseDocumentId(filteredReleases.inCreation._id),
             releaseState: filteredReleases.inCreation.state,
             isVersion: true,
+            release: filteredReleases.inCreation,
           }}
         />
       )}
@@ -320,6 +344,12 @@ export const DocumentPerspectiveList = memo(function DocumentPerspectiveList() {
               fromRelease: getReleaseIdFromReleaseDocumentId(release._id),
               releaseState: release.state,
               isVersion: true,
+              // displayed, in this instance is not going to be the version to compare to
+              // since it's going to be the published version
+              isGoingToUnpublish: editState?.version
+                ? isGoingToUnpublish(editState?.version as SanityDocumentLike)
+                : false,
+              release,
             }}
           />
         ))}

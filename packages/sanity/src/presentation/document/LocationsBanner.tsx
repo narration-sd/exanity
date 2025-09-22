@@ -134,10 +134,10 @@ export function LocationsBanner(props: {
 
                 return (
                   <LocationItem
+                    key={l.href}
                     active={active}
                     documentId={documentId}
                     documentType={schemaType.name}
-                    key={l.href}
                     node={l}
                     toolName={options.name || DEFAULT_TOOL_NAME}
                   />
@@ -177,14 +177,14 @@ function LocationItem(props: {
   })
 
   const handleCurrentToolClick = useCallback(() => {
-    navigate?.({}, {preview: node.href})
+    navigate?.({params: {preview: node.href}})
   }, [node.href, navigate])
 
   return (
     <Card
+      key={node.href}
       {...(isCurrentTool ? {} : presentationLinkProps)}
       as="a"
-      key={node.href}
       onClick={isCurrentTool ? handleCurrentToolClick : presentationLinkProps.onClick}
       padding={3}
       radius={1}

@@ -244,7 +244,6 @@ export function ArrayOfObjectsField(props: {
       }
 
       if (!(item as any)?._key || !(refItem as any)?._key) {
-        // eslint-disable-next-line no-console
         console.error(
           'Neither the item you are moving nor the item you are moving to have a key. Cannot continue.',
         )
@@ -373,6 +372,7 @@ export function ArrayOfObjectsField(props: {
       readOnly: member.field.readOnly,
       schemaType: member.field.schemaType,
       changed: member.field.changed,
+      __unstable_computeDiff: member.field.__unstable_computeDiff,
       id: member.field.id,
       onItemExpand: handleExpandItem,
       onItemCollapse: handleCollapseItem,
@@ -412,6 +412,7 @@ export function ArrayOfObjectsField(props: {
     member.field.readOnly,
     member.field.schemaType,
     member.field.changed,
+    member.field.__unstable_computeDiff,
     member.field.id,
     member.field.focusPath,
     member.field.focused,

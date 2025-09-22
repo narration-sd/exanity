@@ -1,4 +1,6 @@
 name: Create Documentation Report
+permissions:
+  pull-requests: write # for comment
 
 on:
   # Build on version tags
@@ -20,11 +22,10 @@ jobs:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          cache: pnpm
           node-version: lts/*
 
       - name: Add report comment placeholder

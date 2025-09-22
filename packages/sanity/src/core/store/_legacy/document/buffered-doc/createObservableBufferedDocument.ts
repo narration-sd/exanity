@@ -148,10 +148,11 @@ export const createObservableBufferedDocument = (listenerEvent$: Observable<List
           // it is usually because the connection has been down. Attempt to save pending changes (if any)
           bufferedDocument.commit()
         }
+        // mark as consistent when a new snapshot is received
+        consistency$.next(true)
         return createInitialBufferedDocument(listenerEvent.document || null)
       }
       if (bufferedDocument === null) {
-        // eslint-disable-next-line no-console
         console.warn(
           'Ignoring event of type "%s" since buffered document has not yet been set up with snapshot',
           listenerEvent.type,

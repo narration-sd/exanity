@@ -168,7 +168,6 @@ export function EventsTimelineMenu({event, events, mode, placement}: TimelineMen
       })
     : t('timeline.latest-revision')
 
-  // eslint-disable-next-line no-nested-ternary
   const sinceLabel = event
     ? t(TIMELINE_ITEM_I18N_KEY_MAPPING[event.documentVariantType][event.type], {
         context: 'timestamp',
@@ -180,9 +179,15 @@ export function EventsTimelineMenu({event, events, mode, placement}: TimelineMen
       : t('timeline.no-previous-events')
 
   const buttonLabel = mode === 'rev' ? revLabel : sinceLabel
+  const portalElements = useMemo(
+    () => ({
+      [TIMELINE_MENU_PORTAL]: popoverRef,
+    }),
+    [popoverRef],
+  )
 
   return (
-    <PortalProvider __unstable_elements={{[TIMELINE_MENU_PORTAL]: popoverRef}}>
+    <PortalProvider __unstable_elements={portalElements}>
       <Root
         data-testid="timeline-menu"
         constrainSize

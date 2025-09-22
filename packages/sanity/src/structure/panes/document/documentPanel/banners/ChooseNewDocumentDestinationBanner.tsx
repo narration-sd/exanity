@@ -9,9 +9,10 @@ import {
   type PerspectiveNotWriteableReason,
   ReleasesNav,
   type ReleasesNavMenuItemPropsGetter,
-  type SelectedPerspective,
+  type TargetPerspective,
   Translate,
   useTranslation,
+  useWorkspace,
 } from 'sanity'
 
 import {structureLocaleNamespace} from '../../../../i18n'
@@ -19,7 +20,7 @@ import {Banner} from './Banner'
 
 interface Props {
   schemaType: ObjectSchemaType
-  selectedPerspective: SelectedPerspective
+  selectedPerspective: TargetPerspective
   reason: PerspectiveNotWriteableReason
 }
 
@@ -37,14 +38,21 @@ export const ChooseNewDocumentDestinationBanner: ComponentType<Props> = ({
 }) => {
   const {t} = useTranslation(structureLocaleNamespace)
 
+  const {
+    document: {
+      drafts: {enabled: isDraftModelEnabled},
+    },
+  } = useWorkspace()
+
   const menuItemProps = useCallback<ReleasesNavMenuItemPropsGetter>(
     ({perspective}) => ({
       disabled: !isPerspectiveWriteable({
         selectedPerspective: perspective,
+        isDraftModelEnabled,
         schemaType,
       }).result,
     }),
-    [schemaType],
+    [isDraftModelEnabled, schemaType],
   )
 
   return (
@@ -56,6 +64,8 @@ export const ChooseNewDocumentDestinationBanner: ComponentType<Props> = ({
           <Text size={1}>
             {reason === 'PUBLISHED_NOT_WRITEABLE' &&
               t('banners.choose-new-document-destination.cannot-create-published-document')}
+            {reason === 'DRAFTS_NOT_WRITEABLE' &&
+              t('banners.choose-new-document-destination.cannot-create-draft-document')}
             {reason === 'RELEASE_NOT_ACTIVE' && isReleaseDocument(selectedPerspective) && (
               <Translate
                 t={t}

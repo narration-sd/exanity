@@ -24,14 +24,13 @@ jobs:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
           fetch-depth: 0
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          cache: pnpm
           node-version: lts/*
 
       - uses: actions/create-github-app-token@v2
@@ -54,36 +53,61 @@ jobs:
       - name: Update version
         run: |
           npx lerna version \
-          --force-publish \
-          --no-push \
-          --sync-workspace-lock \
-          --conventional-commits \
-          --yes
+            --force-publish \
+            --no-git-tag-version \
+            --conventional-commits \
+            --yes
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
+      - name: Fix lerna.json EOF formatting
+        # lerna version formats lerna.json removing EOF line
+        # this is needed to pass linter
+        run: npx prettier --write lerna.json
+
+      - name: Sync workspace lockfile
+        run: pnpm install --lockfile-only
+
       - name: Get version commit message
-        # get the commit message created by npx lerna version above (determined by lerna.json)
+        # generate the commit message that would be created (determined by lerna.json)
         id: version-commit
-        run: echo "message=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+        run: |
+          VERSION=$(cat lerna.json | jq -r .version)
+          echo "message=chore(release): publish v$VERSION" >> $GITHUB_OUTPUT
 
       - name: Get version
         id: release-as
         run: echo "version=$(cat lerna.json | jq -r .version)" >> $GITHUB_OUTPUT
+
+      - name: Fetch latest tags
+        run: git fetch --tags --force
+
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          {
+            echo "notes<<EOF"
+            pnpm --silent release:notes
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
       - name: Create or update PR
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7
         id: create-pull-request
         with:
           token: ${{ steps.app-token.outputs.token }}
           title: "${{steps.version-commit.outputs.message}}"
-          body: "🤖 I have created a release **squib** **squob**\n\n Merging this PR will publish v${{steps.release-as.outputs.version}} to npm 🚀"
+          body: |
+            🤖 I have created a release **squib** **squob**
+
+            Merging this PR will publish v${{steps.release-as.outputs.version}} to npm 🚀
+
+            ## Release Notes Template
+
+            ${{steps.release-notes.outputs.notes}}
+          commit-message: "${{steps.version-commit.outputs.message}}"
           branch: ci/release-main
+          labels: "release:latest"
           sign-commits: true
           base: main
           team-reviewers: "@sanity-io/studio"
-          draft: false
-
-      - name: Enable automerge on Pull Request
-        run: gh pr merge --squash --auto "${{ steps.create-pull-request.outputs.pull-request-number }}"
-        env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          draft: true

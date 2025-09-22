@@ -13,18 +13,18 @@
     "sanity"
   ],
   "dependencies": {
-    "@sanity/sdk": "^0.0.0-rc",
-    "@sanity/sdk-react": "^0.0.0-rc",
-    "react": "^19",
-    "react-dom": "^19"
+    "@sanity/sdk": "^2.1.2",
+    "@sanity/sdk-react": "^0.0.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
     "@sanity/eslint-config-studio": "catalog:",
-    "@types/react": "^18.3.20",
-    "eslint": "^9.29.0",
-    "prettier": "^3.6.1",
-    "sanity": "^3",
-    "typescript": "^5.8.3"
+    "@types/react": "^19.1.13",
+    "eslint": "^9.36.0",
+    "prettier": "^3.6.2",
+    "sanity": "^3.99.0",
+    "typescript": "^5.9.2"
   },
   "prettier": {
     "semi": false,
