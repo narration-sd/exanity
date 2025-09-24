@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli",
-  "version": "4.9.0",
+  "version": "4.10.0",
   "description": "Sanity CLI tool for managing Sanity installations, managing plugins, schemas and datasets",
   "keywords": [
     "sanity",
@@ -95,6 +95,7 @@
     "@types/which": "^2.0.1",
     "@vercel/frameworks": "1.6.0",
     "@vercel/fs-detectors": "4.1.3",
+    "babel-plugin-react-compiler": "19.1.0-rc.3",
     "boxen": "^4.2.0",
     "clean-stack": "^3.0.1",
     "configstore": "^5.0.1",
@@ -123,10 +124,18 @@
     "semver": "^7.7.2",
     "semver-compare": "^1.0.0",
     "tar": "^6.2.1",
-    "vite": "^7.1.6",
+    "vite": "^7.1.7",
     "vitest": "^3.2.4",
     "which": "^2.0.2",
     "xdg-basedir": "^4.0.0"
+  },
+  "peerDependencies": {
+    "babel-plugin-react-compiler": "*"
+  },
+  "peerDependenciesMeta": {
+    "babel-plugin-react-compiler": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=20.19 <22 || >=22.12"
