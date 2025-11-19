@@ -1,6 +1,3 @@
-'use no memo'
-// The `use no memo` directive is due to a known issue with react-virtual and react compiler: https://github.com/TanStack/virtual/issues/736
-
 import {type DragStartEvent} from '@dnd-kit/core'
 import {isKeySegment} from '@sanity/types'
 import {Card, Stack, Text, useTheme} from '@sanity/ui'
@@ -270,6 +267,7 @@ export function ListArrayInput<Item extends ObjectItem>(props: ArrayOfObjectsInp
         onItemAppend={onItemAppend}
         onItemPrepend={onItemPrepend}
         onValueCreate={createProtoArrayValue}
+        path={props.path}
         readOnly={readOnly}
         schemaType={schemaType}
         value={value}

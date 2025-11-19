@@ -22,6 +22,7 @@ import {
   useItemComponent,
   usePreviewComponent,
 } from '../form-components-hooks'
+import {FullscreenPTEProvider} from '../inputs/PortableText/contexts/fullscreen'
 import {type FormPatch, type PatchChannel, PatchEvent} from '../patch'
 import {type StateTree} from '../store'
 import {prepareDiffProps} from '../store/formState'
@@ -39,7 +40,11 @@ import {
 import {DocumentFieldActionsProvider} from './contexts/DocumentFieldActions'
 import {FormBuilderInputErrorBoundary} from './FormBuilderInputErrorBoundary'
 import {FormProvider} from './FormProvider'
-import {TreeEditingDialog, TreeEditingEnabledProvider, useTreeEditingEnabled} from './tree-editing'
+import {
+  EnhancedObjectDialog,
+  EnhancedObjectDialogProvider,
+  useEnhancedObjectDialog,
+} from './tree-editing'
 
 /**
  * @alpha
@@ -47,7 +52,13 @@ import {TreeEditingDialog, TreeEditingEnabledProvider, useTreeEditingEnabled} fr
 export interface FormBuilderProps
   extends Omit<
     ObjectFormNode,
-    'level' | 'path' | 'presence' | 'validation' | '_allMembers' | '__unstable_computeDiff'
+    | 'level'
+    | 'path'
+    | 'presence'
+    | 'validation'
+    | '_allMembers'
+    | '__unstable_computeDiff'
+    | 'displayInlineChanges'
   > {
   /** @internal */
   __internal_fieldActions?: DocumentFieldAction[]
@@ -75,7 +86,7 @@ export interface FormBuilderProps
   schemaType: ObjectSchemaType
   validation: ValidationMarker[]
   value: FormDocumentValue | undefined
-  compareValue?: Partial<SanityDocument>
+  compareValue?: SanityDocument
 }
 
 /**
@@ -106,6 +117,7 @@ export function FormBuilder(props: FormBuilderProps) {
     presence,
     readOnly,
     schemaType,
+    hasUpstreamVersion,
     validation,
     value,
     compareValue,
@@ -199,6 +211,7 @@ export function FormBuilder(props: FormBuilderProps) {
   const rootInputProps: Omit<ObjectInputProps, 'renderDefault'> = useMemo(() => {
     const diffProps = prepareDiffProps({
       comparisonValue: compareValue,
+      hasUpstreamVersion,
       value,
       schemaType,
       perspective,
@@ -240,8 +253,11 @@ export function FormBuilder(props: FormBuilderProps) {
       schemaType,
       validation: EMPTY_ARRAY,
       value,
+      compareValue,
       __unstable_computeDiff: diffProps.__unstable_computeDiff,
       changed: members.some((m) => m.kind === 'field' && m.field.changed),
+      displayInlineChanges: false,
+      hasUpstreamVersion: diffProps.hasUpstreamVersion,
     }
   }, [
     compareValue,
@@ -258,6 +274,7 @@ export function FormBuilder(props: FormBuilderProps) {
     handleFocus,
     handleOpenField,
     handleSelectFieldGroup,
+    hasUpstreamVersion,
     id,
     members,
     onPathFocus,
@@ -301,14 +318,18 @@ export function FormBuilder(props: FormBuilderProps) {
       <GetFormValueProvider value={value}>
         <FormValueProvider value={value}>
           <DocumentFieldActionsProvider actions={fieldActions}>
-            <TreeEditingEnabledProvider>
-              <RootInput
-                rootInputProps={rootInputProps}
-                onPathOpen={onPathOpen}
-                openPath={openPath}
-                renderInput={renderInput}
-              />
-            </TreeEditingEnabledProvider>
+            <FullscreenPTEProvider>
+              {/** The id 'root' is always attributed to being in a document,
+               * if there is not root then it means it's outside of the document and so it doesn't have access to the dialog */}
+              <EnhancedObjectDialogProvider isDialogAvailable={id === 'root'}>
+                <RootInput
+                  rootInputProps={rootInputProps}
+                  onPathOpen={onPathOpen}
+                  openPath={openPath}
+                  renderInput={renderInput}
+                />
+              </EnhancedObjectDialogProvider>
+            </FullscreenPTEProvider>
           </DocumentFieldActionsProvider>
         </FormValueProvider>
       </GetFormValueProvider>
@@ -325,12 +346,10 @@ interface RootInputProps {
 
 function RootInput(props: RootInputProps) {
   const {rootInputProps, onPathOpen, openPath, renderInput} = props
-  const treeEditing = useTreeEditingEnabled()
-  const isRoot = rootInputProps.id === 'root'
+  const {enabled: enhancedObjectDialogEnabled} = useEnhancedObjectDialog()
 
-  const arrayEditingModal = treeEditing.enabled && isRoot && (
-    <TreeEditingDialog
-      // eslint-disable-next-line react/jsx-handler-names
+  const arrayEditingModal = enhancedObjectDialogEnabled && (
+    <EnhancedObjectDialog
       onPathFocus={rootInputProps.onPathFocus}
       onPathOpen={onPathOpen}
       openPath={openPath}
@@ -342,6 +361,6 @@ function RootInput(props: RootInputProps) {
   return renderInput({
     ...rootInputProps,
     // eslint-disable-next-line camelcase
-    __internal_arrayEditingModal: arrayEditingModal,
+    __internal_enhancedbjectDialog: arrayEditingModal,
   })
 }

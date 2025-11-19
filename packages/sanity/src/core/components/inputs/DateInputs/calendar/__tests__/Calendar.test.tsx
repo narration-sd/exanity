@@ -1,4 +1,5 @@
-import {fireEvent, render, screen} from '@testing-library/react'
+import {render, screen} from '@testing-library/react'
+import {userEvent} from '@testing-library/user-event'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {createTestProvider} from '../../../../../../../test/testUtils/TestProvider'
@@ -93,7 +94,7 @@ describe('Calendar', () => {
 
     // Find and click a date January 20, 2024
     const dateButton = screen.getByTestId('calendar-day-Sat-Jan-20-2024')
-    fireEvent.click(dateButton)
+    await userEvent.click(dateButton)
 
     expect(mockOnSelect).toHaveBeenCalledTimes(1)
     expect(mockOnSelect).toHaveBeenCalledWith(new Date('2024-01-20T14:30:00Z'))
@@ -101,7 +102,7 @@ describe('Calendar', () => {
   })
 
   describe('handleDateChange', () => {
-    it('calls onSelect with timezone-adjusted date should not change the time', async () => {
+    it('calls onSelect with timezone-adjusted date should have the time in UTC', async () => {
       const spy = vi
         .spyOn(useTimeZoneModule, 'useTimeZone')
         .mockReturnValue(mockUseTimeZoneWithTokyo)
@@ -125,11 +126,11 @@ describe('Calendar', () => {
 
       // Find and click a date January 20, 2024
       const dateButton = screen.getByTestId('calendar-day-Sat-Jan-20-2024')
-      fireEvent.click(dateButton)
+      await userEvent.click(dateButton)
 
       // Verify onSelect was called with timezone-adjusted date
       expect(mockOnSelect).toHaveBeenCalledTimes(1)
-      expect(mockOnSelect).toHaveBeenCalledWith(new Date('2024-01-20T14:30:00Z'))
+      expect(mockOnSelect).toHaveBeenCalledWith(new Date('2024-01-19T21:30:00Z'))
 
       spy.mockRestore()
     })

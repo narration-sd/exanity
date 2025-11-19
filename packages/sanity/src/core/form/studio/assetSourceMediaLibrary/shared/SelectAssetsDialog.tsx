@@ -104,20 +104,12 @@ export function SelectAssetsDialog(props: SelectAssetsDialogProps): ReactNode {
     [client, document, mediaLibraryIds?.libraryId, schema, schemaType, workspace.i18n],
   )
 
-  const pluginFilters = useMemo(() => {
-    const filters: any[] = []
-    if (schemaType?.options?.mediaLibrary?.filters) {
-      filters.push(
-        ...schemaType.options.mediaLibrary.filters.map((filter) => ({
-          type: 'groq',
-          name: filter.name,
-          query: filter.query,
-          active: true,
-        })),
-      )
-    }
-    return filters
-  }, [schemaType?.options?.mediaLibrary?.filters])
+  const pluginFilters = (schemaType?.options?.mediaLibrary?.filters || []).map((filter) => ({
+    type: 'groq',
+    name: filter.name,
+    query: filter.query,
+    active: true,
+  }))
 
   const params = useMemo(
     () => ({
@@ -175,7 +167,7 @@ export function SelectAssetsDialog(props: SelectAssetsDialogProps): ReactNode {
     (message: PluginPostMessage) => {
       if (message.type === 'assetSelection') {
         setAssetSelection(message.selection)
-        handleAssetSelection(message.selection)
+        void handleAssetSelection(message.selection)
       }
     },
     [handleAssetSelection],

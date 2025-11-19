@@ -39,13 +39,13 @@ import {
   documentInspectorsReducer,
   documentLanguageFilterReducer,
   draftsEnabledReducer,
+  enhancedObjectDialogEnabledReducer,
   eventsAPIReducer,
   fileAssetSourceResolver,
   imageAssetSourceResolver,
   initialDocumentActions,
   initialDocumentBadges,
   initialLanguageFilter,
-  internalQuotaExcludedReleasesEnabledReducer,
   internalTasksReducer,
   legacySearchEnabledReducer,
   mediaLibraryEnabledReducer,
@@ -55,6 +55,7 @@ import {
   partialIndexingEnabledReducer,
   releaseActionsReducer,
   resolveProductionUrlReducer,
+  scheduledDraftsEnabledReducer,
   schemaTemplatesReducer,
   searchStrategyReducer,
   serverDocumentActionsReducer,
@@ -74,7 +75,6 @@ import {
   type MissingConfigFile,
   type PluginOptions,
   type PreparedConfig,
-  QUOTA_EXCLUDED_RELEASES_ENABLED,
   type SingleWorkspace,
   type Source,
   type SourceClientOptions,
@@ -360,10 +360,6 @@ function resolveSource({
     projectId,
     schema,
     i18n: i18n.source,
-    [QUOTA_EXCLUDED_RELEASES_ENABLED]: internalQuotaExcludedReleasesEnabledReducer({
-      config,
-      initialValue: false,
-    }),
     [DECISION_PARAMETERS_SCHEMA]: decisionParametersSchemaReducer({
       config,
       initialValue: undefined,
@@ -751,9 +747,10 @@ function resolveSource({
         documents: eventsAPIReducer({config, initialValue: true, key: 'documents'}),
         releases: eventsAPIReducer({config, initialValue: false, key: 'releases'}),
       },
-      treeArrayEditing: {
-        // This beta feature is no longer available.
-        enabled: false,
+      form: {
+        enhancedObjectDialog: {
+          enabled: enhancedObjectDialogEnabledReducer({config, initialValue: false}),
+        },
       },
       create: {
         startInCreateEnabled: false,
@@ -783,10 +780,13 @@ function resolveSource({
         initialValue: false,
       }),
     },
+    scheduledDrafts: {
+      enabled: scheduledDraftsEnabledReducer({config, initialValue: true}),
+    },
 
     releases: config.releases
       ? {
-          enabled: config.releases.enabled,
+          enabled: config.releases.enabled ?? true,
           limit: config.releases.limit,
           actions: (partialContext) =>
             resolveConfigProperty({
@@ -797,7 +797,7 @@ function resolveSource({
               reducer: releaseActionsReducer,
             }),
         }
-      : undefined,
+      : {enabled: true},
   }
 
   return source

@@ -104,7 +104,6 @@ export default function PresentationTool(props: {
     state: PresentationStateParams
   }
   const routerSearchParams = useUnique(Object.fromEntries(routerState._searchParams || []))
-  const perspective = usePresentationPerspective()
 
   const canSharePreviewAccess = useSelector(
     previewUrlRef,
@@ -140,6 +139,7 @@ export default function PresentationTool(props: {
       routerSearchParams,
       frameStateRef,
     })
+  const perspective = usePresentationPerspective({scheduledDraft: params.scheduledDraft})
 
   const presentationRef = useActorRef(presentationMachine)
 
@@ -156,6 +156,7 @@ export default function PresentationTool(props: {
     path: params.preview,
     targetOrigin,
     resolvers: tool.options?.resolve?.mainDocuments,
+    perspective,
   })
 
   const [overlaysConnection, setOverlaysConnection] = useStatus()
@@ -184,6 +185,8 @@ export default function PresentationTool(props: {
   const handleNavigate = useEffectEvent<PresentationNavigate>((options) => {
     navigate(options)
   })
+
+  const refreshRef = useRef<number>(undefined)
 
   useEffect(() => {
     if (!controller) return undefined
@@ -225,7 +228,8 @@ export default function PresentationTool(props: {
       }
 
       if (frameStateRef.current.url !== url) {
-        try {
+        // Workaround for React Compiler not yet fully supporting try/catch/finally syntax
+        const run = () => {
           // Handle bypass params being forwarded to the final URL
           const [urlWithoutSearch, search] = url.split('?')
           const searchParams = new URLSearchParams(search)
@@ -236,6 +240,9 @@ export default function PresentationTool(props: {
               preview: `${urlWithoutSearch}${searchParams.size > 0 ? '?' : ''}${searchParams}`,
             },
           })
+        }
+        try {
+          run()
         } catch {
           handleNavigate({params: {preview: url}})
         }
@@ -448,7 +455,6 @@ export default function PresentationTool(props: {
     unstable_navigator,
   })
 
-  const refreshRef = useRef<number>(undefined)
   const handleRefresh = useCallback(
     (fallback: () => void) => {
       presentationRef.send({type: 'iframe refresh'})

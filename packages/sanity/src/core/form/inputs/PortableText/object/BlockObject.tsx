@@ -19,6 +19,7 @@ import {useTranslation} from '../../../../i18n'
 import {EMPTY_ARRAY} from '../../../../util'
 import {useFormCallbacks} from '../../../studio'
 import {useChildPresence} from '../../../studio/contexts/Presence'
+import {useEnhancedObjectDialog} from '../../../studio/tree-editing/context/enabled/useEnhancedObjectDialog'
 import {
   type BlockProps,
   type RenderAnnotationCallback,
@@ -115,6 +116,11 @@ export function BlockObject(props: BlockObjectProps) {
   const memberItem = usePortableTextMemberItem(pathToString(path))
   const isDeleting = useRef<boolean>(false)
 
+  const {enabled: nestedObjectNavigationEnabled, isDialogAvailable} = useEnhancedObjectDialog()
+  // If there's an EnhancedObjectDialog available, it will handle the opening
+  // Otherwise, we render our own modal
+  const shouldUseEnhancedDialog = nestedObjectNavigationEnabled && isDialogAvailable
+
   const selfSelection = useMemo(
     (): EditorSelection => ({
       anchor: {path: relativePath, offset: 0},
@@ -146,9 +152,8 @@ export function BlockObject(props: BlockObjectProps) {
       PortableTextEditor.delete(editor, selfSelection, {mode: 'blocks'})
     } catch (err) {
       console.error(err)
-    } finally {
-      isDeleting.current = true
     }
+    isDeleting.current = true
   }, [editor, selfSelection])
 
   // Focus the editor if this object is removed because it was deleted.
@@ -214,7 +219,7 @@ export function BlockObject(props: BlockObjectProps) {
   const nodePath = memberItem?.node.path || EMPTY_ARRAY
   const referenceElement = divElement
 
-  const componentProps: BlockProps = useMemo(
+  const componentProps = useMemo(
     () => ({
       __unstable_floatingBoundary: floatingBoundary,
       __unstable_referenceBoundary: referenceBoundary,
@@ -234,6 +239,7 @@ export function BlockObject(props: BlockObjectProps) {
       renderAnnotation,
       renderBlock,
       renderDefault: DefaultBlockObjectComponent,
+      shouldUseEnhancedDialog,
       renderField,
       renderInlineBlock,
       renderInput,
@@ -246,6 +252,7 @@ export function BlockObject(props: BlockObjectProps) {
     }),
     [
       floatingBoundary,
+      referenceBoundary,
       referenceElement,
       input,
       focused,
@@ -259,9 +266,9 @@ export function BlockObject(props: BlockObjectProps) {
       nodePath,
       rootPresence,
       readOnly,
-      referenceBoundary,
       renderAnnotation,
       renderBlock,
+      shouldUseEnhancedDialog,
       renderField,
       renderInlineBlock,
       renderInput,
@@ -287,83 +294,75 @@ export function BlockObject(props: BlockObjectProps) {
     [memberItem, setElementRef, setDivElement],
   )
 
-  return useMemo(
-    () => (
-      <Box ref={setRef} contentEditable={false}>
-        <Flex paddingBottom={1} marginY={3} style={debugRender()}>
-          <PreviewContainer {...innerPaddingProps}>
-            <Box flex={1}>
-              <Tooltip
-                placement="top"
-                portal="editor"
-                // If the object modal is open, disable the tooltip to avoid it rerendering the inner items when the validation changes.
-                disabled={isOpen ? true : !tooltipEnabled}
-                content={toolTipContent}
-              >
-                <div>{renderBlock && renderBlock(componentProps)}</div>
-              </Tooltip>
-            </Box>
+  return (
+    <Box ref={setRef} contentEditable={false}>
+      <Flex paddingBottom={1} marginY={3} style={debugRender()}>
+        <PreviewContainer {...innerPaddingProps}>
+          <Box flex={1}>
+            <Tooltip
+              placement="top"
+              portal="editor"
+              // If the object modal is open, disable the tooltip to avoid it rerendering the inner items when the validation changes.
+              disabled={isOpen ? true : !tooltipEnabled}
+              content={toolTipContent}
+            >
+              <div>
+                {renderBlock && <RenderBlock {...componentProps} renderBlock={renderBlock} />}
+              </div>
+            </Tooltip>
+          </Box>
 
-            {blockActionsEnabled && (
-              <BlockActionsOuter contentEditable={false} marginRight={3}>
-                <BlockActionsInner>
-                  {focused && (
-                    <BlockActions
-                      block={value}
-                      onChange={onChange}
-                      renderBlockActions={renderBlockActions}
-                    />
-                  )}
-                </BlockActionsInner>
-              </BlockActionsOuter>
-            )}
+          {blockActionsEnabled && (
+            <BlockActionsOuter contentEditable={false} marginRight={3}>
+              <BlockActionsInner>
+                {focused && (
+                  <BlockActions
+                    block={value}
+                    onChange={onChange}
+                    renderBlockActions={renderBlockActions}
+                  />
+                )}
+              </BlockActionsInner>
+            </BlockActionsOuter>
+          )}
 
-            {changeIndicatorVisible && (
-              <ChangeIndicatorWrapper
-                $hasChanges={memberItem.member.item.changed}
-                contentEditable={false}
-              >
-                <StyledChangeIndicatorWithProvidedFullPath
-                  hasFocus={focused}
-                  isChanged={memberItem.member.item.changed}
-                  path={memberItem.member.item.path}
-                  withHoverEffect={false}
-                />
-              </ChangeIndicatorWrapper>
-            )}
-            {changeHovered && <ReviewChangesHighlightBlock $fullScreen={Boolean(isFullscreen)} />}
-          </PreviewContainer>
-        </Flex>
-      </Box>
-    ),
-    [
-      blockActionsEnabled,
-      changeIndicatorVisible,
-      componentProps,
-      focused,
-      innerPaddingProps,
-      memberItem?.member?.item?.changed,
-      memberItem?.member?.item?.path,
-      onChange,
-      renderBlock,
-      renderBlockActions,
-      changeHovered,
-      isFullscreen,
-      setRef,
-      toolTipContent,
-      tooltipEnabled,
-      value,
-      isOpen,
-    ],
+          {changeIndicatorVisible && (
+            <ChangeIndicatorWrapper
+              $hasChanges={memberItem.member.item.changed}
+              contentEditable={false}
+            >
+              <StyledChangeIndicatorWithProvidedFullPath
+                hasFocus={focused}
+                isChanged={memberItem.member.item.changed}
+                path={memberItem.member.item.path}
+                withHoverEffect={false}
+              />
+            </ChangeIndicatorWrapper>
+          )}
+          {changeHovered && <ReviewChangesHighlightBlock $fullScreen={Boolean(isFullscreen)} />}
+        </PreviewContainer>
+      </Flex>
+    </Box>
   )
 }
 
-export const DefaultBlockObjectComponent = (props: BlockProps) => {
+// Workaround for React Compiler being very strict on refs
+function RenderBlock(
+  props: Omit<BlockProps, 'renderDefault'> & {renderBlock: RenderBlockCallback},
+) {
+  const {renderBlock, ...componentProps} = props
+  return renderBlock(componentProps)
+}
+
+export const DefaultBlockObjectComponent = (
+  props: BlockProps & {shouldUseEnhancedDialog: boolean},
+) => {
   const {
     __unstable_floatingBoundary,
     __unstable_referenceBoundary,
     __unstable_referenceElement,
     children,
+    shouldUseEnhancedDialog,
     focused,
     markers,
     onClose,
@@ -428,7 +427,11 @@ export const DefaultBlockObjectComponent = (props: BlockProps) => {
           value,
         })}
       </Root>
-      {open && (
+      {/**
+       * In situations where we are using the new nested method, we do not want to show this object edit modal.
+       * However, in cases where we aren't, the old modal needs to work as expected
+       */}
+      {open && !shouldUseEnhancedDialog && (
         <ObjectEditModal
           floatingBoundary={__unstable_floatingBoundary}
           defaultType="dialog"

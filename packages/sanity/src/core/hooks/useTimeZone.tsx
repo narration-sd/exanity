@@ -171,7 +171,7 @@ export const useTimeZone = (scope: TimeZoneScope) => {
       if (legacyValue) {
         // Migrate the value to key-value store
         const scheduledPublishingValue = JSON.parse(legacyValue)
-        keyValueStore.setKey(keyStoreId, scheduledPublishingValue.name)
+        void keyValueStore.setKey(keyStoreId, scheduledPublishingValue.name)
         // Remove the legacy key
         localStorage.removeItem(legacyKey)
       }
@@ -199,7 +199,8 @@ export const useTimeZone = (scope: TimeZoneScope) => {
   const getStoredTimeZone = useCallback((): NormalizedTimeZone | undefined => {
     if (!storedTimeZone) return undefined
 
-    try {
+    // The try/catch wrapper instead of doing it inline in try/catch is because of the React Compiler not fully supporting the syntax yet
+    const run = () => {
       const wholeTimeZone = allTimeZones.find((tz) => tz.name === storedTimeZone)
 
       if (
@@ -211,13 +212,16 @@ export const useTimeZone = (scope: TimeZoneScope) => {
 
       const fallbackTimeZone = allTimeZones.find((tz) => tz.offset === wholeTimeZone?.offset)
       if (fallbackTimeZone) {
-        keyValueStore.setKey(keyStoreId, fallbackTimeZone.name)
+        void keyValueStore.setKey(keyStoreId, fallbackTimeZone.name)
         return fallbackTimeZone
       }
+      return undefined
+    }
+    try {
+      return run()
     } catch {
       return undefined
     }
-    return undefined
   }, [allTimeZones, keyStoreId, keyValueStore, storedTimeZone])
 
   const getLocalTimeZone = useCallback((): NormalizedTimeZone => {
@@ -239,6 +243,7 @@ export const useTimeZone = (scope: TimeZoneScope) => {
   const [timeZone, setTimeZone] = useState<NormalizedTimeZone>(() => getInitialTimeZone())
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/no-deriving-state-in-effects -- @todo fix later
     setTimeZone(getInitialTimeZone())
   }, [getInitialTimeZone])
 
@@ -293,9 +298,10 @@ export const useTimeZone = (scope: TimeZoneScope) => {
       debug('handleNewValue:', tz)
 
       setTimeZone((prevTz) => {
-        try {
+        // The try/catch wrapper instead of doing it inline in try/catch is because of the React Compiler not fully supporting the syntax yet
+        const run = () => {
           if (prevTz?.name !== tz.name) {
-            keyValueStore.setKey(keyStoreId, tz.name)
+            void keyValueStore.setKey(keyStoreId, tz.name)
             window.dispatchEvent(new Event(TimeZoneEvents.update))
           }
 
@@ -310,6 +316,9 @@ export const useTimeZone = (scope: TimeZoneScope) => {
             duration: 15000,
             status: 'info',
           })
+        }
+        try {
+          run()
         } catch (err) {
           console.error(err)
 
